@@ -1,1 +1,159 @@
-@import './signup.css';
+.login-wrapper {
+  background-color: rgba(215, 214, 249, 1);
+  min-height: 100vh;
+  padding-top: 0;
+  text-align: center;
+  font-family: Arial, sans-serif;
+}
+
+/* Top header bar */
+.login-header {
+  background-color: rgba(149, 147, 227, 1);
+  height: 80px;
+  display: flex;
+  align-items: flex-end;
+  padding: 18px 40px;
+  box-sizing: border-box;
+}
+
+.login-header-text {
+  text-align: left;
+}
+
+.login-brand {
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  color: rgba(153, 4, 182, 1);
+}
+
+.login-subbrand {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #000000;
+  margin-top: 2px;
+  margin-left: 32px;
+}
+
+/* Banner */
+.banner {
+  background: #000;
+  color: white;
+  width: 80%;
+  height: 120px;
+  border-radius: 12px;
+  margin: 30px auto 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 22px;
+}
+
+/* Title */
+.login-title {
+  margin-top: 35px;
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+/* Login card */
+.login-card {
+  background: linear-gradient(135deg, #b29de0, #9889cd);
+  width: 85%;
+  max-width: 350px;
+  margin: 15px auto;
+  padding: 28px 18px 26px;
+  border-radius: 18px;
+  box-shadow: 2px 2px 12px rgba(0,0,0,0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+/* Input row structure */
+.input-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Labels to the left of boxes */
+.input-label {
+  flex: 0 0 90px;
+  font-size: 13px;
+  color: #1a1235;
+  text-align: left;
+}
+
+/* Outer shell like the reference container */
+.input-shell {
+  flex: 1;
+  background: rgba(0,0,0,0.14);
+  border-radius: 16px;
+  padding: 3px 3px;
+}
+
+/* Inner input box */
+.input-shell input {
+  width: 100%;
+  border: 0.5px solid rgba(0,0,0,0.18);
+  background-color: #ffffff;
+  color: #222222;
+  padding: 10px 14px;
+  height: 40px;
+  border-radius: 12px;
+  outline: none;
+  font-size: 14px;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.input-shell input::placeholder {
+  color: rgba(0,0,0,0.45);
+}
+
+.input-shell input:focus {
+  border-color: rgba(153, 4, 182, 0.7);
+  background-color: #ffffff;
+}
+
+/* Login button */
+.login-btn {
+  background: #ce00ff;
+  border: none;
+  padding: 10px;
+  height: 40px;
+  border-radius: 10px;
+  color: white;
+  cursor: pointer;
+  margin-top: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.25);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+}
+
+.login-btn:disabled {
+  opacity: 0.5;
+}
+
+.login-btn:not(:disabled):hover {
+  filter: brightness(1.05);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+}
+
+.login-btn:not(:disabled):active {
+  transform: translateY(1px);
+  box-shadow: 0 3px 6px rgba(0,0,0,0.22);
+}
+
+/* Footer */
+.footer-text {
+  font-size: 12px;
+  margin-top: 10px;
+}
+
+.reg-link {
+  color: #ce00ff;
+  cursor: pointer;
+}
