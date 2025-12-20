@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { applyGate, getStudentStatus } from '../api/api';
+import { applyGate, getStudentStatus, cancelGate } from '../api/api';
 import '../styles/student.css';
 
 const msLeft = (expiresAt) => {
@@ -71,16 +71,36 @@ const StudentApply = () => {
   const remaining = msLeft(qr?.expiresAt);
   const expired = qr ? remaining <= 0 : false;
 
+  const handleDismiss = async () => {
+    if (!qr) {
+      navigate('/student');
+      return;
+    }
+
+    try {
+      await cancelGate();
+    } catch (e) {
+      // Best-effort: even if cancel fails, go back; status polling on home will correct UI
+    }
+
+    navigate('/student');
+  };
+
   const doApply = async () => {
     setApiError('');
-    if (!purpose.trim() || !place.trim()) {
+    const trimmedPurpose = purpose.trim();
+    const trimmedPlace = place.trim();
+
+    // For exit we require purpose/place from user. For entry, backend will
+    // ignore these and use stored outPurpose/outPlace.
+    if (direction === 'exit' && (!trimmedPurpose || !trimmedPlace)) {
       setApiError('Purpose and place are required');
       return;
     }
 
     setSubmitting(true);
     try {
-      const res = await applyGate({ purpose: purpose.trim(), place: place.trim() });
+      const res = await applyGate({ purpose: trimmedPurpose, place: trimmedPlace });
       setQr({
         requestId: res.data.requestId,
         qrDataUrl: res.data.qrDataUrl,
@@ -94,7 +114,7 @@ const StudentApply = () => {
   };
 
   const isExit = direction === 'exit';
-  const title = isExit ? (qr ? 'Applying for Exit' : 'Apply for Exit') : direction === 'entry' ? 'Apply for Entry' : 'Apply';
+  const title = isExit ? (qr ? 'Applying for Exit' : 'Apply for Exit') : direction === 'entry' ? (qr ? 'Applying for Entry' : 'Apply for Entry') : 'Apply';
 
   return (
     <div className="student-shell">
@@ -111,7 +131,7 @@ const StudentApply = () => {
       <main className="student-main">
         <h1 className="student-title">{title}</h1>
 
-        {!qr && (
+        {!qr && isExit && (
           <div className="student-form">
             <label className="student-label">
               Enter your Purpose
@@ -131,6 +151,21 @@ const StudentApply = () => {
           </div>
         )}
 
+        {!qr && !isExit && (
+          <div className="student-form">
+            <button
+              className="student-apply-btn"
+              type="button"
+              disabled={submitting}
+              onClick={doApply}
+            >
+              {submitting ? 'Applying...' : 'Generate Entry QR'}
+            </button>
+
+            {apiError && <div className="student-error">{apiError}</div>}
+          </div>
+        )}
+
         {qr && (
           <div className="student-qr-section">
             <div className="student-qr-card">
@@ -142,6 +177,15 @@ const StudentApply = () => {
                   <img className="student-qr" src={qr.qrDataUrl} alt="Gate Pass QR" />
                   <div className="student-timer">Expires in {formatMMSS(remaining)}</div>
                 </>
+              )}
+              {!expired && (
+                <button
+                  type="button"
+                  className="student-dismiss-btn"
+                  onClick={handleDismiss}
+                >
+                  {isExit ? 'Not going outside? Dismiss QR' : 'Not going inside? Dismiss QR'}
+                </button>
               )}
             </div>
           </div>

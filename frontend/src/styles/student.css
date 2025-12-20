@@ -134,6 +134,29 @@
   font-weight: 700;
 }
 
+.student-dismiss-btn {
+  margin-top: 16px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: none;
+  background: #ffffff;
+  color: #333333;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25);
+  transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
+}
+
+.student-dismiss-btn:hover {
+  filter: brightness(0.98);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.student-dismiss-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.22);
+}
+
 .student-expired {
   font-weight: 800;
   color: #b00020;

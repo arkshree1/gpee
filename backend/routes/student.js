@@ -8,5 +8,6 @@ const studentController = require('../controllers/studentController');
 
 router.get('/status', auth, requireRole(['student']), asyncHandler(studentController.getStatus));
 router.post('/apply', auth, requireRole(['student']), asyncHandler(studentController.apply));
+router.post('/cancel', auth, requireRole(['student']), asyncHandler(studentController.cancel));
 
 module.exports = router;

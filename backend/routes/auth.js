@@ -4,8 +4,15 @@ const router = express.Router();
 const upload = require('../utils/imageUpload');
 const authController = require('../controllers/authController');
 
-// Signup with image upload
-router.post('/signup', upload.single('image'), authController.signup);
+// Signup with image upload (handle upload errors gracefully)
+router.post('/signup', (req, res, next) => {
+	upload.single('image')(req, res, function (err) {
+		if (err) {
+			return res.status(400).json({ message: err.message || 'Invalid image upload' });
+		}
+		return authController.signup(req, res, next);
+	});
+});
 
 // Verify OTP after signup
 router.post('/verify-otp', authController.verifyOtp);

@@ -34,6 +34,20 @@ const userSchema = new mongoose.Schema(
       enum: ['inside', 'outside'],
       default: 'inside',
     },
+    outPurpose: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    outPlace: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    outTime: {
+      type: Date,
+      default: null,
+    },
     imageUrl: {
       type: String,
     },

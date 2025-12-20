@@ -36,11 +36,7 @@ exports.apply = async (req, res) => {
   const userId = req.user.userId;
   const { purpose, place } = req.body;
 
-  if (!purpose || !place) {
-    return res.status(400).json({ message: 'Purpose and place are required' });
-  }
-
-  const student = await User.findById(userId).select('presence role');
+  const student = await User.findById(userId).select('presence role outPurpose outPlace outTime');
   if (!student) return res.status(404).json({ message: 'Student not found' });
 
   // Prevent applying if an active pending request exists.
@@ -56,6 +52,22 @@ exports.apply = async (req, res) => {
 
   const direction = getDirectionFromPresence(student.presence);
 
+  let effectivePurpose = purpose;
+  let effectivePlace = place;
+
+  if (direction === 'exit') {
+    if (!effectivePurpose || !effectivePlace) {
+      return res.status(400).json({ message: 'Purpose and place are required' });
+    }
+  } else if (direction === 'entry') {
+    effectivePurpose = student.outPurpose;
+    effectivePlace = student.outPlace;
+
+    if (!effectivePurpose || !effectivePlace) {
+      return res.status(400).json({ message: 'No previous exit details found for entry request' });
+    }
+  }
+
   const rawToken = generateRawToken();
   const tokenHash = hashToken(rawToken);
   const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
@@ -63,8 +75,8 @@ exports.apply = async (req, res) => {
   const requestDoc = await GateRequest.create({
     student: userId,
     direction,
-    purpose,
-    place,
+    purpose: effectivePurpose,
+    place: effectivePlace,
     tokenHash,
     expiresAt,
   });
@@ -83,4 +95,26 @@ exports.apply = async (req, res) => {
     qrDataUrl,
     direction,
   });
+};
+
+exports.cancel = async (req, res) => {
+  const userId = req.user.userId;
+
+  const pendingRequest = await GateRequest.findOne({
+    student: userId,
+    status: 'pending',
+    usedAt: null,
+    expiresAt: { $gt: new Date() },
+  });
+
+  if (!pendingRequest) {
+    return res.status(404).json({ message: 'No active request to cancel' });
+  }
+
+  pendingRequest.status = 'user dismissed qr';
+  pendingRequest.usedAt = new Date();
+  pendingRequest.decidedAt = new Date();
+  await pendingRequest.save();
+
+  return res.json({ message: 'Request dismissed successfully' });
 };

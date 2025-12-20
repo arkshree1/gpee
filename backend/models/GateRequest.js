@@ -27,7 +27,7 @@ const gateRequestSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'approved', 'rejected'],
+      enum: ['pending', 'approved', 'rejected', 'user dismissed qr'],
       default: 'pending',
       index: true,
     },

@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { verifyOtp } from '../api/api';
 import '../styles/otp.css';
+import PopupBox from '../components/PopupBox';
 
 const Otp = () => {
   const navigate = useNavigate();
   const [otp, setOtp] = useState('');
+  const [popupMessage, setPopupMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
   const email = localStorage.getItem('pendingEmail') || '';
@@ -13,26 +15,26 @@ const Otp = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email) {
-      window.alert('No email found for OTP verification. Please signup again.');
+      setPopupMessage('No email found for OTP verification. Please signup again.');
       return;
     }
 
     if (!/^\d{6}$/.test(otp)) {
-      window.alert('OTP must be 6 digits.');
+      setPopupMessage('OTP must be 6 digits.');
       return;
     }
 
     setLoading(true);
     try {
       const response = await verifyOtp({ email, otp });
-      window.alert(response.data.message || 'OTP verified successfully.');
+      setPopupMessage(response.data.message || 'OTP verified successfully.');
       localStorage.removeItem('pendingEmail');
       navigate('/login');
     } catch (error) {
       if (error.response && error.response.data && error.response.data.message) {
-        window.alert(error.response.data.message);
+        setPopupMessage(error.response.data.message);
       } else {
-        window.alert('Network or server error during OTP verification.');
+        setPopupMessage('Network or server error during OTP verification.');
       }
     } finally {
       setLoading(false);
@@ -60,6 +62,11 @@ const Otp = () => {
           {loading ? 'Verifying...' : 'Verify OTP'}
         </button>
       </form>
+
+      <PopupBox
+        message={popupMessage}
+        onClose={() => setPopupMessage('')}
+      />
     </div>
   );
 };

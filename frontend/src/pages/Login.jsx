@@ -116,6 +116,7 @@ import { useNavigate } from 'react-router-dom';
 import { login } from '../api/api';
 import { getUserFromToken } from '../utils/auth';
 import '../styles/login.css';
+import PopupBox from '../components/PopupBox';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -124,6 +125,7 @@ const Login = () => {
     password: '',
   });
   const [loading, setLoading] = useState(false);
+  const [popupMessage, setPopupMessage] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -135,14 +137,14 @@ const Login = () => {
     const { email, password } = formValues;
 
     if (!email || !password) {
-      window.alert('Email and password are required.');
+      setPopupMessage('Email and password are required.');
       return;
     }
 
     setLoading(true);
     try {
       const response = await login({ email, password });
-      window.alert(response.data.message || 'Login successful');
+      // Optionally show success; for now keep subtle by not blocking navigation
 
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
@@ -161,9 +163,9 @@ const Login = () => {
       }
     } catch (error) {
       if (error.response && error.response.data && error.response.data.message) {
-        window.alert(error.response.data.message);
+        setPopupMessage(error.response.data.message);
       } else {
-        window.alert('Network or server error during login.');
+        setPopupMessage('Network or server error during login.');
       }
     } finally {
       setLoading(false);
@@ -222,6 +224,11 @@ const Login = () => {
           <span className="reg-link" onClick={() => navigate('/signup')}>Register</span>
         </p>
       </form>
+
+      <PopupBox
+        message={popupMessage}
+        onClose={() => setPopupMessage('')}
+      />
     </div>
   );
 };

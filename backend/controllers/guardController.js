@@ -20,7 +20,7 @@ exports.scanToken = async (req, res) => {
 
   const requestDoc = await GateRequest.findOne({ tokenHash }).populate(
     'student',
-    'name rollnumber imageUrl presence'
+    'name rollnumber imageUrl presence outPurpose outPlace outTime'
   );
 
   if (!requestDoc) return res.status(404).json({ message: 'Invalid token' });
@@ -44,6 +44,9 @@ exports.scanToken = async (req, res) => {
       rollnumber: student.rollnumber,
       imageUrl: student.imageUrl,
       presence: student.presence,
+      outPurpose: student.outPurpose,
+      outPlace: student.outPlace,
+      outTime: student.outTime,
     },
   });
 };
@@ -92,6 +95,15 @@ exports.decide = async (req, res) => {
 
   if (approved) {
     student.presence = computeNewPresence(student.presence, requestDoc.direction);
+    if (requestDoc.direction === 'exit') {
+      student.outPurpose = requestDoc.purpose;
+      student.outPlace = requestDoc.place;
+      student.outTime = requestDoc.decidedAt || new Date();
+    } else if (requestDoc.direction === 'entry') {
+      student.outPurpose = null;
+      student.outPlace = null;
+      student.outTime = null;
+    }
     await student.save();
   }
 

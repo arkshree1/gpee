@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { resetPassword } from '../api/api';
 import '../styles/resetpassword.css';
+import PopupBox from '../components/PopupBox';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -9,6 +10,7 @@ const ResetPassword = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [popupMessage, setPopupMessage] = useState('');
 
   const email = localStorage.getItem('resetEmail') || '';
 
@@ -16,22 +18,22 @@ const ResetPassword = () => {
     e.preventDefault();
 
     if (!email) {
-      window.alert('No email found for password reset. Please start again.');
+      setPopupMessage('No email found for password reset. Please start again.');
       return;
     }
 
     if (!/^\d{6}$/.test(otp)) {
-      window.alert('OTP must be 6 digits.');
+      setPopupMessage('OTP must be 6 digits.');
       return;
     }
 
     if (newPassword.length < 6) {
-      window.alert('Password must be at least 6 characters.');
+      setPopupMessage('Password must be at least 6 characters.');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      window.alert('Passwords do not match.');
+      setPopupMessage('Passwords do not match.');
       return;
     }
 
@@ -43,14 +45,14 @@ const ResetPassword = () => {
         newPassword,
         confirmPassword,
       });
-      window.alert(response.data.message || 'Password reset successful.');
+      setPopupMessage(response.data.message || 'Password reset successful.');
       localStorage.removeItem('resetEmail');
       navigate('/login');
     } catch (error) {
       if (error.response && error.response.data && error.response.data.message) {
-        window.alert(error.response.data.message);
+        setPopupMessage(error.response.data.message);
       } else {
-        window.alert('Network or server error during password reset.');
+        setPopupMessage('Network or server error during password reset.');
       }
     } finally {
       setLoading(false);
@@ -97,6 +99,11 @@ const ResetPassword = () => {
           {loading ? 'Resetting...' : 'Reset Password'}
         </button>
       </form>
+
+      <PopupBox
+        message={popupMessage}
+        onClose={() => setPopupMessage('')}
+      />
     </div>
   );
 };

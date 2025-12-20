@@ -17,8 +17,27 @@ const GuardPage = () => {
   const [scanError, setScanError] = useState('');
 
   const [pending, setPending] = useState(null);
-  // pending = { requestId, direction, purpose, place, student{...} }
+  // pending = { requestId, direction, purpose, place, student{..., outPurpose, outPlace, outTime} }
   const [decisionLoading, setDecisionLoading] = useState(false);
+
+  const formatOutTime = (value) => {
+    if (!value) return '';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '';
+
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+
+    let hours = d.getHours();
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const seconds = String(d.getSeconds()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    if (hours === 0) hours = 12;
+
+    return `${day}/${month}/${year}, ${hours}:${minutes}:${seconds} ${ampm}`;
+  };
 
   const refresh = async () => {
     try {
@@ -50,6 +69,22 @@ const GuardPage = () => {
   const prettyDirection = useMemo(() => {
     if (!pending?.direction) return '';
     return pending.direction === 'exit' ? 'Exit' : 'Entry';
+  }, [pending]);
+
+  const totalTimeOut = useMemo(() => {
+    if (!pending || !pending.student?.outTime) return '';
+    const start = new Date(pending.student.outTime).getTime();
+    const diffMs = Date.now() - start;
+    if (Number.isNaN(diffMs) || diffMs <= 0) return '0 minutes';
+
+    const totalMinutes = Math.floor(diffMs / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    if (hours > 0) {
+      return `${hours} hour${hours !== 1 ? 's' : ''} ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    }
+    return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
   }, [pending]);
 
   const doDecide = async (decision) => {
@@ -112,14 +147,43 @@ const GuardPage = () => {
                 <div className="guard-approval-roll">Roll No: {pending.student?.rollnumber}</div>
 
                 <div className="guard-approval-fields">
-                  <div>
-                    <label>Purpose</label>
-                    <div className="guard-approval-value">{pending.purpose}</div>
-                  </div>
-                  <div>
-                    <label>Place</label>
-                    <div className="guard-approval-value">{pending.place}</div>
-                  </div>
+                  {pending.direction === 'exit' && (
+                    <>
+                      <div>
+                        <label>Purpose</label>
+                        <div className="guard-approval-value">{pending.purpose}</div>
+                      </div>
+                      <div>
+                        <label>Place</label>
+                        <div className="guard-approval-value">{pending.place}</div>
+                      </div>
+                    </>
+                  )}
+
+                  {pending.direction === 'entry' && (
+                    <>
+                      <div>
+                        <label>Out Purpose</label>
+                        <div className="guard-approval-value">{pending.student?.outPurpose || '-'}</div>
+                      </div>
+                      <div>
+                        <label>Out Place</label>
+                        <div className="guard-approval-value">{pending.student?.outPlace || '-'}</div>
+                      </div>
+                      <div>
+                        <label>Out Time</label>
+                        <div className="guard-approval-value">
+                          {pending.student?.outTime
+                            ? formatOutTime(pending.student.outTime)
+                            : '-'}
+                        </div>
+                      </div>
+                      <div>
+                        <label>Total Time Out</label>
+                        <div className="guard-approval-value">{totalTimeOut || '-'}</div>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="guard-approval-actions">

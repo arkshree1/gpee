@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signup } from '../api/api';
+import '../styles/login.css';
 import '../styles/signup.css';
+import PopupBox from '../components/PopupBox';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -16,6 +18,7 @@ const Signup = () => {
 
   const [imageFile, setImageFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [popupMessage, setPopupMessage] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -32,28 +35,28 @@ const Signup = () => {
     const { name, rollnumber, email, password, confirmPassword } = formValues;
 
     if (!name || !rollnumber || !email || !password || !confirmPassword || !imageFile) {
-      window.alert('All fields including image are required.');
+      setPopupMessage('All fields including image are required.');
       return false;
     }
 
     if (!/^\d+$/.test(rollnumber)) {
-      window.alert('Roll number must be numeric.');
+      setPopupMessage('Roll number must be numeric.');
       return false;
     }
 
     const emailRegex = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/;
     if (!emailRegex.test(email)) {
-      window.alert('Please enter a valid email.');
+      setPopupMessage('Please enter a valid email.');
       return false;
     }
 
     if (password.length < 6) {
-      window.alert('Password must be at least 6 characters.');
+      setPopupMessage('Password must be at least 6 characters.');
       return false;
     }
 
     if (password !== confirmPassword) {
-      window.alert('Passwords do not match.');
+      setPopupMessage('Passwords do not match.');
       return false;
     }
 
@@ -75,8 +78,7 @@ const Signup = () => {
       formData.append('image', imageFile);
 
       const response = await signup(formData);
-
-      window.alert(response.data.message || 'Signup successful, please verify OTP.');
+      setPopupMessage(response.data.message || 'Signup successful, please verify OTP.');
 
       if (response.data.email) {
         localStorage.setItem('pendingEmail', response.data.email);
@@ -85,9 +87,9 @@ const Signup = () => {
       navigate('/otp');
     } catch (error) {
       if (error.response && error.response.data && error.response.data.message) {
-        window.alert(error.response.data.message);
+        setPopupMessage(error.response.data.message);
       } else {
-        window.alert('Network or server error during signup.');
+        setPopupMessage('Network or server error during signup.');
       }
     } finally {
       setLoading(false);
@@ -95,78 +97,115 @@ const Signup = () => {
   };
 
   return (
-    <div className="auth-container">
-      <form className="auth-form" onSubmit={handleSubmit}>
-        <h2>Student Signup</h2>
+    <div className="login-wrapper">
+      <header className="login-header">
+        <div className="login-header-text">
+          <span className="login-brand">Passly</span>
+          <span className="login-subbrand">by Watchr</span>
+        </div>
+      </header>
 
-        <label>
-          Name
-          <input
-            type="text"
-            name="name"
-            value={formValues.name}
-            onChange={handleChange}
-            required
-          />
-        </label>
+      <div className="banner">BANNER</div>
 
-        <label>
-          Roll Number
-          <input
-            type="text"
-            name="rollnumber"
-            value={formValues.rollnumber}
-            onChange={handleChange}
-            required
-          />
-        </label>
+      <h3 className="login-title">STUDENT SIGNUP</h3>
 
-        <label>
-          Email
-          <input
-            type="email"
-            name="email"
-            value={formValues.email}
-            onChange={handleChange}
-            required
-          />
-        </label>
+      <form className="login-card" onSubmit={handleSubmit}>
+        <div className="input-group">
+          <label className="input-label" htmlFor="name">Name</label>
+          <div className="input-shell">
+            <input
+              id="name"
+              type="text"
+              name="name"
+              value={formValues.name}
+              onChange={handleChange}
+              required
+            />
+          </div>
+        </div>
 
-        <label>
-          Password
-          <input
-            type="password"
-            name="password"
-            value={formValues.password}
-            onChange={handleChange}
-            required
-          />
-        </label>
+        <div className="input-group">
+          <label className="input-label" htmlFor="rollnumber">Roll Number</label>
+          <div className="input-shell">
+            <input
+              id="rollnumber"
+              type="text"
+              name="rollnumber"
+              value={formValues.rollnumber}
+              onChange={handleChange}
+              required
+            />
+          </div>
+        </div>
 
-        <label>
-          Confirm Password
-          <input
-            type="password"
-            name="confirmPassword"
-            value={formValues.confirmPassword}
-            onChange={handleChange}
-            required
-          />
-        </label>
+        <div className="input-group">
+          <label className="input-label" htmlFor="email">College Email</label>
+          <div className="input-shell">
+            <input
+              id="email"
+              type="email"
+              name="email"
+              value={formValues.email}
+              onChange={handleChange}
+              required
+            />
+          </div>
+        </div>
 
-        <label>
-          Passport Size Image
-          <input type="file" accept="image/*" onChange={handleImageChange} />
-        </label>
+        <div className="input-group">
+          <label className="input-label" htmlFor="password">Password</label>
+          <div className="input-shell">
+            <input
+              id="password"
+              type="password"
+              name="password"
+              value={formValues.password}
+              onChange={handleChange}
+              required
+            />
+          </div>
+        </div>
 
-        <button type="submit" disabled={loading}>
-          {loading ? 'Registering...' : 'Register'}
+        <div className="input-group">
+          <label className="input-label" htmlFor="confirmPassword">Confirm</label>
+          <div className="input-shell">
+            <input
+              id="confirmPassword"
+              type="password"
+              name="confirmPassword"
+              value={formValues.confirmPassword}
+              onChange={handleChange}
+              required
+            />
+          </div>
+        </div>
+
+        <div className="input-group">
+          <label className="input-label" htmlFor="image">Photo</label>
+          <div className="input-shell">
+            <input
+              id="image"
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+            />
+          </div>
+        </div>
+
+        <button type="submit" disabled={loading} className="login-btn">
+          {loading ? 'Registering...' : 'REGISTER'}
         </button>
 
-        <p className="auth-footer-text">
-          Already have an account? <span onClick={() => navigate('/login')}>Login</span>
+        <p className="footer-text">
+          Already have an account?{' '}
+          <span className="reg-link" onClick={() => navigate('/login')}>Login</span>
         </p>
       </form>
+
+      <PopupBox
+        message={popupMessage}
+        onClose={() => setPopupMessage('')}
+      />
     </div>
   );
 };
