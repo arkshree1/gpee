@@ -65,29 +65,50 @@ exports.signup = async (req, res) => {
     }
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) {
+
+    // If user exists and is verified, reject
+    if (existingUser && existingUser.isVerified) {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const otp = generateOtp();
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
-    const user = await User.create({
-      name,
-      rollnumber,
-      branch,
-      email: email.toLowerCase(),
-      password: hashedPassword,
-      imageUrl,
-      hostelName,
-      roomNumber,
-      contactNumber,
-      otp,
-      otpExpires,
-    });
+    let user;
+
+    if (existingUser && !existingUser.isVerified) {
+      // User exists but not verified - update their data and resend OTP
+      existingUser.name = name;
+      existingUser.rollnumber = rollnumber;
+      existingUser.branch = branch;
+      existingUser.password = hashedPassword;
+      existingUser.hostelName = hostelName;
+      existingUser.roomNumber = roomNumber;
+      existingUser.contactNumber = contactNumber;
+      existingUser.otp = otp;
+      existingUser.otpExpires = otpExpires;
+      if (imageUrl) existingUser.imageUrl = imageUrl;
+      await existingUser.save();
+      user = existingUser;
+    } else {
+      // New user - create account
+      user = await User.create({
+        name,
+        rollnumber,
+        branch,
+        email: email.toLowerCase(),
+        password: hashedPassword,
+        imageUrl,
+        hostelName,
+        roomNumber,
+        contactNumber,
+        otp,
+        otpExpires,
+        isVerified: false,
+      });
+    }
 
     await sendEmail(
       user.email,
@@ -129,9 +150,10 @@ exports.verifyOtp = async (req, res) => {
 
     user.otp = null;
     user.otpExpires = null;
+    user.isVerified = true;
     await user.save();
 
-    return res.json({ message: 'OTP verified successfully' });
+    return res.json({ message: 'Email verified successfully. You can now login.' });
   } catch (error) {
     console.error('Verify OTP error:', error);
     return res.status(500).json({ message: 'Server error during OTP verification' });
@@ -193,8 +215,32 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    if (user.otp) {
-      return res.status(400).json({ message: 'Please verify your email using OTP before logging in' });
+    // Check if user is verified
+    if (!user.isVerified) {
+      // Validate password first before sending OTP
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+
+      // Send new OTP for verification
+      const otp = generateOtp();
+      const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+      user.otp = otp;
+      user.otpExpires = otpExpires;
+      await user.save();
+
+      await sendEmail(
+        user.email,
+        'Verify your email before login',
+        `Your email is not verified. Please use OTP ${otp} to verify your account. It is valid for 10 minutes.`
+      );
+
+      return res.status(400).json({
+        message: 'Please verify your email. A new OTP has been sent to your email.',
+        requiresVerification: true,
+        email: user.email,
+      });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
