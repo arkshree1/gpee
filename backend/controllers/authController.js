@@ -42,10 +42,18 @@ const generateOtp = () => {
 
 exports.signup = async (req, res) => {
   try {
-    const { name, rollnumber, email, password, confirmPassword } = req.body;
+    const { name, rollnumber, branch, email, password, confirmPassword, hostelName, roomNumber, contactNumber } = req.body;
 
-    if (!name || !rollnumber || !email || !password || !confirmPassword) {
+    if (!name || !rollnumber || !branch || !email || !password || !confirmPassword || !hostelName || !roomNumber || !contactNumber) {
       return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    if (!/^[A-Za-z0-9]+$/.test(rollnumber)) {
+      return res.status(400).json({ message: 'Roll number must be alphanumeric (e.g. 23CD3037).' });
+    }
+
+    if (!/^\d{10}$/.test(contactNumber)) {
+      return res.status(400).json({ message: 'Contact number must be 10 digits.' });
     }
 
     if (password.length < 6) {
@@ -70,9 +78,13 @@ exports.signup = async (req, res) => {
     const user = await User.create({
       name,
       rollnumber,
+      branch,
       email: email.toLowerCase(),
       password: hashedPassword,
       imageUrl,
+      hostelName,
+      roomNumber,
+      contactNumber,
       otp,
       otpExpires,
     });

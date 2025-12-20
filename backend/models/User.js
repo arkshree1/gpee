@@ -12,6 +12,11 @@ const userSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    branch: {
+      type: String,
+      trim: true,
+      default: null,
+    },
     email: {
       type: String,
       required: true,
@@ -33,6 +38,21 @@ const userSchema = new mongoose.Schema(
       // inside => on campus, outside => out of campus
       enum: ['inside', 'outside'],
       default: 'inside',
+    },
+    hostelName: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    roomNumber: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    contactNumber: {
+      type: String,
+      trim: true,
+      default: null,
     },
     outPurpose: {
       type: String,

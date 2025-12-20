@@ -47,6 +47,16 @@ const gateLogSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    exitTime: {
+      type: Date,
+      default: null,
+      index: true,
+    },
+    entryTime: {
+      type: Date,
+      default: null,
+      index: true,
+    },
   },
   {
     timestamps: true,

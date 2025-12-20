@@ -6,3 +6,25 @@
   text-align: center;
   margin-bottom: 1rem;
 }
+
+.otp-inputs {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.otp-box {
+  width: 40px;
+  height: 40px;
+  text-align: center;
+  font-size: 1.1rem;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  outline: none;
+}
+
+.otp-box:focus {
+  border-color: rgba(153, 4, 182, 1);
+  box-shadow: 0 0 0 2px rgba(149, 147, 227, 0.4);
+}

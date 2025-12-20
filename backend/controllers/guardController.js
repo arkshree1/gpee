@@ -93,12 +93,14 @@ exports.decide = async (req, res) => {
   const student = await User.findById(requestDoc.student);
   if (!student) return res.status(404).json({ message: 'Student not found' });
 
+  const decidedAt = requestDoc.decidedAt || new Date();
+
   if (approved) {
     student.presence = computeNewPresence(student.presence, requestDoc.direction);
     if (requestDoc.direction === 'exit') {
       student.outPurpose = requestDoc.purpose;
       student.outPlace = requestDoc.place;
-      student.outTime = requestDoc.decidedAt || new Date();
+      student.outTime = decidedAt;
     } else if (requestDoc.direction === 'entry') {
       student.outPurpose = null;
       student.outPlace = null;
@@ -107,16 +109,63 @@ exports.decide = async (req, res) => {
     await student.save();
   }
 
-  await GateLog.create({
-    student: student._id,
-    guard: guard._id,
-    request: requestDoc._id,
-    direction: requestDoc.direction,
-    outcome: approved ? 'approved' : 'rejected',
-    purpose: requestDoc.purpose,
-    place: requestDoc.place,
-    decidedAt: requestDoc.decidedAt,
-  });
+  // Logging: one GateLog per full visit. Exit approves create a log with exitTime.
+  // Entry approves fill in entryTime on the latest open log for that student.
+  if (approved) {
+    if (requestDoc.direction === 'exit') {
+      await GateLog.create({
+        student: student._id,
+        guard: guard._id,
+        request: requestDoc._id,
+        direction: requestDoc.direction,
+        outcome: 'approved',
+        purpose: requestDoc.purpose,
+        place: requestDoc.place,
+        decidedAt,
+        exitTime: decidedAt,
+        entryTime: null,
+      });
+    } else if (requestDoc.direction === 'entry') {
+      const openLog = await GateLog.findOne({
+        student: student._id,
+        outcome: 'approved',
+        entryTime: null,
+      }).sort({ decidedAt: -1 });
+
+      if (openLog) {
+        openLog.entryTime = decidedAt;
+        await openLog.save();
+      } else {
+        // Fallback: create a standalone entry log if no open exit log exists.
+        await GateLog.create({
+          student: student._id,
+          guard: guard._id,
+          request: requestDoc._id,
+          direction: requestDoc.direction,
+          outcome: 'approved',
+          purpose: requestDoc.purpose,
+          place: requestDoc.place,
+          decidedAt,
+          exitTime: null,
+          entryTime: decidedAt,
+        });
+      }
+    }
+  } else {
+    // Still log rejections as individual events.
+    await GateLog.create({
+      student: student._id,
+      guard: guard._id,
+      request: requestDoc._id,
+      direction: requestDoc.direction,
+      outcome: 'rejected',
+      purpose: requestDoc.purpose,
+      place: requestDoc.place,
+      decidedAt,
+      exitTime: requestDoc.direction === 'exit' ? decidedAt : null,
+      entryTime: requestDoc.direction === 'entry' ? decidedAt : null,
+    });
+  }
 
   return res.json({
     message: approved ? 'Approved' : 'Rejected',
