@@ -23,7 +23,7 @@ export const getUserFromToken = () => {
   const decoded = decodeToken(token);
   if (!decoded) return null;
 
-  const { exp, userId, role } = decoded;
+  const { exp, userId, role, userType } = decoded;
 
   if (exp && Date.now() >= exp * 1000) {
     // Token expired
@@ -31,7 +31,7 @@ export const getUserFromToken = () => {
     return null;
   }
 
-  return { userId, role };
+  return { userId, role, userType };
 };
 
 export const isAuthenticated = () => {

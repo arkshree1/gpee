@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
+import './styles/student.css';
 import Signup from './pages/Signup';
 import Login from './pages/Login';
 import Otp from './pages/Otp';
@@ -37,7 +38,7 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route
-          path="/student"
+          path="/student/*"
           element={
             <ProtectedRoute allowedRoles={['student']}>
               <StudentPage />
@@ -45,15 +46,15 @@ function App() {
           }
         />
         <Route
-          path="/gaurd"
+          path="/guard/*"
           element={
-            <ProtectedRoute allowedRoles={['gaurd']}>
+            <ProtectedRoute allowedRoles={['guard']}>
               <GuardPage />
             </ProtectedRoute>
           }
         />
         <Route
-          path="/admin"
+          path="/admin/*"
           element={
             <ProtectedRoute allowedRoles={['admin']}>
               <AdminPage />

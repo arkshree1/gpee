@@ -5,6 +5,15 @@ const apiClient = axios.create({
   withCredentials: false,
 });
 
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 export const signup = async (formData) => {
   return apiClient.post('/api/auth/signup', formData, {
     headers: {
@@ -28,5 +37,19 @@ export const forgotPassword = async (payload) => {
 export const resetPassword = async (payload) => {
   return apiClient.post('/api/auth/reset-password', payload);
 };
+
+// Student APIs
+export const getStudentStatus = async () => apiClient.get('/api/student/status');
+export const applyGate = async (payload) => apiClient.post('/api/student/apply', payload);
+
+// Guard APIs
+export const getGuardDashboard = async () => apiClient.get('/api/guard/dashboard');
+export const scanQrToken = async (payload) => apiClient.post('/api/guard/scan', payload);
+export const decideRequest = async (payload) => apiClient.post('/api/guard/decide', payload);
+
+// Admin APIs
+export const getAdminOverview = async () => apiClient.get('/api/admin/overview');
+export const getAdminLogs = async () => apiClient.get('/api/admin/logs');
+export const getAdminUsers = async () => apiClient.get('/api/admin/users');
 
 export default apiClient;

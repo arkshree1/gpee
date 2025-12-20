@@ -39,8 +39,8 @@ const Login = () => {
 
       if (user && user.role === 'student') {
         navigate('/student');
-      } else if (user && user.role === 'gaurd') {
-        navigate('/gaurd');
+      } else if (user && (user.role === 'guard' || user.role === 'gaurd')) {
+        navigate('/guard');
       } else if (user && user.role === 'admin') {
         navigate('/admin');
       } else {
@@ -60,7 +60,7 @@ const Login = () => {
   return (
     <div className="auth-container">
       <form className="auth-form" onSubmit={handleSubmit}>
-        <h2>Student Login</h2>
+  <h2>Campus Access Login</h2>
 
         <label>
           Email
@@ -89,7 +89,7 @@ const Login = () => {
         </button>
 
         <p className="auth-footer-text">
-          Don&apos;t have an account?{' '}
+          Students new here?{' '}
           <span onClick={() => navigate('/signup')}>Register</span>
         </p>
         <p className="auth-footer-text">

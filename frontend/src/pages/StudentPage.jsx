@@ -1,13 +1,15 @@
 import React from 'react';
-import '../styles/signup.css';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import StudentHome from '../components/StudentHome';
+import StudentApply from '../components/StudentApply';
 
 const StudentPage = () => {
   return (
-    <div className="auth-container">
-      <div className="auth-form">
-        <h2>hi from student page</h2>
-      </div>
-    </div>
+    <Routes>
+      <Route index element={<StudentHome />} />
+      <Route path="apply" element={<StudentApply />} />
+      <Route path="*" element={<Navigate to="/student" replace />} />
+    </Routes>
   );
 };
 
