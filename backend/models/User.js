@@ -25,11 +25,14 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
+      enum: ['student', 'guard', 'admin'],
       default: 'student',
     },
     presence: {
       type: String,
-      default: 'in',
+      // inside => on campus, outside => out of campus
+      enum: ['inside', 'outside'],
+      default: 'inside',
     },
     imageUrl: {
       type: String,

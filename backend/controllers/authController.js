@@ -2,6 +2,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const User = require('../models/User');
+const Guard = require('../models/Guard');
+const Admin = require('../models/Admin');
 
 // Real email sender using Nodemailer and environment variables
 const emailUser = process.env.EMAIL_USER;
@@ -132,7 +134,48 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const normalizedEmail = email.toLowerCase();
+
+    // 1) Guard login (separate Guard collection)
+    const guard = await Guard.findOne({ email: normalizedEmail });
+    if (guard) {
+      const isMatch = await guard.comparePassword(password);
+      if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
+
+      const token = jwt.sign(
+        {
+          userId: guard._id,
+          role: 'guard',
+          userType: 'guard',
+        },
+        process.env.JWT_SECRET || 'default_secret',
+        { expiresIn: '7d' }
+      );
+
+      return res.json({ message: 'Login successful', token });
+    }
+
+    // 2) Admin login (separate Admin collection)
+    const admin = await Admin.findOne({ email: normalizedEmail });
+    if (admin) {
+      const isMatch = await admin.comparePassword(password);
+      if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
+
+      const token = jwt.sign(
+        {
+          userId: admin._id,
+          role: 'admin',
+          userType: 'admin',
+        },
+        process.env.JWT_SECRET || 'default_secret',
+        { expiresIn: '7d' }
+      );
+
+      return res.json({ message: 'Login successful', token });
+    }
+
+    // 3) Student login (User collection)
+    const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -151,6 +194,7 @@ exports.login = async (req, res) => {
       {
         userId: user._id,
         role: user.role,
+        userType: 'user',
       },
       process.env.JWT_SECRET || 'default_secret',
       {
