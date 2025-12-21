@@ -174,6 +174,64 @@
   font-size: 14px;
 }
 
+.student-history {
+  margin-top: 2rem;
+  width: 100%;
+}
+
+.student-history-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.student-history-table-wrapper {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.student-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.student-history-table th,
+.student-history-table td {
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.student-history-table th {
+  text-align: left;
+  font-weight: 600;
+}
+
+.student-history-purpose,
+.student-history-place {
+  font-weight: 600;
+  color: #111827;
+}
+
+.student-history-out {
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.student-history-in {
+  font-weight: 600;
+  color: #b91c1c;
+}
+
+.student-history-main {
+  line-height: 1.1;
+}
+
+.student-history-sub {
+  font-size: 0.75rem;
+  line-height: 1.1;
+}
+
 /* Guard minimal styles */
 .guard-shell {
   min-height: 100vh;

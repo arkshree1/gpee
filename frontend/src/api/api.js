@@ -42,6 +42,7 @@ export const resetPassword = async (payload) => {
 export const getStudentStatus = async () => apiClient.get('/api/student/status');
 export const applyGate = async (payload) => apiClient.post('/api/student/apply', payload);
 export const cancelGate = async () => apiClient.post('/api/student/cancel');
+export const getStudentLogs = async () => apiClient.get('/api/student/logs');
 
 // Guard APIs
 export const getGuardDashboard = async () => apiClient.get('/api/guard/dashboard');

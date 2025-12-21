@@ -109,62 +109,120 @@ exports.decide = async (req, res) => {
     await student.save();
   }
 
-  // Logging: one GateLog per full visit. Exit approves create a log with exitTime.
-  // Entry approves fill in entryTime on the latest open log for that student.
-  if (approved) {
-    if (requestDoc.direction === 'exit') {
+  // Logging rules (immutable-style audit trail):
+  // 1) EXIT DENIED     -> NEW document
+  // 2) EXIT APPROVED   -> NEW document (base exit document)
+  // 3) ENTRY DENIED    -> NEW document
+  // 4) ENTRY APPROVED  -> MODIFY ONLY the latest exit-approved document for this student
+
+  if (requestDoc.direction === 'exit') {
+    if (approved) {
+      // EXIT APPROVED -> base exit document
       await GateLog.create({
         student: student._id,
         guard: guard._id,
         request: requestDoc._id,
-        direction: requestDoc.direction,
+        direction: 'exit',
         outcome: 'approved',
         purpose: requestDoc.purpose,
         place: requestDoc.place,
         decidedAt,
-        exitTime: decidedAt,
-        entryTime: null,
+        exitStatus: 'exit done',
+        exitOutcome: 'approved',
+        entryStatus: '--',
+        entryOutcome: '--',
+        exitStatusTime: decidedAt,
+        entryStatusTime: null,
       });
-    } else if (requestDoc.direction === 'entry') {
-      const openLog = await GateLog.findOne({
+    } else {
+      // EXIT DENIED -> new immutable document
+      await GateLog.create({
         student: student._id,
-        outcome: 'approved',
-        entryTime: null,
-      }).sort({ decidedAt: -1 });
+        guard: guard._id,
+        request: requestDoc._id,
+        direction: 'exit',
+        outcome: 'denied',
+        purpose: requestDoc.purpose,
+        place: requestDoc.place,
+        decidedAt,
+        exitStatus: 'exit denied',
+        exitOutcome: 'denied',
+        entryStatus: '--',
+        entryOutcome: '--',
+        exitStatusTime: decidedAt,
+        entryStatusTime: null,
+      });
+    }
+  } else if (requestDoc.direction === 'entry') {
+    // Find latest approved exit log for this student (base document)
+    const baseExitLog = await GateLog.findOne({
+      student: student._id,
+      direction: 'exit',
+      exitOutcome: 'approved',
+    }).sort({ exitStatusTime: -1 });
 
-      if (openLog) {
-        openLog.entryTime = decidedAt;
-        await openLog.save();
+    if (approved) {
+      // ENTRY APPROVED -> modify only the base exit-approved document
+      if (baseExitLog) {
+        baseExitLog.entryStatus = 'entry approved';
+        baseExitLog.entryOutcome = 'approved';
+        baseExitLog.entryStatusTime = decidedAt;
+        baseExitLog.decidedAt = decidedAt;
+        baseExitLog.outcome = 'approved';
+        await baseExitLog.save();
       } else {
-        // Fallback: create a standalone entry log if no open exit log exists.
+        // Fallback: if no base exit log found, create a standalone entry-approved log
         await GateLog.create({
           student: student._id,
           guard: guard._id,
           request: requestDoc._id,
-          direction: requestDoc.direction,
+          direction: 'entry',
           outcome: 'approved',
           purpose: requestDoc.purpose,
           place: requestDoc.place,
           decidedAt,
-          exitTime: null,
-          entryTime: decidedAt,
+          exitStatus: '--',
+          exitOutcome: '--',
+          entryStatus: 'entry approved',
+          entryOutcome: 'approved',
+          exitStatusTime: null,
+          entryStatusTime: decidedAt,
         });
       }
+    } else {
+      // ENTRY DENIED -> new immutable document
+      let exitStatus = '--';
+      let exitOutcome = '--';
+      let exitStatusTime = null;
+
+      if (baseExitLog) {
+        exitStatus = baseExitLog.exitStatus;
+        exitOutcome = baseExitLog.exitOutcome;
+        exitStatusTime = baseExitLog.exitStatusTime;
+      } else if (student.outTime) {
+        // Fallback if base log missing but we know student went out
+        exitStatus = 'exit done';
+        exitOutcome = 'approved';
+        exitStatusTime = student.outTime;
+      }
+
+      await GateLog.create({
+        student: student._id,
+        guard: guard._id,
+        request: requestDoc._id,
+        direction: 'entry',
+        outcome: 'denied',
+        purpose: requestDoc.purpose,
+        place: requestDoc.place,
+        decidedAt,
+        exitStatus,
+        exitOutcome,
+        entryStatus: 'entry denied',
+        entryOutcome: 'denied',
+        exitStatusTime,
+        entryStatusTime: decidedAt,
+      });
     }
-  } else {
-    // Still log rejections as individual events.
-    await GateLog.create({
-      student: student._id,
-      guard: guard._id,
-      request: requestDoc._id,
-      direction: requestDoc.direction,
-      outcome: 'rejected',
-      purpose: requestDoc.purpose,
-      place: requestDoc.place,
-      decidedAt,
-      exitTime: requestDoc.direction === 'exit' ? decidedAt : null,
-      entryTime: requestDoc.direction === 'entry' ? decidedAt : null,
-    });
   }
 
   return res.json({
@@ -186,7 +244,7 @@ exports.getDashboard = async (req, res) => {
     .sort({ rollnumber: 1 })
     .limit(200);
 
-  const rejected = await GateLog.find({ outcome: 'rejected' })
+  const rejected = await GateLog.find({ outcome: 'denied' })
     .sort({ decidedAt: -1 })
     .limit(50)
     .populate('student', 'name rollnumber');

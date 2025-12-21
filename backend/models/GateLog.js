@@ -28,8 +28,9 @@ const gateLogSchema = new mongoose.Schema(
     },
     outcome: {
       type: String,
-      enum: ['approved', 'rejected'],
+      enum: ['approved', 'denied', '--'],
       required: true,
+      default: '--',
       index: true,
     },
     purpose: {
@@ -47,12 +48,36 @@ const gateLogSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    exitTime: {
+    exitStatus: {
+      type: String,
+      required: true,
+      default: '--',
+      trim: true,
+    },
+    exitOutcome: {
+      type: String,
+      required: true,
+      default: '--',
+      trim: true,
+    },
+    entryStatus: {
+      type: String,
+      required: true,
+      default: '--',
+      trim: true,
+    },
+    entryOutcome: {
+      type: String,
+      required: true,
+      default: '--',
+      trim: true,
+    },
+    exitStatusTime: {
       type: Date,
       default: null,
       index: true,
     },
-    entryTime: {
+    entryStatusTime: {
       type: Date,
       default: null,
       index: true,
