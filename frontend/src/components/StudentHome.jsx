@@ -94,6 +94,15 @@ const StudentHome = () => {
           {loading ? 'Loading...' : status?.hasPendingRequest ? 'Request Pending' : actionLabel}
         </button>
 
+        <button
+          className="student-primary-btn"
+          type="button"
+          disabled={loading}
+          onClick={() => navigate('/student/gatepass')}
+        >
+          Apply for Gatepass
+        </button>
+
         {status?.hasPendingRequest && status?.pendingRequest && (
           <div className="student-hint">
             A request is already pending. Ask the guard to scan your QR from the Apply page.
