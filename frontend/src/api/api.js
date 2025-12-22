@@ -42,6 +42,9 @@ export const resetPassword = async (payload) => {
 export const getStudentStatus = async () => apiClient.get('/api/student/status');
 export const applyGate = async (payload) => apiClient.post('/api/student/apply', payload);
 export const cancelGate = async () => apiClient.post('/api/student/cancel');
+export const createLocalGatepass = async (payload) => apiClient.post('/api/student/local-gatepass', payload);
+export const createOutstationGatepass = async (payload) =>
+  apiClient.post('/api/student/outstation-gatepass', payload);
 export const getStudentLogs = async () => apiClient.get('/api/student/logs');
 
 // Guard APIs

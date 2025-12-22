@@ -26,7 +26,11 @@ const GatepassMenu = () => {
           Apply for Local Gatepass
         </button>
 
-        <button className="student-primary-btn" type="button">
+        <button
+          className="student-primary-btn"
+          type="button"
+          onClick={() => navigate('/student/gatepass/outstation')}
+        >
           Apply for Outstation Gatepass
         </button>
       </main>
