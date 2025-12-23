@@ -12,6 +12,11 @@ const userSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    department: {
+      type: String,
+      trim: true,
+      default: null,
+    },
     branch: {
       type: String,
       trim: true,

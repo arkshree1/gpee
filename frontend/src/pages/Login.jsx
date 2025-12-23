@@ -126,6 +126,7 @@ const Login = () => {
   });
   const [loading, setLoading] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -158,6 +159,14 @@ const Login = () => {
         navigate('/guard');
       } else if (user && user.role === 'admin') {
         navigate('/admin');
+      } else if (user && user.role === 'officeSecretary') {
+        navigate('/office-secretary');
+      } else if (user && user.role === 'hod') {
+        navigate('/hod');
+      } else if (user && user.role === 'dugc') {
+        navigate('/dugc');
+      } else if (user && user.role === 'hostelOffice') {
+        navigate('/hostel-office');
       } else {
         navigate('/login');
       }
@@ -203,15 +212,23 @@ const Login = () => {
 
         <div className="input-group">
           <label className="input-label" htmlFor="password">Password</label>
-          <div className="input-shell">
+          <div className="input-shell password-shell">
             <input
               id="password"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               name="password"
               value={formValues.password}
               onChange={handleChange}
               required
             />
+            <button
+              type="button"
+              className="toggle-password-btn"
+              onClick={() => setShowPassword((prev) => !prev)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? '🙈' : '👁️'}
+            </button>
           </div>
         </div>
 

@@ -2,6 +2,12 @@ const mongoose = require('mongoose');
 
 const localGatepassSchema = new mongoose.Schema(
   {
+    gatePassNo: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
     student: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
@@ -67,6 +73,20 @@ const localGatepassSchema = new mongoose.Schema(
       type: Boolean,
       required: true,
       default: false,
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'approved', 'denied'],
+      default: 'pending',
+    },
+    decidedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'HostelOffice',
+      default: null,
+    },
+    decidedAt: {
+      type: Date,
+      default: null,
     },
   },
   {

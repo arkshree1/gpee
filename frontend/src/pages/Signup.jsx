@@ -181,11 +181,28 @@ const Signup = () => {
               required
             >
               <option value="" disabled>Select branch</option>
-              <option value="chemical">Chemical</option>
-              <option value="cse">CSE</option>
-              <option value="csd">CSD</option>
-              <option value="petro">Petro</option>
-              <option value="electrical">Electrical</option>
+              <option value="Chemical Engineering">Chemical Engineering</option>
+              <option value="Chemical Engineering (Major: Renewable Energy Engineering)">
+                Chemical Engineering (Major: Renewable Energy Engineering)
+              </option>
+              <option value="Chemical Engineering (Major: Petrochemicals and Polymers Engineering)">
+                Chemical Engineering (Major: Petrochemicals and Polymers Engineering)
+              </option>
+              <option value="Computer Science and Design Engineering">
+                Computer Science and Design Engineering
+              </option>
+              <option value="Computer Science and Engineering">Computer Science and Engineering</option>
+              <option value="Electrical Engineering (Major: E Vehicle Technology)">
+                Electrical Engineering (Major: E Vehicle Technology)
+              </option>
+              <option value="Electronics Engineering">Electronics Engineering</option>
+              <option value="Mechanical Engineering">Mechanical Engineering</option>
+              <option value="Information Technology">Information Technology</option>
+              <option value="Mathematics and Computing">Mathematics and Computing</option>
+              <option value="Petroleum Engineering">Petroleum Engineering</option>
+              <option value="Petroleum Engineering (Major: Applied Petroleum Geoscience)">
+                Petroleum Engineering (Major: Applied Petroleum Geoscience)
+              </option>
             </select>
           </div>
         </div>

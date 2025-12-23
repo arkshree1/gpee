@@ -76,6 +76,12 @@
   background: rgba(215, 214, 249, 1);
 }
 
+.gatepass-input-readonly {
+  background: rgba(200, 199, 235, 0.7);
+  color: #555;
+  cursor: not-allowed;
+}
+
 .gatepass-input:focus {
   outline: none;
   box-shadow: 0 0 0 2px rgba(149, 147, 227, 0.8);

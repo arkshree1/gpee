@@ -4,6 +4,10 @@ const nodemailer = require('nodemailer');
 const User = require('../models/User');
 const Guard = require('../models/Guard');
 const Admin = require('../models/Admin');
+const OfficeSecretary = require('../models/OfficeSecretary');
+const Hod = require('../models/Hod');
+const Dugc = require('../models/Dugc');
+const HostelOffice = require('../models/HostelOffice');
 
 // Real email sender using Nodemailer and environment variables
 const emailUser = process.env.EMAIL_USER;
@@ -40,6 +44,38 @@ const generateOtp = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
+// Map a specific branch string to its department
+const getDepartmentFromBranch = (branch) => {
+  switch (branch) {
+    case 'Mathematics and Computing':
+      return 'MNC';
+
+    case 'Computer Science and Design Engineering':
+    case 'Computer Science and Engineering':
+    case 'Information Technology':
+      return 'CSE';
+
+    case 'Chemical Engineering':
+    case 'Chemical Engineering (Major: Renewable Energy Engineering)':
+    case 'Chemical Engineering (Major: Petrochemicals and Polymers Engineering)':
+      return 'CHEMICAL';
+
+    case 'Mechanical Engineering':
+      return 'MECHANICAL';
+
+    case 'Petroleum Engineering':
+    case 'Petroleum Engineering (Major: Applied Petroleum Geoscience)':
+      return 'PETROLEUM';
+
+    case 'Electrical Engineering (Major: E Vehicle Technology)':
+    case 'Electronics Engineering':
+      return 'Electrical and Electronics Engineering';
+
+    default:
+      return null;
+  }
+};
+
 exports.signup = async (req, res) => {
   try {
     const { name, rollnumber, branch, email, password, confirmPassword, hostelName, roomNumber, contactNumber } = req.body;
@@ -65,6 +101,7 @@ exports.signup = async (req, res) => {
     }
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const department = getDepartmentFromBranch(branch);
 
     // If user exists and is verified, reject
     if (existingUser && existingUser.isVerified) {
@@ -83,6 +120,7 @@ exports.signup = async (req, res) => {
       existingUser.name = name;
       existingUser.rollnumber = rollnumber;
       existingUser.branch = branch;
+      existingUser.department = department;
       existingUser.password = hashedPassword;
       existingUser.hostelName = hostelName;
       existingUser.roomNumber = roomNumber;
@@ -98,6 +136,7 @@ exports.signup = async (req, res) => {
         name,
         rollnumber,
         branch,
+        department,
         email: email.toLowerCase(),
         password: hashedPassword,
         imageUrl,
@@ -208,7 +247,83 @@ exports.login = async (req, res) => {
       return res.json({ message: 'Login successful', token });
     }
 
-    // 3) Student login (User collection)
+    // 3) Office Secretary login
+    const officeSecretary = await OfficeSecretary.findOne({ email: normalizedEmail });
+    if (officeSecretary) {
+      const isMatch = await officeSecretary.comparePassword(password);
+      if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
+
+      const token = jwt.sign(
+        {
+          userId: officeSecretary._id,
+          role: 'officeSecretary',
+          userType: 'officeSecretary',
+        },
+        process.env.JWT_SECRET || 'default_secret',
+        { expiresIn: '7d' }
+      );
+
+      return res.json({ message: 'Login successful', token });
+    }
+
+    // 4) HOD login
+    const hod = await Hod.findOne({ email: normalizedEmail });
+    if (hod) {
+      const isMatch = await hod.comparePassword(password);
+      if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
+
+      const token = jwt.sign(
+        {
+          userId: hod._id,
+          role: 'hod',
+          userType: 'hod',
+        },
+        process.env.JWT_SECRET || 'default_secret',
+        { expiresIn: '7d' }
+      );
+
+      return res.json({ message: 'Login successful', token });
+    }
+
+    // 5) DUGC login
+    const dugc = await Dugc.findOne({ email: normalizedEmail });
+    if (dugc) {
+      const isMatch = await dugc.comparePassword(password);
+      if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
+
+      const token = jwt.sign(
+        {
+          userId: dugc._id,
+          role: 'dugc',
+          userType: 'dugc',
+        },
+        process.env.JWT_SECRET || 'default_secret',
+        { expiresIn: '7d' }
+      );
+
+      return res.json({ message: 'Login successful', token });
+    }
+
+    // 6) Hostel Office login
+    const hostelOffice = await HostelOffice.findOne({ email: normalizedEmail });
+    if (hostelOffice) {
+      const isMatch = await hostelOffice.comparePassword(password);
+      if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
+
+      const token = jwt.sign(
+        {
+          userId: hostelOffice._id,
+          role: 'hostelOffice',
+          userType: 'hostelOffice',
+        },
+        process.env.JWT_SECRET || 'default_secret',
+        { expiresIn: '7d' }
+      );
+
+      return res.json({ message: 'Login successful', token });
+    }
+
+    // 7) Student login (User collection)
     const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {

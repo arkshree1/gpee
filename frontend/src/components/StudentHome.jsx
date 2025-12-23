@@ -103,6 +103,15 @@ const StudentHome = () => {
           Apply for Gatepass
         </button>
 
+        <button
+          className="student-primary-btn"
+          type="button"
+          disabled={loading}
+          onClick={() => navigate('/student/track-gatepass')}
+        >
+          Track Gatepass
+        </button>
+
         {status?.hasPendingRequest && status?.pendingRequest && (
           <div className="student-hint">
             A request is already pending. Ask the guard to scan your QR from the Apply page.
@@ -135,30 +144,30 @@ const StudentHome = () => {
                     const outTop = outIsDenied
                       ? 'EXIT DENIED'
                       : exitDate
-                      ? formatTime(exitDate)
-                      : '--';
+                        ? formatTime(exitDate)
+                        : '--';
 
                     const outBottom = outIsDenied
                       ? exitDate
                         ? `${formatTime(exitDate)} ${formatDate(exitDate)}`
                         : ''
                       : exitDate
-                      ? formatDate(exitDate)
-                      : '';
+                        ? formatDate(exitDate)
+                        : '';
 
                     const inTop = inIsDenied
                       ? 'ENTRY DENIED'
                       : entryDate
-                      ? formatTime(entryDate)
-                      : '--';
+                        ? formatTime(entryDate)
+                        : '--';
 
                     const inBottom = inIsDenied
                       ? entryDate
                         ? `${formatTime(entryDate)} ${formatDate(entryDate)}`
                         : ''
                       : entryDate
-                      ? formatDate(entryDate)
-                      : '';
+                        ? formatDate(entryDate)
+                        : '';
 
                     return (
                       <tr key={log._id}>

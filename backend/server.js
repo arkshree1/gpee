@@ -64,6 +64,9 @@ app.use('/api/guard', guardRoutes);
 const adminRoutes = require('./routes/admin');
 app.use('/api/admin', adminRoutes);
 
+const hostelOfficeRoutes = require('./routes/hostelOffice');
+app.use('/api/hostel-office', hostelOfficeRoutes);
+
 const { bootstrapDefaultAccounts } = require('./utils/bootstrap');
 
 // MongoDB connection (UPDATED for Mongoose v7)

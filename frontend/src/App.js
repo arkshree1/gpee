@@ -10,6 +10,10 @@ import ResetPassword from './pages/ResetPassword';
 import StudentPage from './pages/StudentPage';
 import GuardPage from './pages/GuardPage';
 import AdminPage from './pages/AdminPage';
+import HodPage from './pages/HodPage';
+import DugcPage from './pages/DugcPage';
+import OfficeSecretaryPage from './pages/OfficeSecretaryPage';
+import HostelOfficePage from './pages/HostelOfficePage';
 import { getUserFromToken } from './utils/auth';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -58,6 +62,38 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['admin']}>
               <AdminPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/hod/*"
+          element={
+            <ProtectedRoute allowedRoles={['hod']}>
+              <HodPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dugc/*"
+          element={
+            <ProtectedRoute allowedRoles={['dugc']}>
+              <DugcPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/office-secretary/*"
+          element={
+            <ProtectedRoute allowedRoles={['officeSecretary']}>
+              <OfficeSecretaryPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/hostel-office/*"
+          element={
+            <ProtectedRoute allowedRoles={['hostelOffice']}>
+              <HostelOfficePage />
             </ProtectedRoute>
           }
         />

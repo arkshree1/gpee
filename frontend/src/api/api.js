@@ -62,4 +62,12 @@ export const getAdminOverview = async () => apiClient.get('/api/admin/overview')
 export const getAdminLogs = async () => apiClient.get('/api/admin/logs');
 export const getAdminUsers = async () => apiClient.get('/api/admin/users');
 
+// Hostel Office APIs
+export const getPendingGatepasses = async () => apiClient.get('/api/hostel-office/pending-gatepasses');
+export const getGatepassHistory = async (search) =>
+  apiClient.get('/api/hostel-office/gatepass-history', { params: { search } });
+export const getEntryExitLogs = async (date, search) =>
+  apiClient.get('/api/hostel-office/entry-exit-logs', { params: { date, search } });
+export const decideGatepass = async (payload) => apiClient.post('/api/hostel-office/decide-gatepass', payload);
+
 export default apiClient;

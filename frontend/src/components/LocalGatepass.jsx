@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createLocalGatepass } from '../api/api';
+import { createLocalGatepass, getStudentStatus } from '../api/api';
 import PopupBox from '../components/PopupBox';
 import '../styles/gatepass.css';
 
@@ -23,6 +23,31 @@ const LocalGatepass = () => {
   });
   const [loading, setLoading] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  // Fetch user profile data on mount to auto-fill the form
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await getStudentStatus();
+        const { studentName, rollnumber, department, roomNumber, contactNumber } = res.data;
+        setForm((prev) => ({
+          ...prev,
+          studentName: studentName || '',
+          rollnumber: rollnumber || '',
+          department: department || '',
+          roomNumber: roomNumber || '',
+          contact: contactNumber || '',
+        }));
+      } catch (error) {
+        console.error('Failed to fetch profile:', error);
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -79,7 +104,8 @@ const LocalGatepass = () => {
     setLoading(true);
     createLocalGatepass(form)
       .then((res) => {
-        setPopupMessage(res.data.message || 'Local gatepass submitted successfully.');
+        setPopupMessage('Local gatepass applied');
+        setSubmitSuccess(true);
       })
       .catch((error) => {
         if (error.response && error.response.data && error.response.data.message) {
@@ -87,6 +113,7 @@ const LocalGatepass = () => {
         } else {
           setPopupMessage('Network or server error while submitting gatepass.');
         }
+        setSubmitSuccess(false);
       })
       .finally(() => {
         setLoading(false);
@@ -109,11 +136,11 @@ const LocalGatepass = () => {
           <div className="gatepass-row single">
             <label className="gatepass-label">Student's Name</label>
             <input
-              className="gatepass-input"
+              className="gatepass-input gatepass-input-readonly"
               type="text"
               name="studentName"
               value={form.studentName}
-              onChange={handleChange}
+              readOnly
             />
           </div>
 
@@ -121,21 +148,21 @@ const LocalGatepass = () => {
             <div className="gatepass-field">
               <label className="gatepass-label">Roll No.</label>
               <input
-                className="gatepass-input"
+                className="gatepass-input gatepass-input-readonly"
                 type="text"
                 name="rollnumber"
                 value={form.rollnumber}
-                onChange={handleChange}
+                readOnly
               />
             </div>
             <div className="gatepass-field">
               <label className="gatepass-label">Department</label>
               <input
-                className="gatepass-input"
+                className="gatepass-input gatepass-input-readonly"
                 type="text"
                 name="department"
                 value={form.department}
-                onChange={handleChange}
+                readOnly
               />
             </div>
           </div>
@@ -144,11 +171,11 @@ const LocalGatepass = () => {
             <div className="gatepass-field">
               <label className="gatepass-label">Room No.</label>
               <input
-                className="gatepass-input"
+                className="gatepass-input gatepass-input-readonly"
                 type="text"
                 name="roomNumber"
                 value={form.roomNumber}
-                onChange={handleChange}
+                readOnly
               />
             </div>
             <div className="gatepass-field">
@@ -223,11 +250,11 @@ const LocalGatepass = () => {
             <div className="gatepass-field">
               <label className="gatepass-label">Contact</label>
               <input
-                className="gatepass-input"
+                className="gatepass-input gatepass-input-readonly"
                 type="tel"
                 name="contact"
                 value={form.contact}
-                onChange={handleChange}
+                readOnly
               />
             </div>
           </div>
@@ -255,7 +282,12 @@ const LocalGatepass = () => {
             Back
           </button>
         </form>
-      <PopupBox message={popupMessage} onClose={() => setPopupMessage('')} />
+        <PopupBox message={popupMessage} onClose={() => {
+          setPopupMessage('');
+          if (submitSuccess) {
+            navigate('/student');
+          }
+        }} />
       </main>
     </div>
   );
