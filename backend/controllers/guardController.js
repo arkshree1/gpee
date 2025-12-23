@@ -251,3 +251,155 @@ exports.getDashboard = async (req, res) => {
 
   return res.json({ logs, outside, rejected });
 };
+
+exports.searchStudents = async (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (!q) return res.json({ students: [] });
+
+  const regex = new RegExp(q, 'i');
+
+  const students = await User.find({ role: 'student', rollnumber: regex })
+    .select('name rollnumber branch roomNumber contactNumber imageUrl presence outPurpose outPlace outTime')
+    .limit(10)
+    .sort({ rollnumber: 1 });
+
+  return res.json({ students });
+};
+
+exports.manualExit = async (req, res) => {
+  const guardId = req.user.userId;
+  const { studentId, purpose, place } = req.body;
+
+  if (!studentId || !purpose || !place) {
+    return res.status(400).json({ message: 'studentId, purpose and place are required' });
+  }
+
+  const guard = await Guard.findById(guardId).select('name email');
+  if (!guard) {
+    return res.status(401).json({ message: 'Invalid guard session' });
+  }
+
+  const student = await User.findById(studentId);
+  if (!student) {
+    return res.status(404).json({ message: 'Student not found' });
+  }
+
+  if (student.presence !== 'inside') {
+    return res.status(400).json({ message: 'Student is not currently inside' });
+  }
+
+  const decidedAt = new Date();
+
+  // Update student presence and out* fields exactly like exit approval via QR
+  student.presence = computeNewPresence(student.presence, 'exit');
+  student.outPurpose = purpose;
+  student.outPlace = place;
+  student.outTime = decidedAt;
+  await student.save();
+
+  // Create GateLog entry equivalent to an approved exit via QR
+  await GateLog.create({
+    student: student._id,
+    guard: guard._id,
+    request: null,
+    direction: 'exit',
+    outcome: 'approved',
+    purpose,
+    place,
+    decidedAt,
+    exitStatus: 'exit done',
+    exitOutcome: 'approved',
+    entryStatus: '--',
+    entryOutcome: '--',
+    exitStatusTime: decidedAt,
+    entryStatusTime: null,
+  });
+
+  return res.json({ message: 'Manual exit recorded successfully' });
+};
+
+exports.manualEntry = async (req, res) => {
+  const guardId = req.user.userId;
+  const { studentId } = req.body;
+
+  if (!studentId) {
+    return res.status(400).json({ message: 'studentId is required' });
+  }
+
+  const guard = await Guard.findById(guardId).select('name email');
+  if (!guard) {
+    return res.status(401).json({ message: 'Invalid guard session' });
+  }
+
+  const student = await User.findById(studentId);
+  if (!student) {
+    return res.status(404).json({ message: 'Student not found' });
+  }
+
+  if (student.presence !== 'outside') {
+    return res.status(400).json({ message: 'Student is not currently outside' });
+  }
+
+  const decidedAt = new Date();
+
+  const purpose = student.outPurpose || undefined;
+  const place = student.outPlace || undefined;
+
+  // Update student presence and out* fields exactly like entry approval via QR
+  student.presence = computeNewPresence(student.presence, 'entry');
+  student.outPurpose = null;
+  student.outPlace = null;
+  student.outTime = null;
+  await student.save();
+
+  // Find latest approved exit log for this student (base document)
+  const baseExitLog = await GateLog.findOne({
+    student: student._id,
+    direction: 'exit',
+    exitOutcome: 'approved',
+  }).sort({ exitStatusTime: -1 });
+
+  if (baseExitLog) {
+    // ENTRY APPROVED -> modify only the base exit-approved document
+    baseExitLog.entryStatus = 'entry approved';
+    baseExitLog.entryOutcome = 'approved';
+    baseExitLog.entryStatusTime = decidedAt;
+    baseExitLog.decidedAt = decidedAt;
+    baseExitLog.outcome = 'approved';
+    if (purpose) baseExitLog.purpose = purpose;
+    if (place) baseExitLog.place = place;
+    await baseExitLog.save();
+  } else {
+    // Fallback: if no base exit log found, create a standalone entry-approved log
+    await GateLog.create({
+      student: student._id,
+      guard: guard._id,
+      request: null,
+      direction: 'entry',
+      outcome: 'approved',
+      purpose: purpose || undefined,
+      place: place || undefined,
+      decidedAt,
+      exitStatus: '--',
+      exitOutcome: '--',
+      entryStatus: 'entry approved',
+      entryOutcome: 'approved',
+      exitStatusTime: null,
+      entryStatusTime: decidedAt,
+    });
+  }
+
+  return res.json({ message: 'Manual entry recorded successfully' });
+};
+
+exports.getEntryExitLogs = async (req, res) => {
+  const logs = await GateLog.find({
+    exitOutcome: 'approved',
+    entryOutcome: { $in: ['approved', '--'] },
+  })
+    .sort({ exitStatusTime: 1, _id: 1 })
+    .limit(300)
+    .populate('student', 'name rollnumber roomNumber contactNumber');
+
+  return res.json({ logs });
+};

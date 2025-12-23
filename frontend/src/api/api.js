@@ -51,6 +51,11 @@ export const getStudentLogs = async () => apiClient.get('/api/student/logs');
 export const getGuardDashboard = async () => apiClient.get('/api/guard/dashboard');
 export const scanQrToken = async (payload) => apiClient.post('/api/guard/scan', payload);
 export const decideRequest = async (payload) => apiClient.post('/api/guard/decide', payload);
+export const getGuardEntryExitLogs = async () => apiClient.get('/api/guard/entry-exit-logs');
+export const searchGuardStudents = async (q) =>
+  apiClient.get('/api/guard/students', { params: { q } });
+export const manualExit = async (payload) => apiClient.post('/api/guard/manual-exit', payload);
+export const manualEntry = async (payload) => apiClient.post('/api/guard/manual-entry', payload);
 
 // Admin APIs
 export const getAdminOverview = async () => apiClient.get('/api/admin/overview');

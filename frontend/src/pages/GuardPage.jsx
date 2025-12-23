@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { decideRequest, getGuardDashboard, scanQrToken } from '../api/api';
+import { decideRequest, getGuardDashboard, getGuardEntryExitLogs, scanQrToken } from '../api/api';
 import GuardScanner from '../components/GuardScanner';
+import GuardEntryExitTable from '../components/GuardEntryExitTable';
+import GuardManualEntry from '../components/GuardManualEntry';
 import '../styles/student.css';
 
 const normalizeImageUrl = (imageUrl) => {
@@ -15,6 +17,17 @@ const GuardPage = () => {
   const [loading, setLoading] = useState(true);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanError, setScanError] = useState('');
+  const [activeTab, setActiveTab] = useState('scan');
+  const [entryExitLogs, setEntryExitLogs] = useState([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [logsSearch, setLogsSearch] = useState('');
+  const [logsDate, setLogsDate] = useState(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  });
 
   const [pending, setPending] = useState(null);
   // pending = { requestId, direction, purpose, place, student{..., outPurpose, outPlace, outTime} }
@@ -54,6 +67,23 @@ const GuardPage = () => {
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (activeTab !== 'logs' || logsLoading || entryExitLogs.length) return;
+    const loadLogs = async () => {
+      try {
+        setLogsLoading(true);
+        const res = await getGuardEntryExitLogs();
+        setEntryExitLogs(res.data.logs || []);
+      } catch (e) {
+        // optional: reuse scan error banner area for logs load errors
+        setScanError(e?.response?.data?.message || 'Failed to load entry-exit logs');
+      } finally {
+        setLogsLoading(false);
+      }
+    };
+    loadLogs();
+  }, [activeTab, logsLoading, entryExitLogs.length]);
 
   const onToken = async (token) => {
     setScanError('');
@@ -111,21 +141,147 @@ const GuardPage = () => {
     ? normalizeImageUrl(pending.student.imageUrl)
     : fallbackAvatar;
 
-  return (
-    <div className="guard-shell">
-      <div className="guard-topbar">
-        <div className="guard-title">Guard Dashboard</div>
-        <div className="guard-actions">
-          <button className="guard-btn" type="button" onClick={() => setScannerOpen(true)}>
-            Scan QR
-          </button>
-          <button className="guard-btn ghost" type="button" onClick={refresh}>
-            Refresh
-          </button>
-        </div>
-      </div>
+  const formatLogTime = (value) => {
+    if (!value) return '';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '';
 
-      {scanError && <div className="guard-error">{scanError}</div>}
+    let hours = d.getHours();
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    if (hours === 0) hours = 12;
+
+    return `${hours}:${minutes} ${ampm}`;
+  };
+
+  const filteredEntryExitLogs = useMemo(() => {
+    let base = entryExitLogs;
+
+    if (logsDate) {
+      const target = new Date(logsDate);
+      const targetY = target.getFullYear();
+      const targetM = target.getMonth();
+      const targetD = target.getDate();
+      base = base.filter((l) => {
+        if (!l.exitStatusTime) return false;
+        const d = new Date(l.exitStatusTime);
+        return (
+          d.getFullYear() === targetY &&
+          d.getMonth() === targetM &&
+          d.getDate() === targetD
+        );
+      });
+    }
+
+    const trimmed = logsSearch.trim();
+    if (!trimmed) return base;
+    const q = trimmed.toLowerCase();
+    return base.filter((l) => {
+      const s = l.student || {};
+      return (
+        (s.name && s.name.toLowerCase().includes(q)) ||
+        (s.rollnumber && s.rollnumber.toLowerCase().includes(q))
+      );
+    });
+  }, [entryExitLogs, logsSearch, logsDate]);
+
+  return (
+    <div className="guard-layout">
+      <header className="guard-header">
+        <div className="guard-header-brand">
+          <span className="guard-header-passly">Passly</span>
+          <span className="guard-header-by">
+            by <strong>Watchr</strong>
+          </span>
+        </div>
+      </header>
+
+      <div className="guard-body">
+        <aside className="guard-sidebar">
+          <button
+            type="button"
+            className={`guard-nav-item ${activeTab === 'scan' ? 'active' : ''}`}
+            onClick={() => setActiveTab('scan')}
+          >
+            <div className="guard-nav-icon">
+              <span className="guard-nav-label">Scan</span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            className={`guard-nav-item ${activeTab === 'logs' ? 'active' : ''}`}
+            onClick={() => setActiveTab('logs')}
+          >
+            <div className="guard-nav-icon">
+              <span className="guard-nav-label">Entry</span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            className={`guard-nav-item ${activeTab === 'manual' ? 'active' : ''}`}
+            onClick={() => setActiveTab('manual')}
+          >
+            <div className="guard-nav-icon">
+              <span className="guard-nav-label">Manual</span>
+            </div>
+          </button>
+        </aside>
+
+        <main className="guard-main">
+          {activeTab === 'scan' && (
+            <div className="guard-scan-page">
+              {scanError && <div className="guard-error-banner">{scanError}</div>}
+              <button
+                className="guard-scan-button"
+                type="button"
+                onClick={() => setScannerOpen(true)}
+              >
+                SCAN
+              </button>
+            </div>
+          )}
+
+          {activeTab === 'logs' && (
+            <div className="guard-logs-page">
+              <div className="guard-logs-header-row">
+                <div className="guard-logs-title">ENTRY-EXIT LOG</div>
+                <div className="guard-logs-date">
+                  <input
+                    type="date"
+                    value={logsDate}
+                    onChange={(e) => setLogsDate(e.target.value)}
+                  />
+                </div>
+                <div className="guard-logs-search">
+                  <input
+                    type="text"
+                    placeholder="Search"
+                    value={logsSearch}
+                    onChange={(e) => setLogsSearch(e.target.value)}
+                  />
+                </div>
+              </div>
+              <GuardEntryExitTable
+                logs={filteredEntryExitLogs}
+                loading={logsLoading}
+                formatLogTime={formatLogTime}
+              />
+            </div>
+          )}
+
+          {activeTab === 'manual' && (
+            <GuardManualEntry
+              onExitCompleted={() => {
+                refresh();
+                setEntryExitLogs([]);
+              }}
+            />
+          )}
+        </main>
+      </div>
 
       {pending && (
         <div className="guard-approval-overlay">
@@ -209,106 +365,6 @@ const GuardPage = () => {
           </div>
         </div>
       )}
-
-      <div className="guard-grid">
-        <div className="guard-card">
-          <h3>Entry / Exit Logs</h3>
-          <div className="guard-card-body">
-            {loading && <div>Loading...</div>}
-            {!loading && (
-              <table className="guard-table">
-                <thead>
-                  <tr>
-                    <th>Time</th>
-                    <th>Student</th>
-                    <th>Action</th>
-                    <th>Outcome</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(dashboard?.logs || []).map((l) => (
-                    <tr key={l._id}>
-                      <td>{new Date(l.decidedAt).toLocaleString()}</td>
-                      <td>
-                        {l.student?.name}
-                        <div className="guard-muted">{l.student?.rollnumber}</div>
-                      </td>
-                      <td>{l.direction}</td>
-                      <td>
-                        <span className="guard-pill">{l.outcome}</span>
-                      </td>
-                    </tr>
-                  ))}
-                  {(dashboard?.logs || []).length === 0 && (
-                    <tr>
-                      <td colSpan={4} className="guard-muted">
-                        No logs yet
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
-
-        <div className="guard-card">
-          <h3>Students Currently Outside</h3>
-          <div className="guard-card-body">
-            {(dashboard?.outside || []).length === 0 ? (
-              <div className="guard-muted">Nobody outside</div>
-            ) : (
-              <table className="guard-table">
-                <thead>
-                  <tr>
-                    <th>Student</th>
-                    <th>Roll</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(dashboard?.outside || []).map((s) => (
-                    <tr key={s._id}>
-                      <td>{s.name}</td>
-                      <td>{s.rollnumber}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
-
-        <div className="guard-card" style={{ gridColumn: '1 / -1' }}>
-          <h3>Rejected Requests</h3>
-          <div className="guard-card-body">
-            {(dashboard?.rejected || []).length === 0 ? (
-              <div className="guard-muted">No rejections</div>
-            ) : (
-              <table className="guard-table">
-                <thead>
-                  <tr>
-                    <th>Time</th>
-                    <th>Student</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(dashboard?.rejected || []).map((l) => (
-                    <tr key={l._id}>
-                      <td>{new Date(l.decidedAt).toLocaleString()}</td>
-                      <td>
-                        {l.student?.name}
-                        <div className="guard-muted">{l.student?.rollnumber}</div>
-                      </td>
-                      <td>{l.direction}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
-      </div>
 
       {scannerOpen && <GuardScanner onToken={onToken} onClose={() => setScannerOpen(false)} />}
     </div>
