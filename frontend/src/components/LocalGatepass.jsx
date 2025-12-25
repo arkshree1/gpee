@@ -17,6 +17,7 @@ const LocalGatepass = () => {
     timeOut: '',
     dateIn: '',
     timeIn: '',
+    purpose: '',
     place: '',
     contact: '',
     consent: false,
@@ -69,6 +70,7 @@ const LocalGatepass = () => {
       timeOut,
       dateIn,
       timeIn,
+      purpose,
       place,
       contact,
       consent,
@@ -84,6 +86,7 @@ const LocalGatepass = () => {
       !timeOut ||
       !dateIn ||
       !timeIn ||
+      !purpose ||
       !place ||
       !contact
     ) {
@@ -98,6 +101,21 @@ const LocalGatepass = () => {
 
     if (!/^\d{10}$/.test(contact)) {
       setPopupMessage('Contact number must be 10 digits.');
+      return;
+    }
+
+    // Validate out time is in the future
+    const outDateTime = new Date(`${dateOut}T${timeOut}`);
+    const inDateTime = new Date(`${dateIn}T${timeIn}`);
+    const now = new Date();
+
+    if (outDateTime <= now) {
+      setPopupMessage('Out time must be in the future.');
+      return;
+    }
+
+    if (inDateTime <= outDateTime) {
+      setPopupMessage('In time must be after out time.');
       return;
     }
 
@@ -234,6 +252,18 @@ const LocalGatepass = () => {
                 onChange={handleChange}
               />
             </div>
+          </div>
+
+          <div className="gatepass-row single">
+            <label className="gatepass-label">Purpose</label>
+            <input
+              className="gatepass-input"
+              type="text"
+              name="purpose"
+              placeholder="e.g., Medical checkup, Shopping, Family visit"
+              value={form.purpose}
+              onChange={handleChange}
+            />
           </div>
 
           <div className="gatepass-row">

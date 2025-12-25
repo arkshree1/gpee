@@ -305,6 +305,22 @@ const GuardPage = () => {
                 <div className="guard-approval-fields">
                   {pending.direction === 'exit' && (
                     <>
+                      {/* Gatepass Badge */}
+                      {pending.gatePassNo && (
+                        <div style={{
+                          background: 'linear-gradient(135deg, #9904b6 0%, #6b0080 100%)',
+                          color: '#fff',
+                          padding: '8px 16px',
+                          borderRadius: '12px',
+                          fontWeight: 700,
+                          fontSize: '16px',
+                          textAlign: 'center',
+                          marginBottom: '12px',
+                          boxShadow: '0 2px 8px rgba(153, 4, 182, 0.4)',
+                        }}>
+                          🎫 Gatepass: {pending.gatePassNo}
+                        </div>
+                      )}
                       <div>
                         <label>Purpose</label>
                         <div className="guard-approval-value">{pending.purpose}</div>
@@ -313,11 +329,81 @@ const GuardPage = () => {
                         <label>Place</label>
                         <div className="guard-approval-value">{pending.place}</div>
                       </div>
+                      {/* Gatepass Scheduled Times */}
+                      {pending.gatepassDetails && (
+                        <>
+                          <div style={{
+                            marginTop: '10px',
+                            padding: '10px',
+                            background: 'rgba(255,255,255,0.1)',
+                            borderRadius: '8px',
+                            border: '1px solid rgba(255,255,255,0.2)',
+                          }}>
+                            <div style={{ fontSize: '11px', opacity: 0.7, marginBottom: '6px', fontWeight: 600 }}>
+                              SCHEDULED TIMES
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '13px' }}>
+                              <div>
+                                <span style={{ opacity: 0.7 }}>Out: </span>
+                                <span style={{ fontWeight: 600 }}>
+                                  {(() => {
+                                    const dt = pending.gatepassDetails.gatepassOutTime;
+                                    if (!dt) return '-';
+                                    const [datePart, timePart] = dt.split('T');
+                                    const dateFormatted = datePart?.split('-').reverse().join('/') || '';
+                                    const t = timePart?.split(':');
+                                    if (!t || t.length < 2) return dateFormatted;
+                                    let h = parseInt(t[0], 10);
+                                    const m = t[1];
+                                    const ampm = h >= 12 ? 'PM' : 'AM';
+                                    h = h % 12 || 12;
+                                    return `${dateFormatted} ${h}:${m} ${ampm}`;
+                                  })()}
+                                </span>
+                              </div>
+                              <div>
+                                <span style={{ opacity: 0.7 }}>In: </span>
+                                <span style={{ fontWeight: 600 }}>
+                                  {(() => {
+                                    const dt = pending.gatepassDetails.gatepassInTime;
+                                    if (!dt) return '-';
+                                    const [datePart, timePart] = dt.split('T');
+                                    const dateFormatted = datePart?.split('-').reverse().join('/') || '';
+                                    const t = timePart?.split(':');
+                                    if (!t || t.length < 2) return dateFormatted;
+                                    let h = parseInt(t[0], 10);
+                                    const m = t[1];
+                                    const ampm = h >= 12 ? 'PM' : 'AM';
+                                    h = h % 12 || 12;
+                                    return `${dateFormatted} ${h}:${m} ${ampm}`;
+                                  })()}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </>
                   )}
 
                   {pending.direction === 'entry' && (
                     <>
+                      {/* Gatepass Badge for Entry */}
+                      {pending.gatePassNo && (
+                        <div style={{
+                          background: 'linear-gradient(135deg, #16a34a 0%, #0f6d32 100%)',
+                          color: '#fff',
+                          padding: '8px 16px',
+                          borderRadius: '12px',
+                          fontWeight: 700,
+                          fontSize: '16px',
+                          textAlign: 'center',
+                          marginBottom: '12px',
+                          boxShadow: '0 2px 8px rgba(22, 163, 74, 0.4)',
+                        }}>
+                          🎫 Gatepass Entry: {pending.gatePassNo}
+                        </div>
+                      )}
                       <div>
                         <label>Out Purpose</label>
                         <div className="guard-approval-value">{pending.student?.outPurpose || '-'}</div>
@@ -327,7 +413,7 @@ const GuardPage = () => {
                         <div className="guard-approval-value">{pending.student?.outPlace || '-'}</div>
                       </div>
                       <div>
-                        <label>Out Time</label>
+                        <label>Actual Out Time</label>
                         <div className="guard-approval-value">
                           {pending.student?.outTime
                             ? formatOutTime(pending.student.outTime)
@@ -338,6 +424,34 @@ const GuardPage = () => {
                         <label>Total Time Out</label>
                         <div className="guard-approval-value">{totalTimeOut || '-'}</div>
                       </div>
+                      {/* Gatepass Scheduled Return Time */}
+                      {pending.gatepassDetails?.gatepassInTime && (
+                        <div style={{
+                          marginTop: '10px',
+                          padding: '8px 10px',
+                          background: 'rgba(255,255,255,0.1)',
+                          borderRadius: '8px',
+                          border: '1px solid rgba(255,255,255,0.2)',
+                          fontSize: '12px',
+                        }}>
+                          <span style={{ opacity: 0.7 }}>Scheduled Return: </span>
+                          <span style={{ fontWeight: 600 }}>
+                            {(() => {
+                              const dt = pending.gatepassDetails.gatepassInTime;
+                              if (!dt) return '-';
+                              const [datePart, timePart] = dt.split('T');
+                              const dateFormatted = datePart?.split('-').reverse().join('/') || '';
+                              const t = timePart?.split(':');
+                              if (!t || t.length < 2) return dateFormatted;
+                              let h = parseInt(t[0], 10);
+                              const m = t[1];
+                              const ampm = h >= 12 ? 'PM' : 'AM';
+                              h = h % 12 || 12;
+                              return `${dateFormatted} ${h}:${m} ${ampm}`;
+                            })()}
+                          </span>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>

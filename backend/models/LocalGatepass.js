@@ -59,6 +59,11 @@ const localGatepassSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    purpose: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     place: {
       type: String,
       required: true,
@@ -87,6 +92,10 @@ const localGatepassSchema = new mongoose.Schema(
     decidedAt: {
       type: Date,
       default: null,
+    },
+    utilized: {
+      type: Boolean,
+      default: false,
     },
   },
   {

@@ -24,5 +24,6 @@ router.post(
 // Track gatepasses
 router.get('/my-gatepasses', auth, requireRole(['student']), asyncHandler(studentController.getMyGatepasses));
 router.post('/gatepass-exit', auth, requireRole(['student']), asyncHandler(studentController.applyGatepassExit));
+router.post('/gatepass-entry', auth, requireRole(['student']), asyncHandler(studentController.applyGatepassEntry));
 
 module.exports = router;

@@ -36,10 +36,11 @@ const TrackGatepass = () => {
 
     useEffect(() => {
         fetchGatepasses();
-        // Poll every 3 seconds to detect QR approval/rejection
-        const interval = setInterval(fetchGatepasses, 3000);
+        // Poll very fast when QR is displayed to detect approval quicker
+        const pollInterval = qrData ? 800 : 5000;
+        const interval = setInterval(fetchGatepasses, pollInterval);
         return () => clearInterval(interval);
-    }, []);
+    }, [qrData]);
 
     // Countdown timer for QR
     useEffect(() => {
@@ -58,20 +59,23 @@ const TrackGatepass = () => {
         return () => clearInterval(interval);
     }, [qrData]);
 
-    // Auto-clear QR when guard approves (detected via presence change from polling)
+    // Auto-dismiss QR when guard approves (detected via presence change)
     useEffect(() => {
         if (!qrData) return;
 
-        // If showing exit QR and presence is now 'outside', guard approved the exit
+        // If showing exit QR and presence changed to 'outside' -> guard approved
         if (qrData.direction === 'exit' && presence === 'outside') {
             setQrData(null);
-            setPopupMessage('Exit approved by guard!');
+            setPopupMessage('Exit approved! You are now outside campus.');
+            // Immediately refresh gatepasses to show updated state
+            fetchGatepasses();
         }
-
-        // If showing entry QR and presence is now 'inside', guard approved the entry
+        // If showing entry QR and presence changed to 'inside' -> guard approved
         if (qrData.direction === 'entry' && presence === 'inside') {
             setQrData(null);
-            setPopupMessage('Entry approved by guard!');
+            setPopupMessage('Entry approved! You are now inside campus.');
+            // Immediately refresh gatepasses to show updated state
+            fetchGatepasses();
         }
     }, [presence, qrData]);
 
@@ -182,14 +186,15 @@ const TrackGatepass = () => {
     const getGatepassAction = (gp) => {
         if (gp.status !== 'approved') return null;
 
+        // If student is outside with THIS gatepass -> show Entry button (highest priority)
+        // This takes precedence over everything else - even if time expired, student needs to enter
+        if (presence === 'outside' && activeGatePassNo === gp.gatePassNo) {
+            return 'entry';
+        }
+
         // If gatepass is marked as utilized (exit + entry completed) -> show utilized
         if (gp.utilized) {
             return 'expired';
-        }
-
-        // If student is outside with THIS gatepass -> show Entry button (regardless of time)
-        if (presence === 'outside' && activeGatePassNo === gp.gatePassNo) {
-            return 'entry';
         }
 
         // If student is inside and gatepass time has expired -> show utilized

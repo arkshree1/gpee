@@ -41,6 +41,43 @@ exports.scanToken = async (req, res) => {
   const student = requestDoc.student;
   if (!student) return res.status(404).json({ message: 'Student not found' });
 
+  // Check if this is a gatepass-related request
+  const isGatepassExit = !!(requestDoc.gatepassId || requestDoc.gatePassNo);
+
+  // Build gatepass details from the GateRequest (preferred) or fetch from LocalGatepass
+  let gatepassDetails = null;
+  const effectiveGatePassNo = gatePassNo || requestDoc.gatePassNo;
+
+  if (isGatepassExit) {
+    // First try to use data stored in GateRequest
+    if (requestDoc.gatepassOutTime || requestDoc.gatepassInTime) {
+      gatepassDetails = {
+        gatePassNo: effectiveGatePassNo,
+        gatepassOutTime: requestDoc.gatepassOutTime,
+        gatepassInTime: requestDoc.gatepassInTime,
+        place: requestDoc.place,
+        purpose: requestDoc.purpose,
+      };
+    } else if (effectiveGatePassNo) {
+      // Fallback: fetch from LocalGatepass model
+      const LocalGatepass = require('../models/LocalGatepass');
+      const gatepass = await LocalGatepass.findOne({ gatePassNo: effectiveGatePassNo });
+      if (gatepass) {
+        gatepassDetails = {
+          gatePassNo: gatepass.gatePassNo,
+          gatepassOutTime: gatepass.dateOut && gatepass.timeOut
+            ? `${gatepass.dateOut}T${gatepass.timeOut}`
+            : null,
+          gatepassInTime: gatepass.dateIn && gatepass.timeIn
+            ? `${gatepass.dateIn}T${gatepass.timeIn}`
+            : null,
+          place: gatepass.place,
+          purpose: gatepass.purpose,
+        };
+      }
+    }
+  }
+
   // Security rule: only authenticated guard gets student details.
   return res.json({
     requestId: requestDoc._id,
@@ -48,7 +85,9 @@ exports.scanToken = async (req, res) => {
     purpose: requestDoc.purpose,
     place: requestDoc.place,
     expiresAt: requestDoc.expiresAt,
-    gatePassNo: gatePassNo || requestDoc.gatePassNo || null,
+    gatePassNo: effectiveGatePassNo || null,
+    isGatepassExit,
+    gatepassDetails,
     student: {
       id: student._id,
       name: student.name,
@@ -117,6 +156,14 @@ exports.decide = async (req, res) => {
         student.activeGatePassNo = requestDoc.gatePassNo;
       }
     } else if (requestDoc.direction === 'entry') {
+      // Mark gatepass as utilized if student was using one
+      if (student.activeGatePassNo) {
+        const LocalGatepass = require('../models/LocalGatepass');
+        await LocalGatepass.findOneAndUpdate(
+          { gatePassNo: student.activeGatePassNo },
+          { utilized: true }
+        );
+      }
       student.outPurpose = null;
       student.outPlace = null;
       student.outTime = null;
@@ -143,6 +190,8 @@ exports.decide = async (req, res) => {
         purpose: requestDoc.purpose,
         place: requestDoc.place,
         decidedAt,
+        gatepassId: requestDoc.gatepassId || null,
+        gatePassNo: requestDoc.gatePassNo || null,
         exitStatus: 'exit done',
         exitOutcome: 'approved',
         entryStatus: '--',
@@ -161,6 +210,8 @@ exports.decide = async (req, res) => {
         purpose: requestDoc.purpose,
         place: requestDoc.place,
         decidedAt,
+        gatepassId: requestDoc.gatepassId || null,
+        gatePassNo: requestDoc.gatePassNo || null,
         exitStatus: 'exit denied',
         exitOutcome: 'denied',
         entryStatus: '--',
@@ -197,6 +248,8 @@ exports.decide = async (req, res) => {
           purpose: requestDoc.purpose,
           place: requestDoc.place,
           decidedAt,
+          gatepassId: requestDoc.gatepassId || null,
+          gatePassNo: requestDoc.gatePassNo || null,
           exitStatus: '--',
           exitOutcome: '--',
           entryStatus: 'entry approved',
@@ -231,6 +284,8 @@ exports.decide = async (req, res) => {
         purpose: requestDoc.purpose,
         place: requestDoc.place,
         decidedAt,
+        gatepassId: requestDoc.gatepassId || null,
+        gatePassNo: requestDoc.gatePassNo || null,
         exitStatus,
         exitOutcome,
         entryStatus: 'entry denied',

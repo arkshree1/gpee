@@ -117,6 +117,30 @@ const GatepassRequestsPage = () => {
   const [popupMessage, setPopupMessage] = useState('');
   const [decidingId, setDecidingId] = useState(null);
 
+  // Format date as dd/mm/yyyy
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    // Handle YYYY-MM-DD format from input
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateStr;
+  };
+
+  // Format time as 12hr AM/PM
+  const formatTime12hr = (timeStr) => {
+    if (!timeStr) return '';
+    const parts = timeStr.split(':');
+    if (parts.length < 2) return timeStr;
+    let hours = parseInt(parts[0], 10);
+    const minutes = parts[1];
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    return `${hours}:${minutes} ${ampm}`;
+  };
+
   const fetchGatepasses = async () => {
     try {
       setError('');
@@ -201,10 +225,10 @@ const GatepassRequestsPage = () => {
               <div><span style={{ fontWeight: 600 }}>Semester:</span> {gp.semester}</div>
               <div><span style={{ fontWeight: 600 }}>Contact:</span> {gp.contact}</div>
               <div><span style={{ fontWeight: 600 }}>Place:</span> {gp.place}</div>
-              <div><span style={{ fontWeight: 600 }}>Date Out:</span> {gp.dateOut}</div>
-              <div><span style={{ fontWeight: 600 }}>Time Out:</span> {gp.timeOut}</div>
-              <div><span style={{ fontWeight: 600 }}>Date In:</span> {gp.dateIn}</div>
-              <div><span style={{ fontWeight: 600 }}>Time In:</span> {gp.timeIn}</div>
+              <div><span style={{ fontWeight: 600 }}>Date Out:</span> {formatDate(gp.dateOut)}</div>
+              <div><span style={{ fontWeight: 600 }}>Time Out:</span> {formatTime12hr(gp.timeOut)}</div>
+              <div><span style={{ fontWeight: 600 }}>Date In:</span> {formatDate(gp.dateIn)}</div>
+              <div><span style={{ fontWeight: 600 }}>Time In:</span> {formatTime12hr(gp.timeIn)}</div>
             </div>
 
             <div style={{ display: 'flex', gap: '12px' }}>
@@ -399,6 +423,29 @@ const GatepassHistoryPage = () => {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
 
+  // Format date as dd/mm/yyyy
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateStr;
+  };
+
+  // Format time as 12hr AM/PM
+  const formatTime12hr = (timeStr) => {
+    if (!timeStr) return '';
+    const parts = timeStr.split(':');
+    if (parts.length < 2) return timeStr;
+    let hours = parseInt(parts[0], 10);
+    const minutes = parts[1];
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    return `${hours}:${minutes} ${ampm}`;
+  };
+
   const fetchHistory = async (searchQuery = '') => {
     try {
       setError('');
@@ -492,8 +539,8 @@ const GatepassHistoryPage = () => {
             </div>
             <div style={{ marginTop: '8px', fontSize: '12px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
               <span><b>Place:</b> {gp.place}</span>
-              <span><b>Out:</b> {gp.dateOut} {gp.timeOut}</span>
-              <span><b>In:</b> {gp.dateIn} {gp.timeIn}</span>
+              <span><b>Out:</b> {formatDate(gp.dateOut)} {formatTime12hr(gp.timeOut)}</span>
+              <span><b>In:</b> {formatDate(gp.dateIn)} {formatTime12hr(gp.timeIn)}</span>
             </div>
           </div>
         ))}

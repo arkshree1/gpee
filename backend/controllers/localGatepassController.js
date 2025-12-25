@@ -34,6 +34,7 @@ exports.createLocalGatepass = async (req, res) => {
     timeOut,
     dateIn,
     timeIn,
+    purpose,
     place,
     contact,
     consent,
@@ -49,6 +50,7 @@ exports.createLocalGatepass = async (req, res) => {
     !timeOut ||
     !dateIn ||
     !timeIn ||
+    !purpose ||
     !place ||
     !contact
   ) {
@@ -78,6 +80,7 @@ exports.createLocalGatepass = async (req, res) => {
     timeOut,
     dateIn,
     timeIn,
+    purpose,
     place,
     contact,
     consent: !!consent,

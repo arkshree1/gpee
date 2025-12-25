@@ -48,6 +48,16 @@ const gateLogSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    gatepassId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'LocalGatepass',
+      default: null,
+    },
+    gatePassNo: {
+      type: String,
+      default: null,
+      trim: true,
+    },
     exitStatus: {
       type: String,
       required: true,

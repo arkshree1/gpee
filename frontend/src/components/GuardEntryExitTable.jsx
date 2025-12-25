@@ -46,7 +46,7 @@ const GuardEntryExitTable = ({ logs, loading, formatLogTime }) => {
                     <td>{s.contactNumber || '-'}</td>
                     <td>{l.place || '-'}</td>
                     <td>{l.purpose || '-'}</td>
-                    <td>--</td>
+                    <td>{l.gatePassNo || '--'}</td>
                     <td>{timeOut || '-'}</td>
                     <td className={hasEntry ? 'guard-logs-time-in-done' : ''}>
                       {hasEntry ? timeIn : '--'}

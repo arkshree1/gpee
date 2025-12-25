@@ -70,7 +70,7 @@ exports.getEntryExitLogs = async (req, res) => {
         contact: log.student?.contactNumber || '--',
         place: log.place || '--',
         purpose: log.purpose || '--',
-        gatePass: '--',
+        gatePass: log.gatePassNo || '--',
         timeOut: log.exitStatusTime,
         timeIn: log.entryStatusTime,
     }));

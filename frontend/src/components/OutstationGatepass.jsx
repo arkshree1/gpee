@@ -98,6 +98,21 @@ const OutstationGatepass = () => {
       return;
     }
 
+    // Validate out time is in the future
+    const outDateTime = new Date(`${dateOut}T${timeOut}`);
+    const inDateTime = new Date(`${dateIn}T${timeIn}`);
+    const now = new Date();
+
+    if (outDateTime <= now) {
+      setPopup({ open: true, message: 'Out time must be in the future.' });
+      return;
+    }
+
+    if (inDateTime <= outDateTime) {
+      setPopup({ open: true, message: 'In time must be after out time.' });
+      return;
+    }
+
     setLoading(true);
 
     createOutstationGatepass({
