@@ -124,3 +124,86 @@ exports.cancel = async (req, res) => {
 
   return res.json({ message: 'Request dismissed successfully' });
 };
+
+// Get student's local gatepasses for tracking
+const LocalGatepass = require('../models/LocalGatepass');
+
+exports.getMyGatepasses = async (req, res) => {
+  const userId = req.user.userId;
+
+  const gatepasses = await LocalGatepass.find({ student: userId })
+    .sort({ createdAt: -1 })
+    .select('-__v');
+
+  return res.json({ gatepasses });
+};
+
+// Generate QR for gatepass exit
+exports.applyGatepassExit = async (req, res) => {
+  const userId = req.user.userId;
+  const { gatepassId } = req.body;
+
+  if (!gatepassId) {
+    return res.status(400).json({ message: 'Gatepass ID is required' });
+  }
+
+  const student = await User.findById(userId).select('presence');
+  if (!student) return res.status(404).json({ message: 'Student not found' });
+
+  if (student.presence !== 'inside') {
+    return res.status(400).json({ message: 'You are already outside campus' });
+  }
+
+  // Check for existing pending request
+  const activePending = await GateRequest.findOne({
+    student: userId,
+    status: 'pending',
+    usedAt: null,
+    expiresAt: { $gt: new Date() },
+  });
+  if (activePending) {
+    return res.status(409).json({ message: 'You already have a pending request' });
+  }
+
+  // Find the approved gatepass
+  const gatepass = await LocalGatepass.findOne({
+    _id: gatepassId,
+    student: userId,
+    status: 'approved',
+  });
+
+  if (!gatepass) {
+    return res.status(404).json({ message: 'Approved gatepass not found' });
+  }
+
+  const rawToken = generateRawToken();
+  const tokenHash = hashToken(rawToken);
+  const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
+
+  const requestDoc = await GateRequest.create({
+    student: userId,
+    direction: 'exit',
+    purpose: `Gatepass: ${gatepass.place}`,
+    place: gatepass.place,
+    tokenHash,
+    expiresAt,
+    gatePassNo: gatepass.gatePassNo, // Link gatepass number to request
+  });
+
+  // QR contains token + gatepass number (separated by pipe)
+  const qrData = `${rawToken}|GP:${gatepass.gatePassNo}`;
+  const qrDataUrl = await QRCode.toDataURL(qrData, {
+    errorCorrectionLevel: 'M',
+    margin: 1,
+    scale: 8,
+  });
+
+  return res.status(201).json({
+    requestId: requestDoc._id,
+    token: rawToken,
+    expiresAt,
+    qrDataUrl,
+    direction: 'exit',
+    gatePassNo: gatepass.gatePassNo,
+  });
+};

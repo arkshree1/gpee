@@ -5,6 +5,7 @@ import StudentApply from '../components/StudentApply';
 import GatepassMenu from '../components/GatepassMenu';
 import LocalGatepass from '../components/LocalGatepass';
 import OutstationGatepass from '../components/OutstationGatepass';
+import TrackGatepass from '../components/TrackGatepass';
 
 const StudentPage = () => {
   return (
@@ -14,9 +15,11 @@ const StudentPage = () => {
       <Route path="gatepass" element={<GatepassMenu />} />
       <Route path="gatepass/local" element={<LocalGatepass />} />
       <Route path="gatepass/outstation" element={<OutstationGatepass />} />
+      <Route path="track-gatepass" element={<TrackGatepass />} />
       <Route path="*" element={<Navigate to="/student" replace />} />
     </Routes>
   );
 };
 
 export default StudentPage;
+

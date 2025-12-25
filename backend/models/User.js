@@ -86,6 +86,11 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    activeGatePassNo: {
+      type: String,
+      default: null,
+      trim: true,
+    },
   },
   {
     timestamps: true,

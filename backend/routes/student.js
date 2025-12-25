@@ -21,4 +21,8 @@ router.post(
 	asyncHandler(outstationGatepassController.createOutstationGatepass)
 );
 
+// Track gatepasses
+router.get('/my-gatepasses', auth, requireRole(['student']), asyncHandler(studentController.getMyGatepasses));
+router.post('/gatepass-exit', auth, requireRole(['student']), asyncHandler(studentController.applyGatepassExit));
+
 module.exports = router;

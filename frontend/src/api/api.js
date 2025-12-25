@@ -46,6 +46,8 @@ export const createLocalGatepass = async (payload) => apiClient.post('/api/stude
 export const createOutstationGatepass = async (payload) =>
   apiClient.post('/api/student/outstation-gatepass', payload);
 export const getStudentLogs = async () => apiClient.get('/api/student/logs');
+export const getMyGatepasses = async () => apiClient.get('/api/student/my-gatepasses');
+export const applyGatepassExit = async (payload) => apiClient.post('/api/student/gatepass-exit', payload);
 
 // Guard APIs
 export const getGuardDashboard = async () => apiClient.get('/api/guard/dashboard');

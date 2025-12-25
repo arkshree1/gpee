@@ -55,6 +55,27 @@ const gateRequestSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    gatePassNo: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    // Gatepass-specific fields (null for normal/instant exit)
+    gatepassId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'LocalGatepass',
+      default: null,
+    },
+    gatepassOutTime: {
+      // Scheduled out date+time from gatepass form (e.g., "2025-12-25T10:00")
+      type: String,
+      default: null,
+    },
+    gatepassInTime: {
+      // Scheduled in date+time from gatepass form (e.g., "2025-12-25T18:00")
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,

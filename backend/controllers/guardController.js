@@ -16,7 +16,17 @@ exports.scanToken = async (req, res) => {
 
   if (!token) return res.status(400).json({ message: 'Token is required' });
 
-  const tokenHash = hashToken(token);
+  // Check if token contains gatepass info (format: token|GP:L-XXXXX)
+  let actualToken = token;
+  let gatePassNo = null;
+
+  if (token.includes('|GP:')) {
+    const parts = token.split('|GP:');
+    actualToken = parts[0];
+    gatePassNo = parts[1];
+  }
+
+  const tokenHash = hashToken(actualToken);
 
   const requestDoc = await GateRequest.findOne({ tokenHash }).populate(
     'student',
@@ -38,6 +48,7 @@ exports.scanToken = async (req, res) => {
     purpose: requestDoc.purpose,
     place: requestDoc.place,
     expiresAt: requestDoc.expiresAt,
+    gatePassNo: gatePassNo || requestDoc.gatePassNo || null,
     student: {
       id: student._id,
       name: student.name,
@@ -101,10 +112,15 @@ exports.decide = async (req, res) => {
       student.outPurpose = requestDoc.purpose;
       student.outPlace = requestDoc.place;
       student.outTime = decidedAt;
+      // If this is a gatepass exit, store the gatepass number
+      if (requestDoc.gatePassNo) {
+        student.activeGatePassNo = requestDoc.gatePassNo;
+      }
     } else if (requestDoc.direction === 'entry') {
       student.outPurpose = null;
       student.outPlace = null;
       student.outTime = null;
+      student.activeGatePassNo = null; // Clear on entry
     }
     await student.save();
   }
