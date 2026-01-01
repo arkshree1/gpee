@@ -76,6 +76,11 @@ const gateRequestSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    isOutstation: {
+      // Flag to distinguish outstation gatepass from local gatepass
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

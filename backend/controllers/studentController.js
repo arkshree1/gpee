@@ -1,6 +1,7 @@
 const QRCode = require('qrcode');
 const User = require('../models/User');
 const GateRequest = require('../models/GateRequest');
+const OutstationGatepass = require('../models/OutstationGatepass');
 const { generateRawToken, hashToken } = require('../utils/security');
 
 const TOKEN_TTL_MS = 5 * 60 * 1000;
@@ -14,7 +15,7 @@ const getDirectionFromPresence = (presence) => {
 exports.getStatus = async (req, res) => {
   const userId = req.user.userId;
 
-  const student = await User.findById(userId).select('presence role name rollnumber imageUrl department roomNumber contactNumber');
+  const student = await User.findById(userId).select('presence role name rollnumber imageUrl department branch roomNumber contactNumber');
   if (!student) return res.status(404).json({ message: 'Student not found' });
 
   const pendingRequest = await GateRequest.findOne({
@@ -33,6 +34,7 @@ exports.getStatus = async (req, res) => {
     studentName: student.name,
     rollnumber: student.rollnumber,
     department: student.department,
+    branch: student.branch,
     roomNumber: student.roomNumber,
     contactNumber: student.contactNumber,
   });
@@ -408,3 +410,233 @@ exports.applyGatepassEntry = async (req, res) => {
     gatePassNo: gatepass.gatePassNo,
   });
 };
+
+// Outstation Gatepass QR functions
+
+// Generate QR for outstation gatepass exit
+exports.applyOSGatepassExit = async (req, res) => {
+  const userId = req.user.userId;
+  const { gatepassId } = req.body;
+
+  if (!gatepassId) {
+    return res.status(400).json({ message: 'Gatepass ID is required' });
+  }
+
+  const student = await User.findById(userId).select('presence');
+  if (!student) return res.status(404).json({ message: 'Student not found' });
+
+  if (student.presence !== 'inside') {
+    return res.status(400).json({ message: 'You are already outside campus' });
+  }
+
+  // Check for existing pending request - if exists, regenerate QR for it
+  const activePending = await GateRequest.findOne({
+    student: userId,
+    status: 'pending',
+    usedAt: null,
+    expiresAt: { $gt: new Date() },
+  });
+
+  if (activePending) {
+    // Regenerate QR for existing pending request
+    const rawToken = generateRawToken();
+    const tokenHash = hashToken(rawToken);
+    const newExpiresAt = new Date(Date.now() + TOKEN_TTL_MS);
+
+    activePending.tokenHash = tokenHash;
+    activePending.expiresAt = newExpiresAt;
+    await activePending.save();
+
+    let qrData = rawToken;
+    if (activePending.gatePassNo) {
+      qrData = `${rawToken}|GP:${activePending.gatePassNo}`;
+    }
+
+    const qrDataUrl = await QRCode.toDataURL(qrData, {
+      errorCorrectionLevel: 'M',
+      margin: 1,
+      scale: 8,
+    });
+
+    return res.status(200).json({
+      requestId: activePending._id,
+      token: rawToken,
+      expiresAt: newExpiresAt,
+      qrDataUrl,
+      direction: activePending.direction,
+      gatePassNo: activePending.gatePassNo,
+      reused: true,
+    });
+  }
+
+  // Find the approved outstation gatepass
+  const gatepass = await OutstationGatepass.findOne({
+    _id: gatepassId,
+    student: userId,
+    finalStatus: 'approved',
+  });
+
+  if (!gatepass) {
+    return res.status(404).json({ message: 'Approved outstation gatepass not found' });
+  }
+
+  // Check if in-time has passed (exit not allowed after in-time)
+  const inDateTime = new Date(`${gatepass.dateIn}T${gatepass.timeIn}`);
+  if (Date.now() > inDateTime.getTime()) {
+    return res.status(400).json({ message: 'Gatepass has expired - in-time has passed' });
+  }
+
+  // Check if already utilized
+  if (gatepass.utilized) {
+    return res.status(400).json({ message: 'Gatepass has already been utilized' });
+  }
+
+  const rawToken = generateRawToken();
+  const tokenHash = hashToken(rawToken);
+  const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
+
+  const gatepassOutTime = `${gatepass.dateOut}T${gatepass.timeOut}`;
+  const gatepassInTime = `${gatepass.dateIn}T${gatepass.timeIn}`;
+
+  const requestDoc = await GateRequest.create({
+    student: userId,
+    direction: 'exit',
+    purpose: gatepass.reasonOfLeave,
+    place: gatepass.address,
+    tokenHash,
+    expiresAt,
+    gatePassNo: gatepass.gatePassNo,
+    gatepassId: gatepass._id,
+    gatepassOutTime,
+    gatepassInTime,
+    isOutstation: true, // Flag for guard to know this is OS gatepass
+  });
+
+  const qrData = `${rawToken}|GP:${gatepass.gatePassNo}`;
+  const qrDataUrl = await QRCode.toDataURL(qrData, {
+    errorCorrectionLevel: 'M',
+    margin: 1,
+    scale: 8,
+  });
+
+  return res.status(201).json({
+    requestId: requestDoc._id,
+    token: rawToken,
+    expiresAt,
+    qrDataUrl,
+    direction: 'exit',
+    gatePassNo: gatepass.gatePassNo,
+  });
+};
+
+// Generate QR for outstation gatepass entry (when student is outside)
+exports.applyOSGatepassEntry = async (req, res) => {
+  const userId = req.user.userId;
+  const { gatepassId } = req.body;
+
+  if (!gatepassId) {
+    return res.status(400).json({ message: 'Gatepass ID is required' });
+  }
+
+  const student = await User.findById(userId).select('presence activeGatePassNo outPurpose outPlace');
+  if (!student) return res.status(404).json({ message: 'Student not found' });
+
+  if (student.presence !== 'outside') {
+    return res.status(400).json({ message: 'You are already inside campus' });
+  }
+
+  // Check for existing pending request
+  const activePending = await GateRequest.findOne({
+    student: userId,
+    status: 'pending',
+    usedAt: null,
+    expiresAt: { $gt: new Date() },
+  });
+
+  if (activePending) {
+    const rawToken = generateRawToken();
+    const tokenHash = hashToken(rawToken);
+    const newExpiresAt = new Date(Date.now() + TOKEN_TTL_MS);
+
+    activePending.tokenHash = tokenHash;
+    activePending.expiresAt = newExpiresAt;
+    await activePending.save();
+
+    let qrData = rawToken;
+    if (activePending.gatePassNo) {
+      qrData = `${rawToken}|GP:${activePending.gatePassNo}`;
+    }
+
+    const qrDataUrl = await QRCode.toDataURL(qrData, {
+      errorCorrectionLevel: 'M',
+      margin: 1,
+      scale: 8,
+    });
+
+    return res.status(200).json({
+      requestId: activePending._id,
+      token: rawToken,
+      expiresAt: newExpiresAt,
+      qrDataUrl,
+      direction: activePending.direction,
+      gatePassNo: activePending.gatePassNo,
+      reused: true,
+    });
+  }
+
+  // Find the approved outstation gatepass
+  const gatepass = await OutstationGatepass.findOne({
+    _id: gatepassId,
+    student: userId,
+    finalStatus: 'approved',
+  });
+
+  if (!gatepass) {
+    return res.status(404).json({ message: 'Approved outstation gatepass not found' });
+  }
+
+  // Verify this is the active gatepass
+  if (student.activeGatePassNo !== gatepass.gatePassNo) {
+    return res.status(400).json({ message: 'This is not your active gatepass for entry' });
+  }
+
+  // No time restriction for entry - student can enter even after in-time passed
+
+  const rawToken = generateRawToken();
+  const tokenHash = hashToken(rawToken);
+  const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
+
+  const gatepassOutTime = `${gatepass.dateOut}T${gatepass.timeOut}`;
+  const gatepassInTime = `${gatepass.dateIn}T${gatepass.timeIn}`;
+
+  const requestDoc = await GateRequest.create({
+    student: userId,
+    direction: 'entry',
+    purpose: student.outPurpose || gatepass.reasonOfLeave,
+    place: student.outPlace || gatepass.address,
+    tokenHash,
+    expiresAt,
+    gatePassNo: gatepass.gatePassNo,
+    gatepassId: gatepass._id,
+    gatepassOutTime,
+    gatepassInTime,
+    isOutstation: true,
+  });
+
+  const qrData = `${rawToken}|GP:${gatepass.gatePassNo}`;
+  const qrDataUrl = await QRCode.toDataURL(qrData, {
+    errorCorrectionLevel: 'M',
+    margin: 1,
+    scale: 8,
+  });
+
+  return res.status(201).json({
+    requestId: requestDoc._id,
+    token: rawToken,
+    expiresAt,
+    qrDataUrl,
+    direction: 'entry',
+    gatePassNo: gatepass.gatePassNo,
+  });
+};
+

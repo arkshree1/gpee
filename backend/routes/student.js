@@ -26,4 +26,11 @@ router.get('/my-gatepasses', auth, requireRole(['student']), asyncHandler(studen
 router.post('/gatepass-exit', auth, requireRole(['student']), asyncHandler(studentController.applyGatepassExit));
 router.post('/gatepass-entry', auth, requireRole(['student']), asyncHandler(studentController.applyGatepassEntry));
 
+// Outstation gatepass QR routes
+router.post('/os-gatepass-exit', auth, requireRole(['student']), asyncHandler(studentController.applyOSGatepassExit));
+router.post('/os-gatepass-entry', auth, requireRole(['student']), asyncHandler(studentController.applyOSGatepassEntry));
+
+// Outstation gatepass tracking
+router.get('/my-outstation-gatepasses', auth, requireRole(['student']), asyncHandler(outstationGatepassController.getMyOutstationGatepasses));
+
 module.exports = router;

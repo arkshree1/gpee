@@ -67,6 +67,15 @@ app.use('/api/admin', adminRoutes);
 const hostelOfficeRoutes = require('./routes/hostelOffice');
 app.use('/api/hostel-office', hostelOfficeRoutes);
 
+const officeSecretaryRoutes = require('./routes/officeSecretary');
+app.use('/api/office-secretary', officeSecretaryRoutes);
+
+const dugcRoutes = require('./routes/dugc');
+app.use('/api/dugc', dugcRoutes);
+
+const hodRoutes = require('./routes/hod');
+app.use('/api/hod', hodRoutes);
+
 const { bootstrapDefaultAccounts } = require('./utils/bootstrap');
 
 // MongoDB connection (UPDATED for Mongoose v7)

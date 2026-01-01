@@ -57,23 +57,42 @@ exports.scanToken = async (req, res) => {
         gatepassInTime: requestDoc.gatepassInTime,
         place: requestDoc.place,
         purpose: requestDoc.purpose,
+        isOutstation: requestDoc.isOutstation || effectiveGatePassNo?.startsWith('OS-'),
       };
     } else if (effectiveGatePassNo) {
-      // Fallback: fetch from LocalGatepass model
-      const LocalGatepass = require('../models/LocalGatepass');
-      const gatepass = await LocalGatepass.findOne({ gatePassNo: effectiveGatePassNo });
-      if (gatepass) {
-        gatepassDetails = {
-          gatePassNo: gatepass.gatePassNo,
-          gatepassOutTime: gatepass.dateOut && gatepass.timeOut
-            ? `${gatepass.dateOut}T${gatepass.timeOut}`
-            : null,
-          gatepassInTime: gatepass.dateIn && gatepass.timeIn
-            ? `${gatepass.dateIn}T${gatepass.timeIn}`
-            : null,
-          place: gatepass.place,
-          purpose: gatepass.purpose,
-        };
+      // Fallback: fetch from appropriate gatepass model based on prefix
+      if (effectiveGatePassNo.startsWith('OS-')) {
+        // Outstation gatepass
+        const OutstationGatepass = require('../models/OutstationGatepass');
+        const gatepass = await OutstationGatepass.findOne({ gatePassNo: effectiveGatePassNo });
+        if (gatepass) {
+          gatepassDetails = {
+            gatePassNo: gatepass.gatePassNo,
+            gatepassOutTime: `${gatepass.dateOut}T${gatepass.timeOut}`,
+            gatepassInTime: `${gatepass.dateIn}T${gatepass.timeIn}`,
+            place: gatepass.address,
+            purpose: gatepass.reasonOfLeave,
+            isOutstation: true,
+          };
+        }
+      } else {
+        // Local gatepass
+        const LocalGatepass = require('../models/LocalGatepass');
+        const gatepass = await LocalGatepass.findOne({ gatePassNo: effectiveGatePassNo });
+        if (gatepass) {
+          gatepassDetails = {
+            gatePassNo: gatepass.gatePassNo,
+            gatepassOutTime: gatepass.dateOut && gatepass.timeOut
+              ? `${gatepass.dateOut}T${gatepass.timeOut}`
+              : null,
+            gatepassInTime: gatepass.dateIn && gatepass.timeIn
+              ? `${gatepass.dateIn}T${gatepass.timeIn}`
+              : null,
+            place: gatepass.place,
+            purpose: gatepass.purpose,
+            isOutstation: false,
+          };
+        }
       }
     }
   }
@@ -154,15 +173,32 @@ exports.decide = async (req, res) => {
       // If this is a gatepass exit, store the gatepass number
       if (requestDoc.gatePassNo) {
         student.activeGatePassNo = requestDoc.gatePassNo;
+        // If it's an OS gatepass, record the actual exit time
+        if (requestDoc.gatePassNo.startsWith('OS-')) {
+          const OutstationGatepass = require('../models/OutstationGatepass');
+          await OutstationGatepass.findOneAndUpdate(
+            { gatePassNo: requestDoc.gatePassNo },
+            { actualExitAt: decidedAt }
+          );
+        }
       }
     } else if (requestDoc.direction === 'entry') {
       // Mark gatepass as utilized if student was using one
       if (student.activeGatePassNo) {
-        const LocalGatepass = require('../models/LocalGatepass');
-        await LocalGatepass.findOneAndUpdate(
-          { gatePassNo: student.activeGatePassNo },
-          { utilized: true }
-        );
+        // Check if it's an Outstation gatepass (starts with OS-) or Local gatepass (starts with L-)
+        if (student.activeGatePassNo.startsWith('OS-')) {
+          const OutstationGatepass = require('../models/OutstationGatepass');
+          await OutstationGatepass.findOneAndUpdate(
+            { gatePassNo: student.activeGatePassNo },
+            { utilized: true, actualEntryAt: decidedAt }
+          );
+        } else {
+          const LocalGatepass = require('../models/LocalGatepass');
+          await LocalGatepass.findOneAndUpdate(
+            { gatePassNo: student.activeGatePassNo },
+            { utilized: true }
+          );
+        }
       }
       student.outPurpose = null;
       student.outPlace = null;

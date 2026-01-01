@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/gatepass.css';
 import PopupBox from './PopupBox';
-import { createOutstationGatepass } from '../api/api';
+import { createOutstationGatepass, getStudentStatus } from '../api/api';
 
 const OutstationGatepass = () => {
   const navigate = useNavigate();
@@ -13,6 +13,7 @@ const OutstationGatepass = () => {
     roomNumber: '',
     course: '',
     department: '',
+    branch: '',
     contact: '',
     leaveDays: '',
     dateOut: '',
@@ -29,13 +30,63 @@ const OutstationGatepass = () => {
 
   const [loading, setLoading] = useState(false);
   const [popup, setPopup] = useState({ open: false, message: '' });
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
+
+  // Fetch user profile data on mount to auto-fill the form
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await getStudentStatus();
+        const { studentName, rollnumber, department, branch, roomNumber, contactNumber } = res.data;
+        setForm((prev) => ({
+          ...prev,
+          studentName: studentName || '',
+          rollnumber: rollnumber || '',
+          roomNumber: roomNumber || '',
+          department: department || '',
+          branch: branch || '',
+          contact: contactNumber || '',
+        }));
+      } catch (error) {
+        console.error('Failed to fetch profile:', error);
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  // Auto-calculate leave days when dates change
+  useEffect(() => {
+    if (form.dateOut && form.dateIn) {
+      const outDate = new Date(form.dateOut);
+      const inDate = new Date(form.dateIn);
+      const diffTime = inDate.getTime() - outDate.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays > 0) {
+        setForm((prev) => ({ ...prev, leaveDays: diffDays }));
+      } else {
+        setForm((prev) => ({ ...prev, leaveDays: '' }));
+      }
+    } else {
+      setForm((prev) => ({ ...prev, leaveDays: '' }));
+    }
+  }, [form.dateOut, form.dateIn]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
+    setForm((prev) => {
+      const newForm = {
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value,
+      };
+      // Reset missedDays to 0 when 'no' is selected
+      if (name === 'classesMissed' && value === 'no') {
+        newForm.missedDays = 0;
+      }
+      return newForm;
+    });
   };
 
   const handleSubmit = (e) => {
@@ -121,13 +172,18 @@ const OutstationGatepass = () => {
       missedDays: Number(missedDays),
     })
       .then(() => {
-        setPopup({ open: true, message: 'Outstation gatepass submitted successfully.' });
+        setSubmitSuccess(true);
+        setPopup({
+          open: true,
+          message: 'Form submitted successfully! You can check the update in Track Gatepass page.'
+        });
         setForm({
           studentName: '',
           rollnumber: '',
           roomNumber: '',
           course: '',
           department: '',
+          branch: '',
           contact: '',
           leaveDays: '',
           dateOut: '',
@@ -165,11 +221,11 @@ const OutstationGatepass = () => {
           <div className="gatepass-row single">
             <label className="gatepass-label">Student's Name</label>
             <input
-              className="gatepass-input"
+              className="gatepass-input gatepass-input-readonly"
               type="text"
               name="studentName"
               value={form.studentName}
-              onChange={handleChange}
+              readOnly
             />
           </div>
 
@@ -177,21 +233,21 @@ const OutstationGatepass = () => {
             <div className="gatepass-field">
               <label className="gatepass-label">Roll No.</label>
               <input
-                className="gatepass-input"
+                className="gatepass-input gatepass-input-readonly"
                 type="text"
                 name="rollnumber"
                 value={form.rollnumber}
-                onChange={handleChange}
+                readOnly
               />
             </div>
             <div className="gatepass-field">
               <label className="gatepass-label">Room No.</label>
               <input
-                className="gatepass-input"
+                className="gatepass-input gatepass-input-readonly"
                 type="text"
                 name="roomNumber"
                 value={form.roomNumber}
-                onChange={handleChange}
+                readOnly
               />
             </div>
           </div>
@@ -199,22 +255,26 @@ const OutstationGatepass = () => {
           <div className="gatepass-row">
             <div className="gatepass-field">
               <label className="gatepass-label">Course</label>
-              <input
+              <select
                 className="gatepass-input"
-                type="text"
                 name="course"
                 value={form.course}
                 onChange={handleChange}
-              />
+              >
+                <option value="">Select Course</option>
+                <option value="BTech">BTech</option>
+                <option value="MBA">MBA</option>
+                <option value="PhD">PhD</option>
+              </select>
             </div>
             <div className="gatepass-field">
               <label className="gatepass-label">Department</label>
               <input
-                className="gatepass-input"
+                className="gatepass-input gatepass-input-readonly"
                 type="text"
                 name="department"
                 value={form.department}
-                onChange={handleChange}
+                readOnly
               />
             </div>
           </div>
@@ -223,24 +283,25 @@ const OutstationGatepass = () => {
             <div className="gatepass-field">
               <label className="gatepass-label">Contact</label>
               <input
-                className="gatepass-input"
+                className="gatepass-input gatepass-input-readonly"
                 type="tel"
                 name="contact"
                 value={form.contact}
-                onChange={handleChange}
+                readOnly
               />
             </div>
-            <div className="gatepass-field">
-              <label className="gatepass-label">No. of leave days</label>
-              <input
-                className="gatepass-input"
-                type="number"
-                min="1"
-                name="leaveDays"
-                value={form.leaveDays}
-                onChange={handleChange}
-              />
-            </div>
+            {form.dateOut && form.dateIn && form.leaveDays > 0 && (
+              <div className="gatepass-field">
+                <label className="gatepass-label">No. of leave days</label>
+                <input
+                  className="gatepass-input gatepass-input-readonly"
+                  type="number"
+                  name="leaveDays"
+                  value={form.leaveDays}
+                  readOnly
+                />
+              </div>
+            )}
           </div>
 
           <div className="gatepass-row">
@@ -348,17 +409,19 @@ const OutstationGatepass = () => {
             </div>
           </div>
 
-          <div className="gatepass-row single">
-            <label className="gatepass-label">No. of days classes missed</label>
-            <input
-              className="gatepass-input"
-              type="number"
-              min="0"
-              name="missedDays"
-              value={form.missedDays}
-              onChange={handleChange}
-            />
-          </div>
+          {form.classesMissed === 'yes' && (
+            <div className="gatepass-row single">
+              <label className="gatepass-label">No. of days classes missed</label>
+              <input
+                className="gatepass-input"
+                type="number"
+                min="1"
+                name="missedDays"
+                value={form.missedDays}
+                onChange={handleChange}
+              />
+            </div>
+          )}
 
           <div className="gatepass-consent">
             <label>
@@ -392,7 +455,12 @@ const OutstationGatepass = () => {
       <PopupBox
         isOpen={popup.open}
         message={popup.message}
-        onClose={() => setPopup({ open: false, message: '' })}
+        onClose={() => {
+          setPopup({ open: false, message: '' });
+          if (submitSuccess) {
+            navigate('/student');
+          }
+        }}
       />
     </div>
   );

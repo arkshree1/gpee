@@ -1,0 +1,49 @@
+const express = require('express');
+const router = express.Router();
+
+const auth = require('../middleware/auth');
+const requireRole = require('../middleware/requireRole');
+const asyncHandler = require('../utils/asyncHandler');
+const dugcController = require('../controllers/dugcController');
+
+// Get pending outstation gatepasses (card view)
+router.get(
+    '/pending-gatepasses',
+    auth,
+    requireRole(['dugc']),
+    asyncHandler(dugcController.getPendingGatepasses)
+);
+
+// Get single gatepass details
+router.get(
+    '/gatepass/:gatepassId',
+    auth,
+    requireRole(['dugc']),
+    asyncHandler(dugcController.getGatepassDetails)
+);
+
+// Get student's OS gatepass history
+router.get(
+    '/student-history/:studentId',
+    auth,
+    requireRole(['dugc']),
+    asyncHandler(dugcController.getStudentOSHistory)
+);
+
+// Get gatepass history (approved/rejected) with search
+router.get(
+    '/gatepass-history',
+    auth,
+    requireRole(['dugc']),
+    asyncHandler(dugcController.getGatepassHistory)
+);
+
+// Approve or reject an outstation gatepass
+router.post(
+    '/decide-gatepass',
+    auth,
+    requireRole(['dugc']),
+    asyncHandler(dugcController.decideGatepass)
+);
+
+module.exports = router;

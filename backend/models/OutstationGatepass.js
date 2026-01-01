@@ -1,5 +1,25 @@
 const mongoose = require('mongoose');
 
+// Sub-schema for stage decision tracking
+const stageDecisionSchema = new mongoose.Schema(
+  {
+    status: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'pending',
+    },
+    decidedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null,
+    },
+    decidedAt: {
+      type: Date,
+      default: null,
+    },
+  },
+  { _id: false }
+);
+
 const outstationGatepassSchema = new mongoose.Schema(
   {
     student: {
@@ -32,6 +52,11 @@ const outstationGatepassSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+    },
+    branch: {
+      type: String,
+      trim: true,
+      default: null,
     },
     contact: {
       type: String,
@@ -92,6 +117,41 @@ const outstationGatepassSchema = new mongoose.Schema(
       type: Boolean,
       required: true,
       default: false,
+    },
+    // Multi-stage workflow fields
+    currentStage: {
+      type: String,
+      enum: ['applied', 'officeSecretary', 'dugc', 'hod', 'completed'],
+      default: 'officeSecretary', // Goes to office secretary immediately after submission
+    },
+    stageStatus: {
+      officeSecretary: { type: stageDecisionSchema, default: () => ({}) },
+      dugc: { type: stageDecisionSchema, default: () => ({}) },
+      hod: { type: stageDecisionSchema, default: () => ({}) },
+    },
+    finalStatus: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'pending',
+    },
+    gatePassNo: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    // Track if gatepass has been fully utilized (exited and entered back)
+    utilized: {
+      type: Boolean,
+      default: false,
+    },
+    // Track actual exit and entry times (set by guard when approving)
+    actualExitAt: {
+      type: Date,
+      default: null,
+    },
+    actualEntryAt: {
+      type: Date,
+      default: null,
     },
   },
   {

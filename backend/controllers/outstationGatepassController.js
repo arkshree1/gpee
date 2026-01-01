@@ -8,6 +8,7 @@ exports.createOutstationGatepass = async (req, res) => {
     roomNumber,
     course,
     department,
+    branch,
     contact,
     leaveDays,
     dateOut,
@@ -75,6 +76,7 @@ exports.createOutstationGatepass = async (req, res) => {
     roomNumber,
     course,
     department,
+    branch,
     contact,
     leaveDays: parsedLeaveDays,
     dateOut,
@@ -92,4 +94,23 @@ exports.createOutstationGatepass = async (req, res) => {
   return res
     .status(201)
     .json({ message: 'Outstation gatepass submitted successfully', gatepassId: doc._id });
+};
+
+// Get student's outstation gatepasses for tracking
+const User = require('../models/User');
+
+exports.getMyOutstationGatepasses = async (req, res) => {
+  const studentId = req.user.userId;
+
+  const student = await User.findById(studentId).select('presence activeGatePassNo');
+
+  const gatepasses = await OutstationGatepass.find({ student: studentId })
+    .sort({ createdAt: -1 })
+    .select('-__v');
+
+  return res.json({
+    gatepasses,
+    presence: student?.presence || 'inside',
+    activeGatePassNo: student?.activeGatePassNo || null,
+  });
 };
