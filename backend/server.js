@@ -10,6 +10,13 @@ dotenv.config();
 
 const app = express();
 
+// Build allowed origins for CSP
+const frontendOrigins = (process.env.FRONTEND_ORIGIN || 'http://localhost:3000')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
+const backendOrigin = process.env.BACKEND_ORIGIN || 'http://localhost:5000';
+
 // Middleware
 app.use(
   helmet({
@@ -17,12 +24,7 @@ app.use(
       useDefaults: true,
       directives: {
         // Allow images from API origin and data URLs for QR/fallback avatars
-        'img-src': [
-          "'self'",
-          'data:',
-          process.env.FRONTEND_ORIGIN || 'http://localhost:3000',
-          process.env.BACKEND_ORIGIN || 'http://localhost:5000',
-        ],
+        'img-src': ["'self'", 'data:', ...frontendOrigins, backendOrigin],
       },
     },
     // Permit cross-origin resources (frontend at :3000 fetching images from :5000)
