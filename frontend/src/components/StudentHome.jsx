@@ -169,9 +169,39 @@ const StudentHome = () => {
                         ? formatDate(entryDate)
                         : '';
 
+                    // Determine gatepass label type and color
+                    const gatePassNo = log.gatePassNo;
+                    let labelColor = null;
+                    if (gatePassNo) {
+                      if (gatePassNo.startsWith('L-')) {
+                        labelColor = '#f5c518'; // Yellow for Local
+                      } else if (gatePassNo.startsWith('OS-')) {
+                        labelColor = '#ff8c00'; // Orange for Outstation
+                      }
+                    }
+
                     return (
                       <tr key={log._id}>
-                        <td className="student-history-purpose">{log.purpose}</td>
+                        <td className="student-history-purpose">
+                          {log.purpose}
+                          {gatePassNo && labelColor && (
+                            <span
+                              style={{
+                                display: 'inline-block',
+                                marginLeft: '8px',
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                                backgroundColor: labelColor,
+                                color: '#000',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                border: '1px solid rgba(0,0,0,0.2)',
+                              }}
+                            >
+                              {gatePassNo}
+                            </span>
+                          )}
+                        </td>
                         <td className="student-history-place">{log.place}</td>
                         <td className="student-history-out">
                           <div className="student-history-main">{outTop}</div>
