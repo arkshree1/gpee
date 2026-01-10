@@ -5,8 +5,6 @@ const GuardScanner = ({ onToken, onClose }) => {
   const videoRef = useRef(null);
   const readerRef = useRef(null);
   const [error, setError] = useState('');
-  const [devices, setDevices] = useState([]);
-  const [selectedId, setSelectedId] = useState('');
   const [requesting, setRequesting] = useState(true);
 
   useEffect(() => {
@@ -17,20 +15,42 @@ const GuardScanner = ({ onToken, onClose }) => {
 
     (async () => {
       try {
-        // Prompt for permission up front to avoid silent failures
-        await navigator.mediaDevices.getUserMedia({ video: true });
+        // Request camera with back camera preference (environment = rear camera)
+        await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' } }
+        });
 
         const cams = await BrowserMultiFormatReader.listVideoInputDevices();
-        setDevices(cams);
-        const deviceId = cams?.[0]?.deviceId;
-        if (!deviceId) {
+        if (!cams || cams.length === 0) {
           setError('No camera device found. Plug in or allow camera access.');
           setRequesting(false);
           return;
         }
-        setSelectedId(deviceId);
+
+        // Find back camera - look for keywords in label
+        let backCamera = cams.find(cam => {
+          const label = (cam.label || '').toLowerCase();
+          return label.includes('back') ||
+            label.includes('rear') ||
+            label.includes('environment') ||
+            label.includes('facing back');
+        });
+
+        // If no back camera found by label, try camera2 0 (usually back on Android)
+        if (!backCamera) {
+          backCamera = cams.find(cam => {
+            const label = (cam.label || '').toLowerCase();
+            return label.includes('camera2 0') || label.includes('camera 0');
+          });
+        }
+
+        // Fallback to last camera in list (often back camera on mobile)
+        const selectedDevice = backCamera || cams[cams.length - 1];
+        const deviceId = selectedDevice.deviceId;
+
         setRequesting(false);
 
+        // Start scanning with selected back camera
         await reader.decodeFromVideoDevice(deviceId, videoRef.current, (result, err) => {
           if (stopped) return;
           if (result) {
@@ -62,25 +82,6 @@ const GuardScanner = ({ onToken, onClose }) => {
     };
   }, [onToken]);
 
-  useEffect(() => {
-    // Switch device when dropdown changes
-    if (!selectedId || !readerRef.current) return;
-    let stopped = false;
-    readerRef.current.decodeFromVideoDevice(selectedId, videoRef.current, (result, err) => {
-      if (stopped) return;
-      if (result) {
-        stopped = true;
-        onToken(result.getText());
-      }
-      if (err && err.name && err.name !== 'NotFoundException') {
-        // ignore most decode errors
-      }
-    });
-    return () => {
-      stopped = true;
-    };
-  }, [selectedId, onToken]);
-
   return (
     <div className="guard-scanner-overlay">
       <div className="guard-scanner-modal">
@@ -90,21 +91,6 @@ const GuardScanner = ({ onToken, onClose }) => {
             Close
           </button>
         </div>
-
-        {devices.length > 1 && (
-          <div style={{ marginBottom: 8 }}>
-            <label className="guard-muted" style={{ marginRight: 8 }}>
-              Camera
-            </label>
-            <select value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
-              {devices.map((d) => (
-                <option key={d.deviceId} value={d.deviceId}>
-                  {d.label || 'Camera'}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
 
         <video ref={videoRef} className="guard-video" muted playsInline />
 
@@ -119,3 +105,4 @@ const GuardScanner = ({ onToken, onClose }) => {
 };
 
 export default GuardScanner;
+
