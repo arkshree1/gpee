@@ -3,81 +3,94 @@ import { BrowserMultiFormatReader } from '@zxing/browser';
 
 const GuardScanner = ({ onToken, onClose }) => {
   const videoRef = useRef(null);
-  const readerRef = useRef(null);
+  const streamRef = useRef(null);
   const [error, setError] = useState('');
-  const [requesting, setRequesting] = useState(true);
+  const [starting, setStarting] = useState(true);
 
   useEffect(() => {
-    const reader = new BrowserMultiFormatReader();
-    readerRef.current = reader;
-
     let stopped = false;
+    const reader = new BrowserMultiFormatReader();
 
-    (async () => {
+    const startScanner = async () => {
       try {
-        // Request camera with back camera preference (environment = rear camera)
-        await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' } }
-        });
+        // Directly request back camera stream with constraints
+        const constraints = {
+          video: {
+            facingMode: { exact: 'environment' }, // Force back camera
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+          audio: false,
+        };
 
-        const cams = await BrowserMultiFormatReader.listVideoInputDevices();
-        if (!cams || cams.length === 0) {
-          setError('No camera device found. Plug in or allow camera access.');
-          setRequesting(false);
-          return;
-        }
-
-        // Find back camera - look for keywords in label
-        let backCamera = cams.find(cam => {
-          const label = (cam.label || '').toLowerCase();
-          return label.includes('back') ||
-            label.includes('rear') ||
-            label.includes('environment') ||
-            label.includes('facing back');
-        });
-
-        // If no back camera found by label, try camera2 0 (usually back on Android)
-        if (!backCamera) {
-          backCamera = cams.find(cam => {
-            const label = (cam.label || '').toLowerCase();
-            return label.includes('camera2 0') || label.includes('camera 0');
+        let stream;
+        try {
+          // Try exact environment (back camera) first
+          stream = await navigator.mediaDevices.getUserMedia(constraints);
+        } catch {
+          // Fallback: try ideal instead of exact (for devices that don't support exact)
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: { ideal: 'environment' },
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
+            audio: false,
           });
         }
 
-        // Fallback to last camera in list (often back camera on mobile)
-        const selectedDevice = backCamera || cams[cams.length - 1];
-        const deviceId = selectedDevice.deviceId;
+        if (stopped) {
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
 
-        setRequesting(false);
+        streamRef.current = stream;
 
-        // Start scanning with selected back camera
-        await reader.decodeFromVideoDevice(deviceId, videoRef.current, (result, err) => {
+        // Attach stream directly to video element
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+
+        setStarting(false);
+
+        // Start QR decoding from the video element
+        reader.decodeFromVideoElement(videoRef.current, (result, err) => {
           if (stopped) return;
           if (result) {
             stopped = true;
-            const text = result.getText();
-            onToken(text);
+            onToken(result.getText());
           }
-          // ignore decode errors (usually just no QR in frame)
-          if (err && err.name && err.name !== 'NotFoundException') {
-            // keep quiet for most
-          }
+          // Ignore NotFoundException - just means no QR in frame
         });
+
       } catch (e) {
-        const msg = e?.name === 'NotAllowedError'
-          ? 'Camera permission denied. Please allow camera access in your browser.'
-          : e?.message || 'Unable to access camera';
+        if (stopped) return;
+        let msg = 'Unable to access camera';
+        if (e?.name === 'NotAllowedError') {
+          msg = 'Camera permission denied. Please allow camera access.';
+        } else if (e?.name === 'NotFoundError' || e?.name === 'OverconstrainedError') {
+          msg = 'Back camera not found. Please use a device with a rear camera.';
+        } else if (e?.message) {
+          msg = e.message;
+        }
         setError(msg);
-        setRequesting(false);
+        setStarting(false);
       }
-    })();
+    };
+
+    startScanner();
 
     return () => {
       stopped = true;
-      try {
-        reader.reset();
-      } catch {
-        // ignore
+      reader.reset();
+      // Stop all camera tracks
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
       }
     };
   }, [onToken]);
@@ -92,12 +105,23 @@ const GuardScanner = ({ onToken, onClose }) => {
           </button>
         </div>
 
-        <video ref={videoRef} className="guard-video" muted playsInline />
+        <video
+          ref={videoRef}
+          className="guard-video"
+          muted
+          playsInline
+          autoPlay
+          style={{ backgroundColor: '#000' }}
+        />
 
-        {requesting && <div className="guard-muted">Requesting camera permission...</div>}
+        {starting && (
+          <div className="guard-muted" style={{ textAlign: 'center', padding: '10px' }}>
+            Starting back camera...
+          </div>
+        )}
         {error && <div className="guard-error">{error}</div>}
         <div className="guard-scanner-hint">
-          If you see "No camera device found", allow camera access or switch to a device with a webcam. On desktop, a USB camera works. QR contains only a random token.
+          Point the back camera at a QR code. If camera doesn't start, check permissions.
         </div>
       </div>
     </div>
@@ -105,4 +129,5 @@ const GuardScanner = ({ onToken, onClose }) => {
 };
 
 export default GuardScanner;
+
 
