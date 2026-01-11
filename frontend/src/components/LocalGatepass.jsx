@@ -142,7 +142,7 @@ const LocalGatepass = () => {
     <div className="gatepass-wrapper">
       <header className="gatepass-header">
         <div className="gatepass-header-text">
-          <span className="gatepass-brand">Passly</span>
+          <span className="gatepass-brand">GoThru</span>
           <span className="gatepass-subbrand">by Watchr</span>
         </div>
       </header>

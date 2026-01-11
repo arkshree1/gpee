@@ -9,7 +9,7 @@ const GatepassMenu = () => {
     <div className="student-shell">
       <header className="student-header">
         <div>
-          <div className="brand">Passly</div>
+          <div className="brand">GoThru</div>
           <div className="sub">by Watchr</div>
         </div>
         <button className="student-back" type="button" onClick={() => navigate('/student')}>

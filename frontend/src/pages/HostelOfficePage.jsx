@@ -49,7 +49,7 @@ const HostelOfficePage = () => {
     <div className="guard-layout">
       <header className="guard-header">
         <div className="guard-header-brand">
-          <span className="guard-header-passly">Passly</span>
+          <span className="guard-header-passly">GoThru</span>
           <span className="guard-header-by">
             by <strong>Watchr</strong>
           </span>

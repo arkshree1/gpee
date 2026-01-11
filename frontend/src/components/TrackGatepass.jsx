@@ -155,7 +155,7 @@ const TrackGatepass = () => {
             <header className="student-header">
                 <button className="student-back" onClick={() => navigate('/student')}>← Back</button>
                 <div>
-                    <div className="brand">Passly</div>
+                    <div className="brand">GoThru</div>
                     <div className="sub">by Watchr</div>
                 </div>
             </header>

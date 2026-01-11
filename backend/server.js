@@ -94,24 +94,25 @@ const { bootstrapDefaultAccounts } = require('./utils/bootstrap');
 
 // MongoDB connection (UPDATED for Mongoose v7)
 const mongoUri = process.env.MONGODB_URI;
-
-mongoose
-  .connect(mongoUri) // removed deprecated options
-  .then(async () => {
-    console.log(`📦 MongoDB connected successfully`);
-    await bootstrapDefaultAccounts();
-  })
-  .catch((err) => {
-    console.error(`❌ MongoDB connection error: ${err.message}`);
-    process.exit(1); // fail fast is FAANG-level
-  });
-
 const PORT = process.env.PORT || 5000;
 
 app.get('/', (req, res) => {
   res.json({ message: 'Backend is running' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+mongoose
+  .connect(mongoUri) // removed deprecated options
+  .then(async () => {
+    console.log(`📦 MongoDB connected successfully`);
+    await bootstrapDefaultAccounts();
+
+    // Start server ONLY after MongoDB is connected
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error(`❌ MongoDB connection error: ${err.message}`);
+    process.exit(1); // fail fast is FAANG-level
+  });
+

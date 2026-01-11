@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { getStudentStatus, getStudentLogs } from '../api/api';
 import '../styles/student.css';
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+
 const StudentHome = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -79,8 +81,45 @@ const StudentHome = () => {
     <div className="student-shell">
       <header className="student-header">
         <div>
-          <div className="brand">Passly</div>
+          <div className="brand">GoThru</div>
           <div className="sub">by Watchr</div>
+        </div>
+        {/* Profile Button */}
+        <div
+          onClick={() => navigate('/student/profile')}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            cursor: 'pointer',
+          }}
+        >
+          <div
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              overflow: 'hidden',
+              border: '2px solid rgba(153, 4, 182, 0.6)',
+              background: '#e0e0e0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {status?.imageUrl ? (
+              <img
+                src={`${API_BASE_URL}${status.imageUrl}`}
+                alt="Profile"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              <span style={{ fontSize: '18px', color: '#666' }}>👤</span>
+            )}
+          </div>
+          <div style={{ fontSize: '10px', marginTop: '2px', fontWeight: 600, color: '#333' }}>
+            Profile
+          </div>
         </div>
       </header>
 

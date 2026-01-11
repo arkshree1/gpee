@@ -83,7 +83,14 @@ const GuardScanner = ({ onToken, onClose }) => {
 
     return () => {
       stopped = true;
-      reader.reset();
+      // Safely try to reset reader (method may not exist in all versions)
+      try {
+        if (reader && typeof reader.reset === 'function') {
+          reader.reset();
+        }
+      } catch {
+        // ignore
+      }
       // Stop all camera tracks
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());

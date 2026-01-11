@@ -89,7 +89,7 @@ const ResetPassword = () => {
     <div className="login-wrapper">
       <header className="login-header">
         <div className="login-header-text">
-          <span className="login-brand">Passly</span>
+          <span className="login-brand">GoThru</span>
           <span className="login-subbrand">by Watchr</span>
         </div>
       </header>
