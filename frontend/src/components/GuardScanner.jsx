@@ -15,7 +15,7 @@ const GuardScanner = ({ onToken, onClose }) => {
       try {
         let stream = null;
 
-        // Try different camera configurations in order of preference
+        // Try different camera conhfigurations in order of preference
         const cameraConfigs = [
           // 1. Try back camera (mobile)
           {
