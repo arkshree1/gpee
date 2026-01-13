@@ -1,0 +1,1241 @@
+/* ==================== ADMIN DASHBOARD - REFINED COLOR THEME ==================== */
+/* Color Palette: #676f9d, #424769, #2d3250, #f9b17a, #ffffff */
+/* VIEWPORT-CONSTRAINED LAYOUT - NO PAGE SCROLLING */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* Prevent page-level scrolling */
+html,
+body {
+    overflow: hidden;
+    height: 100%;
+}
+
+:root {
+    /* Primary Color Palette */
+    --color-white: #ffffff;
+    --color-muted: #676f9d;
+    --color-mid: #424769;
+    --color-dark: #2d3250;
+    --color-accent: #f9b17a;
+
+    /* Derived Shades */
+    --color-bg: #1e2235;
+    --color-card: #2d3250;
+    --color-card-hover: #353a5c;
+    --color-border: rgba(103, 111, 157, 0.25);
+    --color-border-light: rgba(103, 111, 157, 0.15);
+
+    /* Text Colors */
+    --text-primary: #ffffff;
+    --text-secondary: #676f9d;
+    --text-accent: #f9b17a;
+
+    /* Status Colors */
+    --status-success: #4ade80;
+    --status-danger: #f87171;
+    --status-warning: #fbbf24;
+    --status-info: #60a5fa;
+
+    /* Layout Variables */
+    --header-height: 56px;
+    --sidebar-width: 56px;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ==================== MAIN LAYOUT - FIXED 100VH ==================== */
+.admin-layout {
+    height: 100vh;
+    max-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-bg);
+    font-family: 'Inter', sans-serif;
+    color: var(--text-primary);
+    overflow: hidden;
+}
+
+/* ==================== HEADER ==================== */
+.admin-header {
+    height: var(--header-height);
+    min-height: var(--header-height);
+    max-height: var(--header-height);
+    background: var(--color-dark);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    z-index: 100;
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+}
+
+.admin-header-brand {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.admin-header-logo {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--color-accent);
+    letter-spacing: -0.3px;
+}
+
+.admin-header-subtitle {
+    font-size: 10px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.admin-header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.admin-logout-btn {
+    background: var(--color-mid);
+    color: var(--text-primary);
+    border: 1px solid var(--color-border);
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Inter', sans-serif;
+}
+
+.admin-logout-btn:hover {
+    background: var(--color-accent);
+    color: var(--color-dark);
+    border-color: var(--color-accent);
+}
+
+.admin-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: var(--color-mid);
+    border: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.admin-avatar:hover {
+    border-color: var(--color-accent);
+}
+
+.admin-avatar-icon {
+    font-size: 14px;
+}
+
+/* ==================== BODY ==================== */
+.admin-body {
+    display: flex;
+    flex: 1;
+    height: calc(100vh - var(--header-height));
+    max-height: calc(100vh - var(--header-height));
+    overflow: hidden;
+}
+
+/* ==================== SIDEBAR ==================== */
+.admin-sidebar {
+    width: var(--sidebar-width);
+    min-width: var(--sidebar-width);
+    background: var(--color-dark);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 0;
+    gap: 6px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--color-border);
+    overflow: hidden;
+}
+
+.admin-nav-item {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 16px;
+    position: relative;
+}
+
+.admin-nav-item:hover {
+    background: var(--color-mid);
+    color: var(--text-primary);
+}
+
+.admin-nav-item.active {
+    background: var(--color-accent);
+    color: var(--color-dark);
+}
+
+/* ==================== MAIN CONTENT ==================== */
+.admin-main {
+    flex: 1;
+    padding: 20px 24px;
+    overflow: hidden;
+    background: var(--color-bg);
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-page-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+/* ==================== DASHBOARD LAYOUT ==================== */
+.admin-dashboard-layout {
+    display: flex;
+    gap: 20px;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.admin-dashboard-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overflow: hidden;
+}
+
+/* ==================== COLLEGE BANNER ==================== */
+.admin-college-banner {
+    background: linear-gradient(135deg, var(--color-mid) 0%, var(--color-dark) 100%);
+    border-radius: 10px;
+    padding: 18px 24px;
+    text-align: center;
+    border: 1px solid var(--color-border);
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.admin-college-banner::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--color-accent);
+}
+
+.admin-college-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+}
+
+.admin-college-subtitle {
+    font-size: 10px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+}
+
+.admin-college-name-hi {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-accent);
+    margin-bottom: 2px;
+}
+
+.admin-college-subtitle-hi {
+    font-size: 9px;
+    color: var(--text-secondary);
+}
+
+/* ==================== TOTAL STUDENTS ==================== */
+.admin-total-students {
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    padding: 14px 24px;
+    text-align: center;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.admin-total-students::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50%;
+    height: 3px;
+    background: var(--color-accent);
+    border-radius: 3px 3px 0 0;
+}
+
+.admin-total-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.admin-total-value {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ==================== STATS GRID ==================== */
+.admin-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    flex: 1;
+    min-height: 0;
+}
+
+/* ==================== STAT CARD ==================== */
+.admin-stat-card {
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    transition: all 0.2s ease;
+    cursor: default;
+    position: relative;
+    overflow: hidden;
+}
+
+.admin-stat-card:hover {
+    border-color: var(--color-muted);
+    background: var(--color-card-hover);
+}
+
+.admin-stat-value {
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+    margin-bottom: 8px;
+    font-variant-numeric: tabular-nums;
+}
+
+.admin-stat-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+/* ==================== STAT CARD COLOR VARIANTS ==================== */
+/* Green - Students Inside */
+.admin-stat-card.green {
+    border-left: 4px solid var(--status-success);
+}
+
+.admin-stat-card.green .admin-stat-value {
+    color: var(--status-success);
+}
+
+/* Red - Students Outside */
+.admin-stat-card.red {
+    border-left: 4px solid var(--status-danger);
+}
+
+.admin-stat-card.red .admin-stat-value {
+    color: var(--status-danger);
+}
+
+/* Orange - Local Gatepass */
+.admin-stat-card.orange {
+    border-left: 4px solid var(--color-accent);
+}
+
+.admin-stat-card.orange .admin-stat-value {
+    color: var(--color-accent);
+}
+
+/* Purple - Outstation Gatepass */
+.admin-stat-card.purple {
+    border-left: 4px solid var(--color-muted);
+}
+
+.admin-stat-card.purple .admin-stat-value {
+    color: var(--color-muted);
+}
+
+/* ==================== CLICKABLE STAT CARDS ==================== */
+.admin-stat-card.clickable {
+    cursor: pointer;
+}
+
+.admin-stat-card.clickable:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* ==================== PLACEHOLDER & LOADING ==================== */
+.admin-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    font-size: 18px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.admin-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    color: var(--text-secondary);
+    font-size: 14px;
+    gap: 10px;
+}
+
+.admin-loading::before {
+    content: '';
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--color-mid);
+    border-top-color: var(--color-accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ==================== LIVE ACTIVITY LOGS PANEL ==================== */
+.live-logs-panel {
+    width: 300px;
+    min-width: 300px;
+    flex-shrink: 0;
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.live-logs-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-dark);
+    flex-shrink: 0;
+}
+
+.live-logs-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: 0.5px;
+}
+
+.live-logs-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--status-success);
+}
+
+.live-logs-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--status-success);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.4;
+    }
+}
+
+.live-logs-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 0;
+}
+
+.live-logs-container::-webkit-scrollbar {
+    width: 4px;
+}
+
+.live-logs-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.live-logs-container::-webkit-scrollbar-thumb {
+    background: var(--color-mid);
+    border-radius: 2px;
+}
+
+.live-log-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.live-log-item:last-child {
+    border-bottom: none;
+}
+
+.live-log-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.live-log-action {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.live-log-action.entry {
+    color: var(--status-success);
+    background: rgba(74, 222, 128, 0.12);
+}
+
+.live-log-action.exit {
+    color: var(--status-danger);
+    background: rgba(248, 113, 113, 0.12);
+}
+
+.live-log-time {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.live-log-student {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.live-log-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.live-log-roll {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+
+.live-logs-empty,
+.live-logs-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 80px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.live-logs-error {
+    color: var(--status-danger);
+}
+
+/* ==================== MODAL ==================== */
+.admin-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(30, 34, 53, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.admin-modal {
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 850px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.admin-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-dark);
+    flex-shrink: 0;
+}
+
+.admin-modal-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.admin-modal-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: none;
+    background: var(--color-mid);
+    color: var(--text-primary);
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.admin-modal-close:hover {
+    background: var(--color-accent);
+    color: var(--color-dark);
+}
+
+.admin-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+}
+
+.admin-modal-loading,
+.admin-modal-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 120px;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+/* ==================== STUDENT TABLE ==================== */
+.admin-student-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.admin-student-table th,
+.admin-student-table td {
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.admin-student-table th {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: var(--color-dark);
+    position: sticky;
+    top: 0;
+}
+
+.admin-student-table td {
+    color: var(--text-primary);
+}
+
+.admin-student-table tbody tr:hover {
+    background: var(--color-card-hover);
+}
+
+/* ==================== RESPONSIVE - TABLET ==================== */
+@media (max-width: 1024px) {
+    :root {
+        --sidebar-width: 48px;
+    }
+
+    .admin-dashboard-layout {
+        flex-direction: column;
+    }
+
+    .live-logs-panel {
+        width: 100%;
+        min-width: 100%;
+        max-height: 200px;
+        order: 1;
+    }
+
+    .admin-dashboard-content {
+        order: 0;
+    }
+
+    .admin-nav-item {
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+    }
+
+    .admin-stat-value {
+        font-size: 40px;
+    }
+}
+
+/* ==================== RESPONSIVE - MOBILE ==================== */
+@media (max-width: 768px) {
+    :root {
+        --header-height: 50px;
+        --sidebar-width: 44px;
+    }
+
+    .admin-header {
+        padding: 0 16px;
+    }
+
+    .admin-header-logo {
+        font-size: 18px;
+    }
+
+    .admin-logout-btn {
+        padding: 6px 14px;
+        font-size: 12px;
+    }
+
+    .admin-avatar {
+        width: 30px;
+        height: 30px;
+    }
+
+    .admin-main {
+        padding: 16px;
+    }
+
+    .admin-page-title {
+        font-size: 10px;
+        margin-bottom: 12px;
+    }
+
+    .admin-college-banner {
+        padding: 14px 18px;
+    }
+
+    .admin-college-name {
+        font-size: 13px;
+    }
+
+    .admin-college-subtitle,
+    .admin-college-subtitle-hi {
+        display: none;
+    }
+
+    .admin-total-students {
+        padding: 12px 18px;
+    }
+
+    .admin-total-value {
+        font-size: 30px;
+    }
+
+    .admin-stats-grid {
+        gap: 10px;
+    }
+
+    .admin-stat-card {
+        padding: 16px 12px;
+    }
+
+    .admin-stat-value {
+        font-size: 36px;
+    }
+
+    .admin-stat-label {
+        font-size: 10px;
+    }
+
+    .live-logs-panel {
+        max-height: 180px;
+    }
+}
+
+/* ==================== RESPONSIVE - SMALL MOBILE ==================== */
+@media (max-width: 480px) {
+    .admin-sidebar {
+        display: none;
+    }
+
+    .admin-stat-value {
+        font-size: 32px;
+    }
+
+    .live-logs-panel {
+        max-height: 160px;
+    }
+
+    .admin-student-table {
+        font-size: 12px;
+    }
+
+    .admin-student-table th,
+    .admin-student-table td {
+        padding: 10px 12px;
+    }
+}
+
+/* ==================== DETAILED LOGS PAGE ==================== */
+.admin-detailed-logs-page {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.admin-detailed-logs-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: 10px 10px 0 0;
+    flex-shrink: 0;
+}
+
+.admin-detailed-logs-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.admin-detailed-logs-count {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--color-mid);
+    padding: 4px 10px;
+    border-radius: 20px;
+}
+
+/* Scrollable table container */
+.admin-detailed-logs-table-container {
+    flex: 1;
+    overflow-y: auto;
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+}
+
+.admin-detailed-logs-table-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.admin-detailed-logs-table-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.admin-detailed-logs-table-container::-webkit-scrollbar-thumb {
+    background: var(--color-mid);
+    border-radius: 3px;
+}
+
+/* Detailed logs table */
+.admin-detailed-logs-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.admin-detailed-logs-table th,
+.admin-detailed-logs-table td {
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.admin-detailed-logs-table th {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: var(--color-dark);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.admin-detailed-logs-table td {
+    color: var(--text-primary);
+}
+
+.admin-detailed-logs-table tbody tr:hover {
+    background: var(--color-card-hover);
+}
+
+.admin-detailed-logs-table .time-cell {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* Activity badge */
+.activity-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: 4px 10px;
+    border-radius: 4px;
+}
+
+.activity-badge.entry {
+    color: var(--status-success);
+    background: rgba(74, 222, 128, 0.15);
+}
+
+.activity-badge.exit {
+    color: var(--status-danger);
+    background: rgba(248, 113, 113, 0.15);
+}
+
+/* Type badge */
+.type-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: 'Inter', monospace;
+}
+
+.type-badge.normal {
+    color: var(--text-secondary);
+    background: rgba(148, 163, 184, 0.15);
+}
+
+.type-badge.local {
+    color: var(--color-accent);
+    background: rgba(249, 177, 122, 0.15);
+}
+
+.type-badge.outstation {
+    color: var(--color-muted);
+    background: rgba(103, 111, 157, 0.15);
+}
+
+/* ==================== DETAILED LOGS RESPONSIVE ==================== */
+@media (max-width: 1024px) {
+    .admin-detailed-logs-table {
+        font-size: 12px;
+    }
+
+    .admin-detailed-logs-table th,
+    .admin-detailed-logs-table td {
+        padding: 12px 10px;
+    }
+}
+
+@media (max-width: 768px) {
+    .admin-detailed-logs-header {
+        padding: 10px 12px;
+    }
+
+    .admin-detailed-logs-title {
+        font-size: 14px;
+    }
+
+    .admin-detailed-logs-table th,
+    .admin-detailed-logs-table td {
+        padding: 10px 8px;
+    }
+
+    .admin-detailed-logs-table {
+        font-size: 11px;
+    }
+}
+
+/* ==================== RESPONSIVE VISIBILITY CLASSES ==================== */
+.desktop-only {
+    display: table;
+}
+
+.mobile-only {
+    display: none;
+}
+
+/* ==================== MOBILE CARD LAYOUT ==================== */
+@media (max-width: 768px) {
+    .desktop-only {
+        display: none !important;
+    }
+
+    .mobile-only {
+        display: block !important;
+    }
+
+    /* Cards Container */
+    .admin-logs-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px;
+    }
+
+    /* Individual Log Card */
+    .log-card {
+        background: var(--color-card);
+        border: 1px solid var(--color-border);
+        border-radius: 10px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .log-card.entry {
+        border-left: 4px solid var(--status-success);
+    }
+
+    .log-card.exit {
+        border-left: 4px solid var(--status-danger);
+    }
+
+    /* Activity Badge at Top */
+    .log-card-activity {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        padding: 6px 14px;
+        border-radius: 0 0 8px 0;
+    }
+
+    .log-card-activity.entry {
+        background: var(--status-success);
+        color: var(--color-dark);
+    }
+
+    .log-card-activity.exit {
+        background: var(--status-danger);
+        color: #fff;
+    }
+
+    /* Card Content Grid */
+    .log-card-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 10px;
+        padding: 12px;
+    }
+
+    /* Identity Block (Left) */
+    .log-card-identity {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .log-card-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .log-card-roll {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--color-accent);
+    }
+
+    .log-card-identity .type-badge {
+        width: fit-content;
+        margin-top: 4px;
+    }
+
+    .log-card-contact {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+    }
+
+    /* Middle Block (Place & Time) */
+    .log-card-middle {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 8px;
+        background: var(--color-mid);
+        border-radius: 6px;
+    }
+
+    .log-card-place-label {
+        font-size: 9px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        letter-spacing: 0.5px;
+    }
+
+    .log-card-place {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary);
+        text-transform: capitalize;
+    }
+
+    .log-card-time {
+        font-size: 11px;
+        color: var(--text-secondary);
+        margin-top: auto;
+    }
+
+    /* Purpose Block (Right) */
+    .log-card-purpose {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 8px;
+        background: rgba(249, 177, 122, 0.08);
+        border-radius: 6px;
+        border: 1px solid rgba(249, 177, 122, 0.15);
+    }
+
+    .log-card-purpose-label {
+        font-size: 9px;
+        font-weight: 600;
+        color: var(--color-accent);
+        letter-spacing: 0.5px;
+    }
+
+    .log-card-purpose-text {
+        font-size: 12px;
+        color: var(--text-primary);
+        line-height: 1.4;
+    }
+}
+
+/* ==================== VERY SMALL SCREENS ==================== */
+@media (max-width: 480px) {
+    .log-card-content {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .log-card-identity {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto auto;
+        gap: 4px 10px;
+    }
+
+    .log-card-name {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .log-card-roll {
+        grid-column: 1;
+        grid-row: 2;
+    }
+
+    .log-card-identity .type-badge {
+        grid-column: 2;
+        grid-row: 1 / 3;
+        align-self: center;
+        margin-top: 0;
+    }
+
+    .log-card-contact {
+        grid-column: 1 / 3;
+        margin-top: 2px;
+    }
+
+    .log-card-middle,
+    .log-card-purpose {
+        padding: 10px;
+    }
+
+    .admin-detailed-logs-header {
+        padding: 10px;
+    }
+
+    .admin-detailed-logs-title {
+        font-size: 13px;
+    }
+
+    .admin-detailed-logs-count {
+        font-size: 11px;
+        padding: 3px 8px;
+    }
+
+    .admin-logs-cards {
+        padding: 8px;
+        gap: 10px;
+    }
+}

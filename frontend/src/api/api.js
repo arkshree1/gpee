@@ -66,6 +66,12 @@ export const manualEntry = async (payload) => apiClient.post('/api/guard/manual-
 export const getAdminOverview = async () => apiClient.get('/api/admin/overview');
 export const getAdminLogs = async () => apiClient.get('/api/admin/logs');
 export const getAdminUsers = async () => apiClient.get('/api/admin/users');
+export const getAdminLiveLogs = async () => apiClient.get('/api/admin/live-logs');
+export const getStudentsInside = async () => apiClient.get('/api/admin/students-inside');
+export const getStudentsOutside = async () => apiClient.get('/api/admin/students-outside');
+export const getLocalGatepassExits = async () => apiClient.get('/api/admin/local-gatepass-exits');
+export const getOutstationGatepassExits = async () => apiClient.get('/api/admin/outstation-gatepass-exits');
+export const getDetailedLogs = async () => apiClient.get('/api/admin/detailed-logs');
 
 // Hostel Office APIs
 export const getPendingGatepasses = async () => apiClient.get('/api/hostel-office/pending-gatepasses');

@@ -13,30 +13,55 @@ const GuardScanner = ({ onToken, onClose }) => {
 
     const startScanner = async () => {
       try {
-        // Directly request back camera stream with constraints
-        const constraints = {
-          video: {
-            facingMode: { exact: 'environment' }, // Force back camera
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-          },
-          audio: false,
-        };
+        let stream = null;
 
-        let stream;
-        try {
-          // Try exact environment (back camera) first
-          stream = await navigator.mediaDevices.getUserMedia(constraints);
-        } catch {
-          // Fallback: try ideal instead of exact (for devices that don't support exact)
-          stream = await navigator.mediaDevices.getUserMedia({
+        // Try different camera configurations in order of preference
+        const cameraConfigs = [
+          // 1. Try back camera (mobile)
+          {
+            video: {
+              facingMode: { exact: 'environment' },
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
+            audio: false,
+          },
+          // 2. Try ideal back camera (fallback)
+          {
             video: {
               facingMode: { ideal: 'environment' },
               width: { ideal: 1280 },
               height: { ideal: 720 },
             },
             audio: false,
-          });
+          },
+          // 3. Try any available camera (laptops, front cameras)
+          {
+            video: {
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
+            audio: false,
+          },
+          // 4. Most basic - just get any video
+          {
+            video: true,
+            audio: false,
+          },
+        ];
+
+        for (const config of cameraConfigs) {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia(config);
+            break; // Success, stop trying
+          } catch {
+            // This config failed, try next
+            continue;
+          }
+        }
+
+        if (!stream) {
+          throw new Error('Could not access any camera');
         }
 
         if (stopped) {
@@ -68,9 +93,11 @@ const GuardScanner = ({ onToken, onClose }) => {
         if (stopped) return;
         let msg = 'Unable to access camera';
         if (e?.name === 'NotAllowedError') {
-          msg = 'Camera permission denied. Please allow camera access.';
-        } else if (e?.name === 'NotFoundError' || e?.name === 'OverconstrainedError') {
-          msg = 'Back camera not found. Please use a device with a rear camera.';
+          msg = 'Camera permission denied. Please allow camera access in your browser settings.';
+        } else if (e?.name === 'NotFoundError') {
+          msg = 'No camera found on this device.';
+        } else if (e?.name === 'NotReadableError') {
+          msg = 'Camera is in use by another application.';
         } else if (e?.message) {
           msg = e.message;
         }
@@ -83,7 +110,7 @@ const GuardScanner = ({ onToken, onClose }) => {
 
     return () => {
       stopped = true;
-      // Safely try to reset reader (method may not exist in all versions)
+      // Safely try to reset reader
       try {
         if (reader && typeof reader.reset === 'function') {
           reader.reset();
@@ -123,12 +150,12 @@ const GuardScanner = ({ onToken, onClose }) => {
 
         {starting && (
           <div className="guard-muted" style={{ textAlign: 'center', padding: '10px' }}>
-            Starting back camera...
+            Starting camera...
           </div>
         )}
         {error && <div className="guard-error">{error}</div>}
         <div className="guard-scanner-hint">
-          Point the back camera at a QR code. If camera doesn't start, check permissions.
+          Point the camera at a QR code. Hold steady until detected.
         </div>
       </div>
     </div>
@@ -136,5 +163,3 @@ const GuardScanner = ({ onToken, onClose }) => {
 };
 
 export default GuardScanner;
-
-
