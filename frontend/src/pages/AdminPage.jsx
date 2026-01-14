@@ -27,6 +27,15 @@ const AdminPage = () => {
   const [detailedLogs, setDetailedLogs] = useState([]);
   const [logsLoading, setLogsLoading] = useState(false);
 
+  // Mobile sidebar state
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Handle nav item click (close sidebar on mobile after selection)
+  const handleNavClick = (pageId) => {
+    setActivePage(pageId);
+    setSidebarOpen(false); // Close sidebar on mobile
+  };
+
   const loadDashboard = async () => {
     setLoading(true);
     try {
@@ -287,6 +296,17 @@ const AdminPage = () => {
     <div className="admin-layout">
       {/* Header */}
       <header className="admin-header">
+        {/* Mobile Hamburger Button */}
+        <button
+          className="admin-menu-toggle"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          aria-label="Toggle navigation"
+        >
+          <span className="hamburger-line"></span>
+          <span className="hamburger-line"></span>
+          <span className="hamburger-line"></span>
+        </button>
+
         <div className="admin-header-brand">
           <span className="admin-header-logo">GoThru</span>
           <span className="admin-header-subtitle">by Watchr</span>
@@ -303,16 +323,25 @@ const AdminPage = () => {
 
       {/* Body */}
       <div className="admin-body">
+        {/* Mobile Sidebar Overlay */}
+        {sidebarOpen && (
+          <div
+            className="admin-sidebar-overlay"
+            onClick={() => setSidebarOpen(false)}
+          ></div>
+        )}
+
         {/* Sidebar */}
-        <nav className="admin-sidebar">
+        <nav className={`admin-sidebar ${sidebarOpen ? 'open' : ''}`}>
           {navItems.map((item) => (
             <button
               key={item.id}
               className={`admin-nav-item ${activePage === item.id ? 'active' : ''}`}
-              onClick={() => setActivePage(item.id)}
+              onClick={() => handleNavClick(item.id)}
               title={item.label}
             >
               <span className="admin-nav-icon">{item.icon}</span>
+              <span className="admin-nav-label">{item.label}</span>
             </button>
           ))}
         </nav>

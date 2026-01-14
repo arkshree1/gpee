@@ -195,6 +195,55 @@ body {
     color: var(--color-dark);
 }
 
+/* Nav label - hidden on desktop, visible on mobile sidebar */
+.admin-nav-label {
+    display: none;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* ==================== HAMBURGER BUTTON ==================== */
+.admin-menu-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    gap: 5px;
+    border-radius: 6px;
+    transition: background 0.2s ease;
+}
+
+.admin-menu-toggle:hover {
+    background: var(--color-mid);
+}
+
+.hamburger-line {
+    width: 22px;
+    height: 2px;
+    background: var(--text-primary);
+    border-radius: 2px;
+    transition: all 0.3s ease;
+}
+
+/* ==================== MOBILE SIDEBAR OVERLAY ==================== */
+.admin-sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 200;
+}
+
 /* ==================== MAIN CONTENT ==================== */
 .admin-main {
     flex: 1;
@@ -824,11 +873,67 @@ body {
 }
 
 /* ==================== RESPONSIVE - SMALL MOBILE ==================== */
-@media (max-width: 480px) {
-    .admin-sidebar {
-        display: none;
+@media (max-width: 768px) {
+
+    /* Show hamburger menu button */
+    .admin-menu-toggle {
+        display: flex;
     }
 
+    /* Show sidebar overlay when open */
+    .admin-sidebar-overlay {
+        display: block;
+    }
+
+    /* Mobile Sidebar - slides in from left */
+    .admin-sidebar {
+        position: fixed;
+        top: var(--header-height);
+        left: 0;
+        width: 0;
+        max-width: 0;
+        height: calc(100vh - var(--header-height));
+        z-index: 250;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease, width 0.3s ease, max-width 0.3s ease;
+        overflow: hidden;
+        align-items: flex-start;
+        padding: 16px 0;
+    }
+
+    /* Sidebar open state */
+    .admin-sidebar.open {
+        width: 25vw;
+        min-width: 140px;
+        max-width: 180px;
+        transform: translateX(0);
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Nav items expand horizontally with labels */
+    .admin-sidebar.open .admin-nav-item {
+        width: calc(100% - 20px);
+        height: auto;
+        padding: 12px 14px;
+        margin: 0 10px;
+        justify-content: flex-start;
+        gap: 12px;
+    }
+
+    /* Show nav labels */
+    .admin-sidebar.open .admin-nav-label {
+        display: block;
+    }
+
+    /* Nav icon alignment */
+    .admin-sidebar.open .admin-nav-icon {
+        font-size: 16px;
+        flex-shrink: 0;
+    }
+}
+
+/* ==================== VERY SMALL MOBILE ==================== */
+@media (max-width: 480px) {
     .admin-stat-value {
         font-size: 32px;
     }
@@ -844,6 +949,13 @@ body {
     .admin-student-table th,
     .admin-student-table td {
         padding: 10px 12px;
+    }
+
+    /* Slightly wider sidebar on very small screens */
+    .admin-sidebar.open {
+        width: 60vw;
+        min-width: 180px;
+        max-width: 220px;
     }
 }
 
