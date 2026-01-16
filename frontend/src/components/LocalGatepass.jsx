@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createLocalGatepass, getStudentStatus } from '../api/api';
 import PopupBox from '../components/PopupBox';
-import '../styles/gatepass.css';
+import '../styles/student-dashboard.css';
 
 const LocalGatepass = () => {
   const navigate = useNavigate();
@@ -27,7 +27,6 @@ const LocalGatepass = () => {
   const [profileLoading, setProfileLoading] = useState(true);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  // Fetch user profile data on mount to auto-fill the form
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -104,7 +103,6 @@ const LocalGatepass = () => {
       return;
     }
 
-    // Validate out time is in the future
     const outDateTime = new Date(`${dateOut}T${timeOut}`);
     const inDateTime = new Date(`${dateIn}T${timeIn}`);
     const now = new Date();
@@ -122,7 +120,7 @@ const LocalGatepass = () => {
     setLoading(true);
     createLocalGatepass(form)
       .then((res) => {
-        setPopupMessage('Local gatepass applied');
+        setPopupMessage('Local gatepass applied successfully!');
         setSubmitSuccess(true);
       })
       .catch((error) => {
@@ -139,179 +137,162 @@ const LocalGatepass = () => {
   };
 
   return (
-    <div className="gatepass-wrapper">
-      <header className="gatepass-header">
-        <div className="gatepass-header-text">
-          <span className="gatepass-brand">GoThru</span>
-          <span className="gatepass-subbrand">by Watchr</span>
+    <div className="sd-shell">
+      {/* Header */}
+      <header className="sd-header">
+        <div className="sd-header-brand">
+          <span className="sd-logo">GoThru</span>
+          <span className="sd-logo-sub">by Watchr</span>
         </div>
+        <button
+          className="sa-back-btn"
+          onClick={() => navigate('/student/gatepass')}
+        >
+          Back →
+        </button>
       </header>
 
-      <main className="gatepass-main">
-        <h2 className="gatepass-title">Local Gate Pass</h2>
+      <main className="sd-main lg-main">
+        <h1 className="lg-title">Local Gatepass</h1>
 
-        <form className="gatepass-card" onSubmit={handleSubmit}>
-          <div className="gatepass-row single">
-            <label className="gatepass-label">Student's Name</label>
-            <input
-              className="gatepass-input gatepass-input-readonly"
-              type="text"
-              name="studentName"
-              value={form.studentName}
-              readOnly
-            />
-          </div>
-
-          <div className="gatepass-row">
-            <div className="gatepass-field">
-              <label className="gatepass-label">Roll No.</label>
-              <input
-                className="gatepass-input gatepass-input-readonly"
-                type="text"
-                name="rollnumber"
-                value={form.rollnumber}
-                readOnly
-              />
-            </div>
-            <div className="gatepass-field">
-              <label className="gatepass-label">Department</label>
-              <input
-                className="gatepass-input gatepass-input-readonly"
-                type="text"
-                name="department"
-                value={form.department}
-                readOnly
-              />
+        <form className="lg-form" onSubmit={handleSubmit}>
+          {/* Student Info Section */}
+          <div className="lg-section">
+            <div className="lg-section-label">STUDENT INFORMATION</div>
+            <div className="lg-info-grid">
+              <div className="lg-info-item">
+                <span className="lg-info-label">Name</span>
+                <span className="lg-info-value">{form.studentName || '—'}</span>
+              </div>
+              <div className="lg-info-item">
+                <span className="lg-info-label">Roll No.</span>
+                <span className="lg-info-value">{form.rollnumber || '—'}</span>
+              </div>
+              <div className="lg-info-item">
+                <span className="lg-info-label">Department</span>
+                <span className="lg-info-value">{form.department || '—'}</span>
+              </div>
+              <div className="lg-info-item">
+                <span className="lg-info-label">Room No.</span>
+                <span className="lg-info-value">{form.roomNumber || '—'}</span>
+              </div>
             </div>
           </div>
 
-          <div className="gatepass-row">
-            <div className="gatepass-field">
-              <label className="gatepass-label">Room No.</label>
+          {/* Trip Details Section */}
+          <div className="lg-section">
+            <div className="lg-section-label">TRIP DETAILS</div>
+
+            <div className="lg-field">
+              <label className="lg-label">Semester</label>
               <input
-                className="gatepass-input gatepass-input-readonly"
-                type="text"
-                name="roomNumber"
-                value={form.roomNumber}
-                readOnly
-              />
-            </div>
-            <div className="gatepass-field">
-              <label className="gatepass-label">Semester</label>
-              <input
-                className="gatepass-input"
+                className="lg-input"
                 type="text"
                 name="semester"
+                placeholder="e.g., 4th"
                 value={form.semester}
                 onChange={handleChange}
               />
             </div>
-          </div>
 
-          <div className="gatepass-row">
-            <div className="gatepass-field">
-              <label className="gatepass-label">Date (Out)</label>
+            <div className="lg-row">
+              <div className="lg-field">
+                <label className="lg-label">Exit Date</label>
+                <input
+                  className="lg-input"
+                  type="date"
+                  name="dateOut"
+                  value={form.dateOut}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="lg-field">
+                <label className="lg-label">Exit Time</label>
+                <input
+                  className="lg-input"
+                  type="time"
+                  name="timeOut"
+                  value={form.timeOut}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+
+            <div className="lg-row">
+              <div className="lg-field">
+                <label className="lg-label">Return Date</label>
+                <input
+                  className="lg-input"
+                  type="date"
+                  name="dateIn"
+                  value={form.dateIn}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="lg-field">
+                <label className="lg-label">Return Time</label>
+                <input
+                  className="lg-input"
+                  type="time"
+                  name="timeIn"
+                  value={form.timeIn}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+
+            <div className="lg-field">
+              <label className="lg-label">Purpose</label>
               <input
-                className="gatepass-input"
-                type="date"
-                name="dateOut"
-                value={form.dateOut}
+                className="lg-input"
+                type="text"
+                name="purpose"
+                placeholder="e.g., Medical, Shopping, Family visit"
+                value={form.purpose}
                 onChange={handleChange}
               />
             </div>
-            <div className="gatepass-field">
-              <label className="gatepass-label">Time Out</label>
-              <input
-                className="gatepass-input"
-                type="time"
-                name="timeOut"
-                value={form.timeOut}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
 
-          <div className="gatepass-row">
-            <div className="gatepass-field">
-              <label className="gatepass-label">Date (In)</label>
+            <div className="lg-field">
+              <label className="lg-label">Place/Destination</label>
               <input
-                className="gatepass-input"
-                type="date"
-                name="dateIn"
-                value={form.dateIn}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="gatepass-field">
-              <label className="gatepass-label">Time In</label>
-              <input
-                className="gatepass-input"
-                type="time"
-                name="timeIn"
-                value={form.timeIn}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-
-          <div className="gatepass-row single">
-            <label className="gatepass-label">Purpose</label>
-            <input
-              className="gatepass-input"
-              type="text"
-              name="purpose"
-              placeholder="e.g., Medical checkup, Shopping, Family visit"
-              value={form.purpose}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div className="gatepass-row">
-            <div className="gatepass-field">
-              <label className="gatepass-label">Place</label>
-              <input
-                className="gatepass-input"
+                className="lg-input"
                 type="text"
                 name="place"
+                placeholder="e.g., City Market, Hospital"
                 value={form.place}
                 onChange={handleChange}
               />
             </div>
-            <div className="gatepass-field">
-              <label className="gatepass-label">Contact</label>
-              <input
-                className="gatepass-input gatepass-input-readonly"
-                type="tel"
-                name="contact"
-                value={form.contact}
-                readOnly
-              />
+          </div>
+
+          {/* Contact Section */}
+          <div className="lg-section">
+            <div className="lg-section-label">CONTACT</div>
+            <div className="lg-info-item full">
+              <span className="lg-info-label">Phone Number</span>
+              <span className="lg-info-value">{form.contact || '—'}</span>
             </div>
           </div>
 
-          <div className="gatepass-consent">
-            <label>
-              <input
-                type="checkbox"
-                name="consent"
-                checked={form.consent}
-                onChange={handleChange}
-              />
-              <span>
-                I confirm that all information provided is correct, and I understand that incorrect
-                details may lead to denial of access or disciplinary action.
-              </span>
-            </label>
-          </div>
+          {/* Consent */}
+          <label className="lg-consent">
+            <input
+              type="checkbox"
+              name="consent"
+              checked={form.consent}
+              onChange={handleChange}
+            />
+            <span>
+              I confirm that all information is correct. I understand that incorrect details may lead to denial of access.
+            </span>
+          </label>
 
-          <button type="submit" className="gatepass-apply-btn" disabled={loading}>
-            {loading ? 'Submitting...' : 'APPLY'}
-          </button>
-
-          <button type="button" className="gatepass-back-link" onClick={() => navigate('/student/gatepass')}>
-            Back
+          <button type="submit" className="lg-submit-btn" disabled={loading}>
+            {loading ? 'Submitting...' : '📄 Submit Application'}
           </button>
         </form>
+
         <PopupBox message={popupMessage} onClose={() => {
           setPopupMessage('');
           if (submitSuccess) {
@@ -319,6 +300,11 @@ const LocalGatepass = () => {
           }
         }} />
       </main>
+
+      {/* Footer */}
+      <div className="sd-footer">
+        GoThru v1.1 • RGIPT Campus Access System
+      </div>
     </div>
   );
 };

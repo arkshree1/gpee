@@ -46,7 +46,7 @@ exports.apply = async (req, res) => {
   const userId = req.user.userId;
   const { purpose, place } = req.body;
 
-  const student = await User.findById(userId).select('presence role outPurpose outPlace outTime activeGatePassNo');
+  const student = await User.findById(userId).select('presence role outPurpose outPlace outTime localActiveGPNo OSActiveGPNo');
   if (!student) return res.status(404).json({ message: 'Student not found' });
 
   // Prevent applying if an active pending request exists.
@@ -83,9 +83,9 @@ exports.apply = async (req, res) => {
       return res.status(400).json({ message: 'No previous exit details found for entry request' });
     }
 
-    // Check if student has an active gatepass - if so, include gatepass info
-    if (student.activeGatePassNo) {
-      const gatepass = await LocalGatepass.findOne({ gatePassNo: student.activeGatePassNo });
+    // Check if student has an active local gatepass - if so, include gatepass info
+    if (student.localActiveGPNo) {
+      const gatepass = await LocalGatepass.findOne({ gatePassNo: student.localActiveGPNo });
       if (gatepass) {
         gatePassNo = gatepass.gatePassNo;
         gatepassId = gatepass._id;
@@ -169,7 +169,7 @@ const LocalGatepass = require('../models/LocalGatepass');
 exports.getMyGatepasses = async (req, res) => {
   const userId = req.user.userId;
 
-  const student = await User.findById(userId).select('presence activeGatePassNo');
+  const student = await User.findById(userId).select('presence localActiveGPNo');
 
   const gatepasses = await LocalGatepass.find({ student: userId })
     .sort({ createdAt: -1 })
@@ -178,7 +178,7 @@ exports.getMyGatepasses = async (req, res) => {
   return res.json({
     gatepasses,
     presence: student?.presence || 'inside',
-    activeGatePassNo: student?.activeGatePassNo || null,
+    localActiveGPNo: student?.localActiveGPNo || null,
   });
 };
 
@@ -304,7 +304,7 @@ exports.applyGatepassEntry = async (req, res) => {
     return res.status(400).json({ message: 'Gatepass ID is required' });
   }
 
-  const student = await User.findById(userId).select('presence activeGatePassNo outPurpose outPlace outTime');
+  const student = await User.findById(userId).select('presence localActiveGPNo outPurpose outPlace outTime');
   if (!student) return res.status(404).json({ message: 'Student not found' });
 
   if (student.presence !== 'outside') {
@@ -365,7 +365,7 @@ exports.applyGatepassEntry = async (req, res) => {
   }
 
   // Verify this is the active gatepass the student used to exit
-  if (student.activeGatePassNo !== gatepass.gatePassNo) {
+  if (student.localActiveGPNo !== gatepass.gatePassNo) {
     return res.status(400).json({ message: 'This is not your active gatepass for entry' });
   }
 
@@ -540,7 +540,7 @@ exports.applyOSGatepassEntry = async (req, res) => {
     return res.status(400).json({ message: 'Gatepass ID is required' });
   }
 
-  const student = await User.findById(userId).select('presence activeGatePassNo outPurpose outPlace');
+  const student = await User.findById(userId).select('presence OSActiveGPNo outPurpose outPlace');
   if (!student) return res.status(404).json({ message: 'Student not found' });
 
   if (student.presence !== 'outside') {
@@ -598,7 +598,7 @@ exports.applyOSGatepassEntry = async (req, res) => {
   }
 
   // Verify this is the active gatepass
-  if (student.activeGatePassNo !== gatepass.gatePassNo) {
+  if (student.OSActiveGPNo !== gatepass.gatePassNo) {
     return res.status(400).json({ message: 'This is not your active gatepass for entry' });
   }
 

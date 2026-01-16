@@ -155,6 +155,7 @@ exports.decideGatepass = async (req, res) => {
         // Final approval - gatepass is approved
         gatepass.finalStatus = 'approved';
         gatepass.currentStage = 'completed';
+        gatepass.utilizationStatus = 'pending'; // Awaiting student exit
         // Generate sequential 5-digit gatepass number (OS-00001, OS-00002, etc.)
         const lastGatepass = await OutstationGatepass.findOne({ gatePassNo: { $ne: null } })
             .sort({ gatePassNo: -1 })

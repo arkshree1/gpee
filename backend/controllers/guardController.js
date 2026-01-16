@@ -170,40 +170,50 @@ exports.decide = async (req, res) => {
       student.outPurpose = requestDoc.purpose;
       student.outPlace = requestDoc.place;
       student.outTime = decidedAt;
-      // If this is a gatepass exit, store the gatepass number
+      // If this is a gatepass exit, store the gatepass number in the appropriate field
       if (requestDoc.gatePassNo) {
-        student.activeGatePassNo = requestDoc.gatePassNo;
-        // If it's an OS gatepass, record the actual exit time
         if (requestDoc.gatePassNo.startsWith('OS-')) {
+          student.OSActiveGPNo = requestDoc.gatePassNo;
+          // Record the actual exit time for OS gatepass and set status to in_use
           const OutstationGatepass = require('../models/OutstationGatepass');
           await OutstationGatepass.findOneAndUpdate(
             { gatePassNo: requestDoc.gatePassNo },
-            { actualExitAt: decidedAt }
+            { actualExitAt: decidedAt, utilizationStatus: 'in_use' }
+          );
+        } else if (requestDoc.gatePassNo.startsWith('L-')) {
+          student.localActiveGPNo = requestDoc.gatePassNo;
+          // Set local gatepass status to in_use
+          const LocalGatepass = require('../models/LocalGatepass');
+          await LocalGatepass.findOneAndUpdate(
+            { gatePassNo: requestDoc.gatePassNo },
+            { utilizationStatus: 'in_use' }
           );
         }
       }
     } else if (requestDoc.direction === 'entry') {
       // Mark gatepass as utilized if student was using one
-      if (student.activeGatePassNo) {
-        // Check if it's an Outstation gatepass (starts with OS-) or Local gatepass (starts with L-)
-        if (student.activeGatePassNo.startsWith('OS-')) {
-          const OutstationGatepass = require('../models/OutstationGatepass');
-          await OutstationGatepass.findOneAndUpdate(
-            { gatePassNo: student.activeGatePassNo },
-            { utilized: true, actualEntryAt: decidedAt }
-          );
-        } else {
-          const LocalGatepass = require('../models/LocalGatepass');
-          await LocalGatepass.findOneAndUpdate(
-            { gatePassNo: student.activeGatePassNo },
-            { utilized: true }
-          );
-        }
+      // Check Outstation gatepass
+      if (student.OSActiveGPNo) {
+        const OutstationGatepass = require('../models/OutstationGatepass');
+        await OutstationGatepass.findOneAndUpdate(
+          { gatePassNo: student.OSActiveGPNo },
+          { utilized: true, actualEntryAt: decidedAt, utilizationStatus: 'completed' }
+        );
+      }
+      // Check Local gatepass
+      if (student.localActiveGPNo) {
+        const LocalGatepass = require('../models/LocalGatepass');
+        await LocalGatepass.findOneAndUpdate(
+          { gatePassNo: student.localActiveGPNo },
+          { utilized: true, utilizationStatus: 'completed' }
+        );
       }
       student.outPurpose = null;
       student.outPlace = null;
       student.outTime = null;
-      student.activeGatePassNo = null; // Clear on entry
+      // Clear both gatepass fields on entry
+      student.localActiveGPNo = null;
+      student.OSActiveGPNo = null;
     }
     await student.save();
   }
@@ -452,11 +462,30 @@ exports.manualEntry = async (req, res) => {
   const purpose = student.outPurpose || undefined;
   const place = student.outPlace || undefined;
 
+  // Mark gatepasses as utilized if student was using one
+  if (student.OSActiveGPNo) {
+    const OutstationGatepass = require('../models/OutstationGatepass');
+    await OutstationGatepass.findOneAndUpdate(
+      { gatePassNo: student.OSActiveGPNo },
+      { utilized: true, actualEntryAt: decidedAt, utilizationStatus: 'completed' }
+    );
+  }
+  if (student.localActiveGPNo) {
+    const LocalGatepass = require('../models/LocalGatepass');
+    await LocalGatepass.findOneAndUpdate(
+      { gatePassNo: student.localActiveGPNo },
+      { utilized: true, utilizationStatus: 'completed' }
+    );
+  }
+
   // Update student presence and out* fields exactly like entry approval via QR
   student.presence = computeNewPresence(student.presence, 'entry');
   student.outPurpose = null;
   student.outPlace = null;
   student.outTime = null;
+  // Clear both gatepass fields
+  student.localActiveGPNo = null;
+  student.OSActiveGPNo = null;
   await student.save();
 
   // Find latest approved exit log for this student (base document)

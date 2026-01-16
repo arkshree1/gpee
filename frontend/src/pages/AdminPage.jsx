@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   getAdminOverview,
@@ -6,10 +6,15 @@ import {
   getStudentsOutside,
   getLocalGatepassExits,
   getOutstationGatepassExits,
-  getDetailedLogs
+  getDetailedLogs,
+  getAllStudents,
+  searchAdminStudents,
+  getStudentLogsById
 } from '../api/api';
 import LiveActivityLogs from '../components/LiveActivityLogs';
+import DonutChart from '../components/DonutChart';
 import '../styles/admin.css';
+import '../styles/student.css';
 
 const AdminPage = () => {
   const navigate = useNavigate();
@@ -29,6 +34,27 @@ const AdminPage = () => {
 
   // Mobile sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Student search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [recentSearches, setRecentSearches] = useState([]);
+
+  // Student detail popup state
+  const [showStudentDetail, setShowStudentDetail] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [studentLogs, setStudentLogs] = useState([]);
+  const [studentLogsLoading, setStudentLogsLoading] = useState(false);
+
+  // Load recent searches from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('adminRecentSearches');
+    if (saved) {
+      setRecentSearches(JSON.parse(saved));
+    }
+  }, []);
 
   // Handle nav item click (close sidebar on mobile after selection)
   const handleNavClick = (pageId) => {
@@ -68,6 +94,17 @@ const AdminPage = () => {
     }
   }, [activePage]);
 
+  // Add admin-page-active class to prevent scrolling on admin pages only
+  useEffect(() => {
+    document.documentElement.classList.add('admin-page-active');
+    document.body.classList.add('admin-page-active');
+
+    return () => {
+      document.documentElement.classList.remove('admin-page-active');
+      document.body.classList.remove('admin-page-active');
+    };
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     navigate('/login');
@@ -81,6 +118,10 @@ const AdminPage = () => {
     try {
       let res;
       switch (type) {
+        case 'total':
+          setModalTitle('All Students');
+          res = await getAllStudents();
+          break;
         case 'inside':
           setModalTitle('Students Inside Campus');
           res = await getStudentsInside();
@@ -123,14 +164,75 @@ const AdminPage = () => {
     });
   };
 
+  // Debounced search handler
+  const handleSearchChange = useCallback(async (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    setShowSuggestions(true);
+
+    if (value.trim().length < 1) {
+      setSearchResults([]);
+      return;
+    }
+
+    setSearchLoading(true);
+    try {
+      const res = await searchAdminStudents(value);
+      setSearchResults(res.data.students || []);
+    } catch (err) {
+      console.error('Search error:', err);
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  }, []);
+
+  // Handle student selection from suggestions
+  const handleStudentSelect = async (student) => {
+    setShowSuggestions(false);
+    setSearchQuery('');
+    setSearchResults([]);
+
+    // Add to recent searches
+    const updatedRecent = [student, ...recentSearches.filter(s => s._id !== student._id)].slice(0, 5);
+    setRecentSearches(updatedRecent);
+    localStorage.setItem('adminRecentSearches', JSON.stringify(updatedRecent));
+
+    // Load student details and logs
+    setSelectedStudent(student);
+    setShowStudentDetail(true);
+    setStudentLogsLoading(true);
+
+    try {
+      const res = await getStudentLogsById(student._id);
+      setStudentLogs(res.data.logs || []);
+      // Update student with full details
+      if (res.data.student) {
+        setSelectedStudent(res.data.student);
+      }
+    } catch (err) {
+      console.error('Failed to load student logs:', err);
+      setStudentLogs([]);
+    } finally {
+      setStudentLogsLoading(false);
+    }
+  };
+
+  // Handle search button click
+  const handleSearchSubmit = () => {
+    if (searchResults.length > 0) {
+      handleStudentSelect(searchResults[0]);
+    }
+  };
+
   // Calculate total students
   const totalStudents = (overview?.studentsInside || 0) + (overview?.studentsOutside || 0);
 
   // Sidebar navigation items
   const navItems = [
     { id: 'dashboard', icon: '◫', label: 'Dashboard' },
-    { id: 'students', icon: '◑', label: 'Students' },
-    { id: 'gatepasses', icon: '▤', label: 'Gatepasses' },
+    { id: 'students', icon: '◑', label: 'Logs' },
+    { id: 'gatepasses', icon: '▤', label: 'Search' },
     { id: 'settings', icon: '⚙', label: 'Settings' },
   ];
 
@@ -154,29 +256,70 @@ const AdminPage = () => {
               <p className="admin-college-subtitle-hi">(संसद के अधिनियम द्वारा राष्ट्रीय महत्व का संस्थान)</p>
             </div>
 
-            {/* Total Students */}
-            <div className="admin-total-students">
-              <div className="admin-total-label">Total Students</div>
-              <div className="admin-total-value">{totalStudents}</div>
-            </div>
+            {/* Dashboard Main Section: Donut + Metrics */}
+            <div className="admin-dashboard-main">
+              {/* Left: Donut Chart Container */}
+              <div className="admin-donut-container">
+                <DonutChart
+                  size={240}
+                  strokeWidth={32}
+                  totalStudents={totalStudents}
+                  data={[
+                    {
+                      value: overview?.studentsInside || 0,
+                      color: '#34B1AA',
+                      label: 'Students Inside Campus'
+                    },
+                    {
+                      value: overview?.normalExits || 0,
+                      color: '#F29F67',
+                      label: 'Students Outside (Normal)'
+                    },
+                    {
+                      value: overview?.localGatepassExits || 0,
+                      color: '#3B8FF3',
+                      label: 'Students Outside (Local Gatepass)'
+                    },
+                    {
+                      value: overview?.outstationGatepassExits || 0,
+                      color: '#1E1E2C',
+                      label: 'Students Outside (Outstation Gatepass)'
+                    }
+                  ]}
+                />
+              </div>
 
-            {/* Stats Grid */}
-            <div className="admin-stats-grid">
-              <div className="admin-stat-card green clickable" onClick={() => handleCardClick('inside')}>
-                <div className="admin-stat-value">{overview?.studentsInside || 0}</div>
-                <div className="admin-stat-label">Students Inside</div>
-              </div>
-              <div className="admin-stat-card red clickable" onClick={() => handleCardClick('outside')}>
-                <div className="admin-stat-value">{overview?.studentsOutside || 0}</div>
-                <div className="admin-stat-label">Students Outside</div>
-              </div>
-              <div className="admin-stat-card orange clickable" onClick={() => handleCardClick('local')}>
-                <div className="admin-stat-value">{overview?.localGatepassExits || 0}</div>
-                <div className="admin-stat-label">Local Gatepass Exits</div>
-              </div>
-              <div className="admin-stat-card purple clickable" onClick={() => handleCardClick('outstation')}>
-                <div className="admin-stat-value">{overview?.outstationGatepassExits || 0}</div>
-                <div className="admin-stat-label">Outstation Gatepass Exits</div>
+              {/* Right: Metrics Panel - Vertical Stack */}
+              <div className="admin-metrics-panel">
+                {/* Total Students */}
+                <div className="admin-metric-card clickable" style={{ borderLeft: '4px solid #6366f1' }} onClick={() => handleCardClick('total')}>
+                  <div className="admin-metric-title">TOTAL STUDENTS</div>
+                  <div className="admin-metric-value" style={{ color: '#6366f1' }}>{totalStudents}</div>
+                </div>
+
+                {/* Students In Campus */}
+                <div className="admin-metric-card clickable" style={{ borderLeft: '4px solid #34B1AA' }} onClick={() => handleCardClick('inside')}>
+                  <div className="admin-metric-title">STUDENTS IN CAMPUS</div>
+                  <div className="admin-metric-value" style={{ color: '#34B1AA' }}>{overview?.studentsInside || 0}</div>
+                </div>
+
+                {/* Students Outside - Normal */}
+                <div className="admin-metric-card clickable" style={{ borderLeft: '4px solid #F29F67' }} onClick={() => handleCardClick('outside')}>
+                  <div className="admin-metric-title">STUDENTS OUTSIDE – NORMAL EXIT</div>
+                  <div className="admin-metric-value" style={{ color: '#F29F67' }}>{overview?.normalExits || 0}</div>
+                </div>
+
+                {/* Students Outside - Local GP */}
+                <div className="admin-metric-card clickable" style={{ borderLeft: '4px solid #3B8FF3' }} onClick={() => handleCardClick('local')}>
+                  <div className="admin-metric-title">STUDENT OUT ON LOCAL GATEPASS</div>
+                  <div className="admin-metric-value" style={{ color: '#3B8FF3' }}>{overview?.localGatepassExits || 0}</div>
+                </div>
+
+                {/* Students Outside - OS GP */}
+                <div className="admin-metric-card clickable" style={{ borderLeft: '4px solid #1E1E2C' }} onClick={() => handleCardClick('outstation')}>
+                  <div className="admin-metric-title">STUDENT OUT ON OUTSTATION GATEPASS</div>
+                  <div className="admin-metric-value" style={{ color: '#1E1E2C' }}>{overview?.outstationGatepassExits || 0}</div>
+                </div>
               </div>
             </div>
           </div>
@@ -284,6 +427,72 @@ const AdminPage = () => {
       );
     }
 
+    // Gatepasses page - Student Search
+    if (activePage === 'gatepasses') {
+      return (
+        <div className="admin-search-page">
+          {/* Search Input Section */}
+          <div className="admin-search-section">
+            <h3 className="admin-search-title">Search Student</h3>
+            <div className="admin-search-box">
+              <input
+                type="text"
+                className="admin-search-input"
+                placeholder="Search by name or roll number..."
+                value={searchQuery}
+                onChange={handleSearchChange}
+                onFocus={() => setShowSuggestions(true)}
+              />
+              <button className="admin-search-btn" onClick={() => handleSearchSubmit()}>
+                <span>🔍</span> Search
+              </button>
+            </div>
+
+            {/* Suggestions Dropdown - appears on focus when typing */}
+            {showSuggestions && searchResults.length > 0 && (
+              <div className="admin-suggestions-dropdown">
+                {searchLoading && <div className="admin-suggestion-loading">Searching...</div>}
+                {searchResults.map((student) => (
+                  <div
+                    key={student._id}
+                    className="admin-suggestion-item"
+                    onClick={() => handleStudentSelect(student)}
+                  >
+                    <span className="suggestion-name">{student.name}</span>
+                    <span className="suggestion-roll">{student.rollnumber}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Recent Searches - Always visible below search box */}
+          {searchQuery === '' && recentSearches.length > 0 && (
+            <div className="admin-recent-searches">
+              <div className="recent-searches-header">Recent Searches</div>
+              <div className="recent-searches-list">
+                {recentSearches.map((student) => (
+                  <div
+                    key={student._id}
+                    className="recent-search-item"
+                    onClick={() => handleStudentSelect(student)}
+                  >
+                    <span className="suggestion-name">{student.name}</span>
+                    <span className="suggestion-roll">{student.rollnumber}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Click outside to close suggestions */}
+          {showSuggestions && searchResults.length > 0 && (
+            <div className="admin-suggestions-backdrop" onClick={() => setShowSuggestions(false)} />
+          )}
+        </div>
+      );
+    }
+
     // Placeholder for other pages
     return (
       <div className="admin-placeholder">
@@ -333,17 +542,26 @@ const AdminPage = () => {
 
         {/* Sidebar */}
         <nav className={`admin-sidebar ${sidebarOpen ? 'open' : ''}`}>
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              className={`admin-nav-item ${activePage === item.id ? 'active' : ''}`}
-              onClick={() => handleNavClick(item.id)}
-              title={item.label}
-            >
-              <span className="admin-nav-icon">{item.icon}</span>
-              <span className="admin-nav-label">{item.label}</span>
-            </button>
-          ))}
+          {/* Sidebar Brand Header */}
+          <div className="admin-sidebar-brand">
+            <span className="admin-sidebar-brand-icon">☰</span>
+            <span className="admin-sidebar-brand-text">GoThru</span>
+          </div>
+
+          {/* Navigation Items */}
+          <div className="admin-sidebar-nav">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                className={`admin-nav-item ${activePage === item.id ? 'active' : ''}`}
+                onClick={() => handleNavClick(item.id)}
+                title={item.label}
+              >
+                <span className="admin-nav-icon">{item.icon}</span>
+                <span className="admin-nav-label">{item.label}</span>
+              </button>
+            ))}
+          </div>
         </nav>
 
         {/* Main Content */}
@@ -376,8 +594,7 @@ const AdminPage = () => {
                     <tr>
                       <th>Name</th>
                       <th>Roll Number</th>
-                      <th>Room</th>
-                      <th>Hostel</th>
+                      <th>Email</th>
                       <th>Contact</th>
                     </tr>
                   </thead>
@@ -386,14 +603,126 @@ const AdminPage = () => {
                       <tr key={student._id || idx}>
                         <td>{student.name}</td>
                         <td>{student.rollnumber}</td>
-                        <td>{student.roomNumber || '--'}</td>
-                        <td>{student.hostelName || '--'}</td>
+                        <td>{student.email || '--'}</td>
                         <td>{student.contactNumber || '--'}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Student Detail Popup */}
+      {showStudentDetail && selectedStudent && (
+        <div className="admin-modal-overlay student-detail-overlay" onClick={() => setShowStudentDetail(false)}>
+          <div className="admin-student-detail-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="student-detail-close" onClick={() => setShowStudentDetail(false)}>×</button>
+
+            <div className="student-detail-content">
+              {/* Student ID Card - using same structure as StudentProfile */}
+              <div className="id-card admin-id-card">
+                {/* Header Section with College Name */}
+                <div className="id-card-header">
+                  <div className="id-card-logo-section">
+                    <img src="/rgipt-logo.png" alt="RGIPT Logo" className="id-card-logo" onError={(e) => { e.target.style.display = 'none'; }} />
+                    <div className="id-card-logo-text">RGIPT X GoThru</div>
+                  </div>
+                  <div className="id-card-college-info">
+                    <div className="id-card-college-name-en">RAJIV GANDHI INSTITUTE OF PETROLEUM TECHNOLOGY</div>
+                    <div className="id-card-college-subtitle">(An Institute of National Importance Established Under an Act of Parliament)</div>
+                  </div>
+                </div>
+
+                {/* Tricolor Line */}
+                <div className="id-card-tricolor">
+                  <div className="tricolor-saffron"></div>
+                  <div className="tricolor-white"></div>
+                  <div className="tricolor-green"></div>
+                </div>
+
+                {/* Card Title */}
+                <div className="id-card-title">Student GoThru Pass Card</div>
+
+                {/* Main Content */}
+                <div className="id-card-body">
+                  <div className="id-card-photo-section">
+                    <div className="id-card-photo-frame">
+                      {selectedStudent.imageUrl ? (
+                        <img src={selectedStudent.imageUrl.startsWith('http') ? selectedStudent.imageUrl : `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${selectedStudent.imageUrl}`} alt={selectedStudent.name} className="id-card-photo" />
+                      ) : (
+                        <div className="id-card-photo-placeholder"><span>📷</span></div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="id-card-details">
+                    <div className="id-card-row">
+                      <span className="id-card-label">Name</span>
+                      <span className="id-card-colon">:</span>
+                      <span className="id-card-value">{selectedStudent.name}</span>
+                    </div>
+                    <div className="id-card-row">
+                      <span className="id-card-label">Room & Hostel</span>
+                      <span className="id-card-colon">:</span>
+                      <span className="id-card-value">{selectedStudent.roomNumber || '--'}, {selectedStudent.hostelName || '--'}</span>
+                    </div>
+                    <div className="id-card-row">
+                      <span className="id-card-label">Contact No.</span>
+                      <span className="id-card-colon">:</span>
+                      <span className="id-card-value">{selectedStudent.contactNumber || '--'}</span>
+                    </div>
+                    <div className="id-card-row">
+                      <span className="id-card-label">Roll No.</span>
+                      <span className="id-card-colon">:</span>
+                      <span className="id-card-value">{selectedStudent.rollnumber?.toUpperCase()}</span>
+                    </div>
+                    <div className="id-card-row">
+                      <span className="id-card-label">Branch</span>
+                      <span className="id-card-colon">:</span>
+                      <span className="id-card-value">{selectedStudent.department || selectedStudent.branch || '--'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Entry-Exit Logs */}
+              <div className="student-logs-section">
+                <h4 className="student-logs-title">Entry-Exit History</h4>
+                <div className="student-logs-container">
+                  {studentLogsLoading ? (
+                    <div className="admin-modal-loading">Loading logs...</div>
+                  ) : studentLogs.length === 0 ? (
+                    <div className="admin-modal-empty">No entry-exit logs found</div>
+                  ) : (
+                    studentLogs.map((log) => (
+                      <div key={log.id} className={`student-log-card ${log.direction.toLowerCase()}`}>
+                        <div className={`log-direction-badge ${log.direction.toLowerCase()}`}>
+                          {log.direction}
+                        </div>
+                        <div className="log-card-details">
+                          <div className="log-detail-block">
+                            <span className="log-type-badge">{log.type}</span>
+                            <span className="log-time">{formatTime(log.timestamp)}</span>
+                          </div>
+                          <div className="log-detail-block">
+                            <div className="log-info">
+                              <span className="log-label">PLACE</span>
+                              <span className="log-value">{log.place}</span>
+                            </div>
+                            <div className="log-info">
+                              <span className="log-label">PURPOSE</span>
+                              <span className="log-value">{log.purpose}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>

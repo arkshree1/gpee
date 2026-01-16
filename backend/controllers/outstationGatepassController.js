@@ -102,7 +102,7 @@ const User = require('../models/User');
 exports.getMyOutstationGatepasses = async (req, res) => {
   const studentId = req.user.userId;
 
-  const student = await User.findById(studentId).select('presence activeGatePassNo');
+  const student = await User.findById(studentId).select('presence OSActiveGPNo');
 
   const gatepasses = await OutstationGatepass.find({ student: studentId })
     .sort({ createdAt: -1 })
@@ -111,6 +111,6 @@ exports.getMyOutstationGatepasses = async (req, res) => {
   return res.json({
     gatepasses,
     presence: student?.presence || 'inside',
-    activeGatePassNo: student?.activeGatePassNo || null,
+    OSActiveGPNo: student?.OSActiveGPNo || null,
   });
 };

@@ -72,6 +72,11 @@ export const getStudentsOutside = async () => apiClient.get('/api/admin/students
 export const getLocalGatepassExits = async () => apiClient.get('/api/admin/local-gatepass-exits');
 export const getOutstationGatepassExits = async () => apiClient.get('/api/admin/outstation-gatepass-exits');
 export const getDetailedLogs = async () => apiClient.get('/api/admin/detailed-logs');
+export const getAllStudents = async () => apiClient.get('/api/admin/all-students');
+export const searchAdminStudents = async (q) =>
+  apiClient.get('/api/admin/search-students', { params: { q } });
+export const getStudentLogsById = async (studentId) =>
+  apiClient.get(`/api/admin/student-logs/${studentId}`);
 
 // Hostel Office APIs
 export const getPendingGatepasses = async () => apiClient.get('/api/hostel-office/pending-gatepasses');

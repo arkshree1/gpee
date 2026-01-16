@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { applyGate, getStudentStatus, cancelGate } from '../api/api';
-import '../styles/student.css';
+import '../styles/student-dashboard.css';
 
 const msLeft = (expiresAt) => {
   if (!expiresAt) return 0;
@@ -26,9 +26,8 @@ const StudentApply = () => {
   const [apiError, setApiError] = useState('');
 
   const [qr, setQr] = useState(null);
-  // qr = { qrDataUrl, expiresAt, requestId }
-
   const [nowTick, setNowTick] = useState(0);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   useEffect(() => {
     const id = setInterval(() => setNowTick((x) => x + 1), 500);
@@ -41,49 +40,59 @@ const StudentApply = () => {
         const res = await getStudentStatus();
         setDirection(res.data.nextAction);
       } catch {
-        // ignore; backend will reject apply anyway
+        // ignore
       }
     })();
   }, []);
 
-  // After QR is issued, poll status so we can return to home when guard scans/decides
   useEffect(() => {
     if (!qr) return undefined;
-
     const interval = setInterval(async () => {
       try {
         const res = await getStudentStatus();
-        const data = res.data;
-        if (!data.hasPendingRequest) {
+        if (!res.data.hasPendingRequest) {
           navigate('/student');
         }
-      } catch (e) {
-        // ignore polling errors
-      }
+      } catch (e) { }
     }, 2000);
-
     return () => clearInterval(interval);
   }, [qr, navigate]);
 
-  // recompute on tick so countdown updates.
+  useEffect(() => {
+    if (!qr) return undefined;
+    window.history.pushState({ qrScreen: true }, '');
+    const handlePopState = (event) => {
+      event.preventDefault();
+      setShowConfirmModal(true);
+      window.history.pushState({ qrScreen: true }, '');
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [qr]);
+
   // eslint-disable-next-line no-unused-vars
   const _tick = nowTick;
   const remaining = msLeft(qr?.expiresAt);
   const expired = qr ? remaining <= 0 : false;
 
-  const handleDismiss = async () => {
+  const confirmDismiss = async () => {
+    setShowConfirmModal(false);
     if (!qr) {
       navigate('/student');
       return;
     }
-
     try {
       await cancelGate();
-    } catch (e) {
-      // Best-effort: even if cancel fails, go back; status polling on home will correct UI
-    }
-
+    } catch (e) { }
     navigate('/student');
+  };
+
+  const handleDismissClick = () => {
+    if (!qr) {
+      navigate('/student');
+      return;
+    }
+    setShowConfirmModal(true);
   };
 
   const doApply = async () => {
@@ -91,8 +100,6 @@ const StudentApply = () => {
     const trimmedPurpose = purpose.trim();
     const trimmedPlace = place.trim();
 
-    // For exit we require purpose/place from user. For entry, backend will
-    // ignore these and use stored outPurpose/outPlace.
     if (direction === 'exit' && (!trimmedPurpose || !trimmedPlace)) {
       setApiError('Purpose and place are required');
       return;
@@ -114,83 +121,145 @@ const StudentApply = () => {
   };
 
   const isExit = direction === 'exit';
-  const title = isExit ? (qr ? 'Applying for Exit' : 'Apply for Exit') : direction === 'entry' ? (qr ? 'Applying for Entry' : 'Apply for Entry') : 'Apply';
+  const title = isExit
+    ? (qr ? 'Exit QR Generated' : 'Apply for Exit')
+    : direction === 'entry'
+      ? (qr ? 'Entry QR Generated' : 'Apply for Entry')
+      : 'Apply';
 
   return (
-    <div className="student-shell">
-      <header className="student-header">
-        <button className="student-back" type="button" onClick={() => navigate('/student')}>
-          Back
-        </button>
-        <div>
-          <div className="brand">GoThru</div>
-          <div className="sub">by Watchr</div>
+    <div className="sd-shell">
+      {/* Header */}
+      <header className="sd-header">
+        <div className="sd-header-brand">
+          <span className="sd-logo">GoThru</span>
+          <span className="sd-logo-sub">by Watchr</span>
         </div>
+        <button
+          className="sa-back-btn"
+          onClick={() => qr ? handleDismissClick() : navigate('/student')}
+        >
+          Back →
+        </button>
       </header>
 
-      <main className="student-main">
-        <h1 className="student-title">{title}</h1>
+      <main className="sd-main sa-main">
+        <h1 className="sa-title">{title}</h1>
 
+        {/* Form - before QR */}
         {!qr && isExit && (
-          <div className="student-form">
-            <label className="student-label">
-              Enter your Purpose
-              <input className="student-input" value={purpose} onChange={(e) => setPurpose(e.target.value)} />
-            </label>
+          <div className="sa-form">
+            <div className="sa-field">
+              <label className="sa-label">Enter your Purpose</label>
+              <input
+                className="sa-input"
+                value={purpose}
+                onChange={(e) => setPurpose(e.target.value)}
+                placeholder="e.g., Medical, Shopping, Personal"
+              />
+            </div>
 
-            <label className="student-label">
-              Enter Place
-              <input className="student-input" value={place} onChange={(e) => setPlace(e.target.value)} />
-            </label>
+            <div className="sa-field">
+              <label className="sa-label">Enter Place</label>
+              <input
+                className="sa-input"
+                value={place}
+                onChange={(e) => setPlace(e.target.value)}
+                placeholder="e.g., Market, Hospital, Home"
+              />
+            </div>
 
-            <button className="student-apply-btn" type="button" disabled={submitting} onClick={doApply}>
-              {submitting ? 'Applying...' : 'APPLY'}
-            </button>
-
-            {apiError && <div className="student-error">{apiError}</div>}
-          </div>
-        )}
-
-        {!qr && !isExit && (
-          <div className="student-form">
             <button
-              className="student-apply-btn"
+              className="sa-submit-btn"
               type="button"
               disabled={submitting}
               onClick={doApply}
             >
-              {submitting ? 'Applying...' : 'Generate Entry QR'}
+              {submitting ? 'Generating...' : '🚪 Generate Exit QR'}
             </button>
 
-            {apiError && <div className="student-error">{apiError}</div>}
+            {apiError && <div className="sa-error">{apiError}</div>}
           </div>
         )}
 
+        {/* Entry - just generate button */}
+        {!qr && !isExit && (
+          <div className="sa-form">
+            <p className="sa-info">Click below to generate your entry QR code.</p>
+            <button
+              className="sa-submit-btn"
+              type="button"
+              disabled={submitting}
+              onClick={doApply}
+            >
+              {submitting ? 'Generating...' : '🏠 Generate Entry QR'}
+            </button>
+            {apiError && <div className="sa-error">{apiError}</div>}
+          </div>
+        )}
+
+        {/* QR Display */}
         {qr && (
-          <div className="student-qr-section">
-            <div className="student-qr-card">
-              <div className="student-qr-top">Show this QR to the guard</div>
+          <div className="sa-qr-section">
+            <div className="sa-qr-card">
+              <div className="sa-qr-instruction">Show this QR to the guard</div>
               {expired ? (
-                <div className="student-expired">QR expired. Please apply again.</div>
+                <div className="sa-expired">
+                  ⏰ QR expired. Please apply again.
+                </div>
               ) : (
                 <>
-                  <img className="student-qr" src={qr.qrDataUrl} alt="Gate Pass QR" />
-                  <div className="student-timer">Expires in {formatMMSS(remaining)}</div>
+                  <img className="sa-qr-image" src={qr.qrDataUrl} alt="Gate Pass QR" />
+                  <div className="sa-timer">
+                    Expires in <span className="sa-timer-value">{formatMMSS(remaining)}</span>
+                  </div>
                 </>
               )}
               {!expired && (
                 <button
                   type="button"
-                  className="student-dismiss-btn"
-                  onClick={handleDismiss}
+                  className="sa-dismiss-btn"
+                  onClick={handleDismissClick}
                 >
-                  {isExit ? 'Not going outside? Dismiss QR' : 'Not going inside? Dismiss QR'}
+                  {isExit ? 'Not going outside? Cancel' : 'Not going inside? Cancel'}
                 </button>
               )}
             </div>
           </div>
         )}
       </main>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="sd-modal-overlay" onClick={() => setShowConfirmModal(false)}>
+          <div className="sd-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="sd-modal-close" onClick={() => setShowConfirmModal(false)}>×</button>
+            <h3 className="sd-modal-title">Are you sure?</h3>
+            <div className="sd-modal-content">
+              <p style={{ margin: 0, fontSize: '14px', color: '#555', lineHeight: 1.5 }}>
+                {isExit
+                  ? 'This will cancel your exit request and you will need to apply again.'
+                  : 'This will cancel your entry request and you will need to apply again.'
+                }
+              </p>
+            </div>
+            <div className="sa-confirm-actions">
+              <button
+                className="sa-confirm-btn no"
+                onClick={() => setShowConfirmModal(false)}
+              >
+                No, Keep QR
+              </button>
+              <button
+                className="sa-confirm-btn yes"
+                onClick={confirmDismiss}
+              >
+                Yes, Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

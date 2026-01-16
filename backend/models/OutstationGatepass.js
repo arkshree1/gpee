@@ -153,6 +153,11 @@ const outstationGatepassSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    utilizationStatus: {
+      type: String,
+      enum: ['pending', 'in_use', 'completed'],
+      default: 'pending',
+    },
   },
   {
     timestamps: true,

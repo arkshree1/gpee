@@ -61,10 +61,9 @@ const LiveActivityLogs = () => {
         <div className="live-logs-panel">
             {/* Header */}
             <div className="live-logs-header">
-                <span className="live-logs-title">Live Activity</span>
+                <span className="live-logs-title">LIVE ACTIVITY</span>
                 <span className="live-logs-indicator" title="Auto-refreshing every 5s">
                     <span className="live-logs-dot"></span>
-                    LIVE
                 </span>
             </div>
 
@@ -84,15 +83,18 @@ const LiveActivityLogs = () => {
 
                 {logs.map((log, index) => (
                     <div key={log.id || index} className="live-log-item">
-                        <div className="live-log-header">
+                        <span className="live-log-time">{formatTime(log.timestamp)}</span>
+                        <div className="live-log-timeline">
+                            <span className={`live-log-dot ${log.actionType === 'ENTRY' ? 'entry' : 'exit'}`}></span>
+                        </div>
+                        <div className="live-log-content">
                             <span className={`live-log-action ${log.actionType === 'ENTRY' ? 'entry' : 'exit'}`}>
                                 {log.actionType}
                             </span>
-                            <span className="live-log-time">{formatTime(log.timestamp)}</span>
-                        </div>
-                        <div className="live-log-student">
-                            <span className="live-log-name">{log.studentName}</span>
-                            <span className="live-log-roll">{log.rollNumber}</span>
+                            <div className="live-log-student">
+                                <span className="live-log-name">{log.studentName}</span>
+                                <span className="live-log-roll">{log.rollNumber}</span>
+                            </div>
                         </div>
                     </div>
                 ))}

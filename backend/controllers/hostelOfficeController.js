@@ -113,6 +113,10 @@ exports.decideGatepass = async (req, res) => {
     gatepass.status = decision;
     gatepass.decidedBy = hostelOfficeId;
     gatepass.decidedAt = new Date();
+    // Set utilizationStatus to 'pending' when approved (awaiting student exit)
+    if (decision === 'approved') {
+        gatepass.utilizationStatus = 'pending';
+    }
     await gatepass.save();
 
     return res.json({

@@ -178,6 +178,79 @@
   font-size: 14px;
 }
 
+/* Confirmation Modal */
+.student-confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.student-confirm-modal {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 320px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+}
+
+.student-confirm-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 12px;
+}
+
+.student-confirm-text {
+  font-size: 14px;
+  color: #555;
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+
+.student-confirm-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.student-confirm-btn {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.student-confirm-btn.no {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.student-confirm-btn.no:hover {
+  background: #e0e0e0;
+}
+
+.student-confirm-btn.yes {
+  background: #e74c3c;
+  color: #fff;
+}
+
+.student-confirm-btn.yes:hover {
+  background: #c0392b;
+}
+
 .student-history {
   margin-top: 2rem;
   width: 100%;

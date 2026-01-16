@@ -86,7 +86,12 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    activeGatePassNo: {
+    localActiveGPNo: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    OSActiveGPNo: {
       type: String,
       default: null,
       trim: true,

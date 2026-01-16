@@ -15,5 +15,8 @@ router.get('/students-inside', auth, requireRole(['admin']), asyncHandler(adminC
 router.get('/students-outside', auth, requireRole(['admin']), asyncHandler(adminController.getStudentsOutside));
 router.get('/local-gatepass-exits', auth, requireRole(['admin']), asyncHandler(adminController.getLocalGatepassExits));
 router.get('/outstation-gatepass-exits', auth, requireRole(['admin']), asyncHandler(adminController.getOutstationGatepassExits));
+router.get('/all-students', auth, requireRole(['admin']), asyncHandler(adminController.getAllStudents));
+router.get('/search-students', auth, requireRole(['admin']), asyncHandler(adminController.searchStudents));
+router.get('/student-logs/:studentId', auth, requireRole(['admin']), asyncHandler(adminController.getStudentLogs));
 
 module.exports = router;

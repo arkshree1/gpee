@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMyGatepasses, getMyOutstationGatepasses, applyGatepassExit, applyGatepassEntry, applyOSGatepassExit, applyOSGatepassEntry, cancelGate } from '../api/api';
 import PopupBox from './PopupBox';
-import '../styles/student.css';
+import '../styles/student-dashboard.css';
 
 const TrackGatepass = () => {
     const navigate = useNavigate();
@@ -13,27 +13,24 @@ const TrackGatepass = () => {
     const [error, setError] = useState('');
     const [popupMessage, setPopupMessage] = useState('');
 
-    // Student status
     const [presence, setPresence] = useState('inside');
-    const [activeGatePassNo, setActiveGatePassNo] = useState(null);
+    const [localActiveGPNo, setLocalActiveGPNo] = useState(null);
+    const [OSActiveGPNo, setOSActiveGPNo] = useState(null);
 
-    // QR State
     const [qrData, setQrData] = useState(null);
     const [qrLoading, setQrLoading] = useState(false);
     const [countdown, setCountdown] = useState(0);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
 
     const fetchGatepasses = async () => {
         try {
             setError('');
-            const [localRes, osRes] = await Promise.all([
-                getMyGatepasses(),
-                getMyOutstationGatepasses(),
-            ]);
+            const [localRes, osRes] = await Promise.all([getMyGatepasses(), getMyOutstationGatepasses()]);
             setLocalGatepasses(localRes.data.gatepasses || []);
             setOutstationGatepasses(osRes.data.gatepasses || []);
-            // Use OS presence if available, otherwise use local
             setPresence(osRes.data.presence || localRes.data.presence || 'inside');
-            setActiveGatePassNo(osRes.data.activeGatePassNo || localRes.data.activeGatePassNo || null);
+            setLocalActiveGPNo(localRes.data.localActiveGPNo || null);
+            setOSActiveGPNo(osRes.data.OSActiveGPNo || null);
         } catch (err) {
             setError(err?.response?.data?.message || 'Failed to fetch gatepasses');
         } finally {
@@ -48,7 +45,6 @@ const TrackGatepass = () => {
         return () => clearInterval(interval);
     }, [qrData]);
 
-    // Countdown timer for QR
     useEffect(() => {
         if (!qrData?.expiresAt) return;
         const updateCountdown = () => {
@@ -61,7 +57,6 @@ const TrackGatepass = () => {
         return () => clearInterval(interval);
     }, [qrData]);
 
-    // Auto-dismiss QR on presence change
     useEffect(() => {
         if (!qrData) return;
         if (qrData.direction === 'exit' && presence === 'outside') {
@@ -75,6 +70,19 @@ const TrackGatepass = () => {
             fetchGatepasses();
         }
     }, [presence, qrData]);
+
+    // Handle browser back button when QR is active
+    useEffect(() => {
+        if (!qrData) return;
+        const handlePopState = (e) => {
+            e.preventDefault();
+            window.history.pushState(null, '', window.location.pathname);
+            setShowConfirmModal(true);
+        };
+        window.history.pushState(null, '', window.location.pathname);
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [qrData]);
 
     const handleGenerateExitQR = async (gatepassId) => {
         setQrLoading(true);
@@ -100,7 +108,6 @@ const TrackGatepass = () => {
         }
     };
 
-    // OS Gatepass QR handlers
     const handleOSExitQR = async (gatepassId) => {
         setQrLoading(true);
         try {
@@ -129,8 +136,17 @@ const TrackGatepass = () => {
         try {
             await cancelGate();
             setQrData(null);
+            setShowConfirmModal(false);
         } catch (err) {
             setPopupMessage(err?.response?.data?.message || 'Failed to dismiss');
+        }
+    };
+
+    const handleBackClick = () => {
+        if (qrData) {
+            setShowConfirmModal(true);
+        } else {
+            navigate('/student');
         }
     };
 
@@ -151,109 +167,101 @@ const TrackGatepass = () => {
     };
 
     return (
-        <div className="student-shell">
-            <header className="student-header">
-                <button className="student-back" onClick={() => navigate('/student')}>← Back</button>
-                <div>
-                    <div className="brand">GoThru</div>
-                    <div className="sub">by Watchr</div>
+        <div className="sd-shell">
+            <header className="sd-header">
+                <div className="sd-header-brand">
+                    <span className="sd-logo">GoThru</span>
+                    <span className="sd-logo-sub">by Watchr</span>
                 </div>
+                <button className="sa-back-btn" onClick={handleBackClick}>Back →</button>
             </header>
 
-            <main className="student-main">
-                <h2 style={{ textAlign: 'center', marginBottom: '16px' }}>Track Gatepass</h2>
+            <main className="sd-main tg-main">
+                {/* QR Display - Full Screen Style (hides everything else) */}
+                {qrData ? (
+                    <>
+                        <div className="sa-qr-title">{qrData.direction === 'exit' ? 'Exit' : 'Entry'} QR Generated</div>
+                        <div className="sa-qr-card">
+                            <div className="sa-qr-label">SHOW THIS QR TO THE GUARD</div>
+                            <img src={qrData.qrDataUrl} alt="QR" className="sa-qr-img" />
+                            <div className="sa-qr-timer">Expires in <span className="sa-qr-time">{formatTime(countdown)}</span></div>
+                        </div>
+                        <button className="sa-cancel-btn" onClick={() => setShowConfirmModal(true)}>
+                            Not going outside? Cancel
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        <h1 className="tg-title">Gatepass Status</h1>
 
-                {/* Tabs */}
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', justifyContent: 'center' }}>
-                    <button
-                        onClick={() => setActiveTab('local')}
-                        style={{
-                            padding: '10px 24px',
-                            borderRadius: '20px',
-                            border: 'none',
-                            background: activeTab === 'local' ? 'rgba(153, 4, 182, 0.9)' : 'rgba(200,200,200,0.5)',
-                            color: activeTab === 'local' ? '#fff' : '#333',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                        }}
-                    >
-                        Local
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('outstation')}
-                        style={{
-                            padding: '10px 24px',
-                            borderRadius: '20px',
-                            border: 'none',
-                            background: activeTab === 'outstation' ? 'rgba(153, 4, 182, 0.9)' : 'rgba(200,200,200,0.5)',
-                            color: activeTab === 'outstation' ? '#fff' : '#333',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                        }}
-                    >
-                        Outstation
-                    </button>
-                </div>
+                        {/* Tabs */}
+                        <div className="tg-tabs">
+                            <button className={`tg-tab ${activeTab === 'local' ? 'active' : ''}`} onClick={() => setActiveTab('local')}>
+                                🏠 Local
+                            </button>
+                            <button className={`tg-tab ${activeTab === 'outstation' ? 'active' : ''}`} onClick={() => setActiveTab('outstation')}>
+                                ✈️ Outstation
+                            </button>
+                        </div>
 
-                {loading && <p>Loading gatepasses...</p>}
-                {error && <p style={{ color: '#b00020', fontWeight: 600 }}>{error}</p>}
+                        {loading && <p className="tg-loading">Loading gatepasses...</p>}
+                        {error && <p className="tg-error">{error}</p>}
 
-                {/* QR Display */}
-                {qrData && (
-                    <div className="student-qr-card" style={{ marginBottom: '20px' }}>
-                        <div className="student-qr-top">GATEPASS {qrData.direction?.toUpperCase()} QR - {qrData.gatePassNo}</div>
-                        <img src={qrData.qrDataUrl} alt="QR" className="student-qr" />
-                        <div className="student-timer">Expires in: {formatTime(countdown)}</div>
-                        <button className="student-dismiss-btn" onClick={handleDismissQR}>Dismiss</button>
-                    </div>
-                )}
+                        {/* Local Gatepasses Tab */}
+                        {activeTab === 'local' && (
+                            <LocalGatepassList
+                                gatepasses={localGatepasses}
+                                presence={presence}
+                                localActiveGPNo={localActiveGPNo}
+                                qrData={qrData}
+                                qrLoading={qrLoading}
+                                onExitQR={handleGenerateExitQR}
+                                onEntryQR={handleGenerateEntryQR}
+                                formatDate={formatDate}
+                                formatTime12hr={formatTime12hr}
+                            />
+                        )}
 
-                {/* Local Gatepasses Tab */}
-                {activeTab === 'local' && (
-                    <LocalGatepassList
-                        gatepasses={localGatepasses}
-                        presence={presence}
-                        activeGatePassNo={activeGatePassNo}
-                        qrData={qrData}
-                        qrLoading={qrLoading}
-                        onExitQR={handleGenerateExitQR}
-                        onEntryQR={handleGenerateEntryQR}
-                        formatDate={formatDate}
-                        formatTime12hr={formatTime12hr}
-                    />
-                )}
-
-                {/* Outstation Gatepasses Tab */}
-                {activeTab === 'outstation' && (
-                    <OutstationGatepassList
-                        gatepasses={outstationGatepasses}
-                        presence={presence}
-                        activeGatePassNo={activeGatePassNo}
-                        qrData={qrData}
-                        qrLoading={qrLoading}
-                        onExitQR={handleOSExitQR}
-                        onEntryQR={handleOSEntryQR}
-                        formatDate={formatDate}
-                        formatTime12hr={formatTime12hr}
-                    />
+                        {/* Outstation Gatepasses Tab */}
+                        {activeTab === 'outstation' && (
+                            <OutstationGatepassList
+                                gatepasses={outstationGatepasses}
+                                presence={presence}
+                                OSActiveGPNo={OSActiveGPNo}
+                                qrData={qrData}
+                                qrLoading={qrLoading}
+                                onExitQR={handleOSExitQR}
+                                onEntryQR={handleOSEntryQR}
+                                formatDate={formatDate}
+                                formatTime12hr={formatTime12hr}
+                            />
+                        )}
+                    </>
                 )}
 
                 <PopupBox message={popupMessage} onClose={() => setPopupMessage('')} />
             </main>
+
+            <div className="sd-footer">GoThru v1.1 • RGIPT Campus Access System</div>
+
+            {/* Confirmation Modal */}
+            {showConfirmModal && (
+                <div className="sd-modal-overlay">
+                    <div className="sa-confirm-modal">
+                        <div className="sa-confirm-title">Cancel QR?</div>
+                        <p className="sa-confirm-text">Are you sure you want to cancel this QR? You'll need to generate a new one.</p>
+                        <div className="sa-confirm-btns">
+                            <button className="sa-confirm-yes" onClick={handleDismissQR}>Yes, Cancel</button>
+                            <button className="sa-confirm-no" onClick={() => setShowConfirmModal(false)}>No, Keep QR</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
 
-// Local Gatepass List (existing functionality)
-const LocalGatepassList = ({ gatepasses, presence, activeGatePassNo, qrData, qrLoading, onExitQR, onEntryQR, formatDate, formatTime12hr }) => {
-    const getStatusColor = (status) => {
-        switch (status) {
-            case 'approved': return '#16a34a';
-            case 'denied': return '#dc2626';
-            default: return '#f59e0b';
-        }
-    };
-
+const LocalGatepassList = ({ gatepasses, presence, localActiveGPNo, qrData, qrLoading, onExitQR, onEntryQR, formatDate, formatTime12hr }) => {
     const hasGatepassExpired = (gp) => {
         if (!gp.dateIn || !gp.timeIn) return false;
         try {
@@ -266,50 +274,44 @@ const LocalGatepassList = ({ gatepasses, presence, activeGatePassNo, qrData, qrL
 
     const getGatepassAction = (gp) => {
         if (gp.status !== 'approved') return null;
-        if (presence === 'outside' && activeGatePassNo === gp.gatePassNo) return 'entry';
+        if (presence === 'outside' && localActiveGPNo === gp.gatePassNo) return 'entry';
         if (gp.utilized) return 'expired';
         if (presence === 'inside' && hasGatepassExpired(gp)) return 'expired';
         if (presence === 'inside') return 'exit';
         return null;
     };
 
-    if (gatepasses.length === 0) return <p style={{ opacity: 0.7, textAlign: 'center' }}>No local gatepasses found</p>;
+    if (gatepasses.length === 0) return <p className="tg-empty">No local gatepasses found</p>;
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div className="tg-list">
             {gatepasses.map((gp) => {
                 const action = getGatepassAction(gp);
+                const statusClass = gp.status === 'approved' ? 'approved' : gp.status === 'denied' ? 'denied' : 'pending';
                 return (
-                    <div key={gp._id} style={{
-                        background: gp.status === 'approved' ? 'rgba(200,240,200,0.9)' : gp.status === 'denied' ? 'rgba(255,200,200,0.9)' : 'rgba(255,240,200,0.9)',
-                        borderRadius: '14px', padding: '16px', border: '1px solid rgba(0,0,0,0.12)',
-                    }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                    <div key={gp._id} className={`tg-card ${statusClass}`}>
+                        <div className="tg-card-header">
                             <div>
-                                <div style={{ fontWeight: 700, fontSize: '16px' }}>{gp.gatePassNo}</div>
-                                <div style={{ fontSize: '12px', opacity: 0.8 }}>{gp.place}</div>
+                                <div className="tg-card-id">{gp.gatePassNo}</div>
+                                <div className="tg-card-place">{gp.place}</div>
                             </div>
-                            <span style={{ padding: '4px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: 700, color: '#fff', background: getStatusColor(gp.status) }}>
-                                {gp.status.toUpperCase()}
-                            </span>
+                            <span className={`tg-status-badge ${statusClass}`}>{gp.status.toUpperCase()}</span>
                         </div>
-                        <div style={{ fontSize: '12px', marginBottom: '10px' }}>
+                        <div className="tg-card-dates">
                             <div><b>Out:</b> {formatDate(gp.dateOut)} {formatTime12hr(gp.timeOut)}</div>
                             <div><b>In:</b> {formatDate(gp.dateIn)} {formatTime12hr(gp.timeIn)}</div>
                         </div>
                         {action === 'exit' && !qrData && (
-                            <button onClick={() => onExitQR(gp._id)} disabled={qrLoading} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: 'none', background: 'rgba(153,4,182,0.9)', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
-                                {qrLoading ? 'Generating...' : 'Generate QR for Exit'}
+                            <button className="tg-action-btn exit" onClick={() => onExitQR(gp._id)} disabled={qrLoading}>
+                                {qrLoading ? 'Generating...' : '🚪 Generate Exit QR'}
                             </button>
                         )}
                         {action === 'entry' && !qrData && (
-                            <button onClick={() => onEntryQR(gp._id)} disabled={qrLoading} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: 'none', background: 'rgba(22,163,74,0.9)', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
-                                {qrLoading ? 'Generating...' : 'Generate QR for Entry'}
+                            <button className="tg-action-btn entry" onClick={() => onEntryQR(gp._id)} disabled={qrLoading}>
+                                {qrLoading ? 'Generating...' : '🏠 Generate Entry QR'}
                             </button>
                         )}
-                        {action === 'expired' && (
-                            <div style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'rgba(100,100,100,0.8)', color: '#fff', fontWeight: 700, textAlign: 'center' }}>✓ Gatepass Utilized</div>
-                        )}
+                        {action === 'expired' && <div className="tg-utilized">✓ Gatepass Utilized</div>}
                     </div>
                 );
             })}
@@ -317,18 +319,17 @@ const LocalGatepassList = ({ gatepasses, presence, activeGatePassNo, qrData, qrL
     );
 };
 
-// Outstation Gatepass List with Progress Tracker and QR
-const OutstationGatepassList = ({ gatepasses, presence, activeGatePassNo, qrData, qrLoading, onExitQR, onEntryQR, formatDate, formatTime12hr }) => {
-    if (gatepasses.length === 0) return <p style={{ opacity: 0.7, textAlign: 'center' }}>No outstation gatepasses found</p>;
+const OutstationGatepassList = ({ gatepasses, presence, OSActiveGPNo, qrData, qrLoading, onExitQR, onEntryQR, formatDate, formatTime12hr }) => {
+    if (gatepasses.length === 0) return <p className="tg-empty">No outstation gatepasses found</p>;
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div className="tg-list">
             {gatepasses.map((gp) => (
                 <OutstationGatepassCard
                     key={gp._id}
                     gp={gp}
                     presence={presence}
-                    activeGatePassNo={activeGatePassNo}
+                    OSActiveGPNo={OSActiveGPNo}
                     qrData={qrData}
                     qrLoading={qrLoading}
                     onExitQR={onExitQR}
@@ -341,12 +342,10 @@ const OutstationGatepassList = ({ gatepasses, presence, activeGatePassNo, qrData
     );
 };
 
-// Individual OS Gatepass Card with Progress Tracker and QR buttons
-const OutstationGatepassCard = ({ gp, presence, activeGatePassNo, qrData, qrLoading, onExitQR, onEntryQR, formatDate, formatTime12hr }) => {
-    // Determine stage status
+const OutstationGatepassCard = ({ gp, presence, OSActiveGPNo, qrData, qrLoading, onExitQR, onEntryQR, formatDate, formatTime12hr }) => {
     const stages = [
         { id: 'applied', label: 'Applied', status: 'completed' },
-        { id: 'officeSecretary', label: 'Office Secretary', status: getStageStatus(gp, 'officeSecretary') },
+        { id: 'officeSecretary', label: 'Secretary', status: getStageStatus(gp, 'officeSecretary') },
         { id: 'dugc', label: 'DUGC', status: getStageStatus(gp, 'dugc') },
         { id: 'hod', label: 'HOD', status: getStageStatus(gp, 'hod') },
     ];
@@ -366,224 +365,64 @@ const OutstationGatepassCard = ({ gp, presence, activeGatePassNo, qrData, qrLoad
     const isRejected = gp.finalStatus === 'rejected';
     const isApproved = gp.finalStatus === 'approved';
 
-    // Determine QR action for approved gatepasses
     const getOSAction = () => {
         if (!isApproved) return null;
         if (gp.utilized) return 'utilized';
-
-        // Check if in-time has passed
         const inDateTime = new Date(`${gp.dateIn}T${gp.timeIn}`);
         const hasInTimePassed = Date.now() > inDateTime.getTime();
-
-        // If student is outside with this gatepass active - show entry button (no time limit)
-        if (presence === 'outside' && activeGatePassNo === gp.gatePassNo) {
-            return 'entry';
-        }
-
-        // If student is inside and in-time hasn't passed - show exit button
-        if (presence === 'inside' && !hasInTimePassed) {
-            return 'exit';
-        }
-
-        // If in-time has passed and student is inside, gatepass is expired
-        if (presence === 'inside' && hasInTimePassed) {
-            return 'expired';
-        }
-
+        if (presence === 'outside' && OSActiveGPNo === gp.gatePassNo) return 'entry';
+        if (presence === 'inside' && !hasInTimePassed) return 'exit';
+        if (presence === 'inside' && hasInTimePassed) return 'expired';
         return null;
     };
 
     const action = getOSAction();
+    const cardClass = isRejected ? 'denied' : isApproved ? 'approved' : 'pending';
 
     return (
-        <div style={{
-            background: isRejected ? 'rgba(255,200,200,0.9)' : isApproved ? 'rgba(200,240,200,0.9)' : '#fff',
-            borderRadius: '16px',
-            padding: '20px',
-            border: '1px solid rgba(0,0,0,0.1)',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-        }}>
-            {/* Header with Gatepass Number */}
-            <div style={{ marginBottom: '12px' }}>
-                {gp.gatePassNo && (
-                    <div style={{
-                        display: 'inline-block',
-                        fontSize: '12px',
-                        fontWeight: 700,
-                        padding: '4px 10px',
-                        background: 'rgba(153,4,182,0.15)',
-                        color: 'rgba(153,4,182,1)',
-                        borderRadius: '6px',
-                        marginBottom: '8px',
-                    }}>
-                        {gp.gatePassNo}
-                    </div>
-                )}
-                <div style={{ fontWeight: 700, fontSize: '16px' }}>{gp.reasonOfLeave}</div>
-            </div>
+        <div className={`tg-card os-card ${cardClass}`}>
+            {gp.gatePassNo && <div className="tg-os-badge">{gp.gatePassNo}</div>}
+            <div className="tg-os-reason">{gp.reasonOfLeave}</div>
 
-            {/* Details */}
-            <div style={{ fontSize: '13px', marginBottom: '16px', lineHeight: 1.6 }}>
+            <div className="tg-card-dates">
                 <div><b>Out:</b> {formatDate(gp.dateOut)} at {formatTime12hr(gp.timeOut)}</div>
                 <div><b>In:</b> {formatDate(gp.dateIn)} at {formatTime12hr(gp.timeIn)}</div>
-                <div><b>Leave Days:</b> {gp.leaveDays} days</div>
+                <div><b>Leave Days:</b> {gp.leaveDays}</div>
             </div>
 
-            {/* Progress Tracker */}
-            <div style={{ marginBottom: '16px' }}>
-                <ProgressTracker stages={stages} isRejected={isRejected} />
-            </div>
+            <ProgressTracker stages={stages} />
 
-            {/* Stage Details */}
-            <div style={{ fontSize: '12px', display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: action ? '16px' : '0' }}>
-                {stages.slice(1).map((stage) => {
-                    const stageData = gp.stageStatus?.[stage.id];
-                    if (!stageData?.status || stageData.status === 'pending') return null;
-                    return (
-                        <div key={stage.id} style={{
-                            padding: '6px 10px',
-                            borderRadius: '6px',
-                            background: stageData.status === 'approved' ? 'rgba(22,163,74,0.1)' : 'rgba(220,38,38,0.1)',
-                            color: stageData.status === 'approved' ? '#16a34a' : '#dc2626',
-                        }}>
-                            {stage.label}: {stageData.status === 'approved' ? '✓ Approved' : '✗ Rejected'}
-                        </div>
-                    );
-                })}
-            </div>
-
-            {/* QR Action Buttons */}
             {action === 'exit' && !qrData && (
-                <button
-                    onClick={() => onExitQR(gp._id)}
-                    disabled={qrLoading}
-                    style={{
-                        width: '100%',
-                        padding: '14px',
-                        borderRadius: '10px',
-                        border: 'none',
-                        background: 'rgba(153,4,182,0.9)',
-                        color: '#fff',
-                        fontWeight: 700,
-                        cursor: qrLoading ? 'not-allowed' : 'pointer',
-                        opacity: qrLoading ? 0.6 : 1,
-                    }}
-                >
-                    {qrLoading ? 'Generating...' : 'Generate Exit QR'}
+                <button className="tg-action-btn exit" onClick={() => onExitQR(gp._id)} disabled={qrLoading}>
+                    {qrLoading ? 'Generating...' : '🚪 Generate Exit QR'}
                 </button>
             )}
             {action === 'entry' && !qrData && (
-                <button
-                    onClick={() => onEntryQR(gp._id)}
-                    disabled={qrLoading}
-                    style={{
-                        width: '100%',
-                        padding: '14px',
-                        borderRadius: '10px',
-                        border: 'none',
-                        background: 'rgba(22,163,74,0.9)',
-                        color: '#fff',
-                        fontWeight: 700,
-                        cursor: qrLoading ? 'not-allowed' : 'pointer',
-                        opacity: qrLoading ? 0.6 : 1,
-                    }}
-                >
-                    {qrLoading ? 'Generating...' : 'Generate Entry QR'}
+                <button className="tg-action-btn entry" onClick={() => onEntryQR(gp._id)} disabled={qrLoading}>
+                    {qrLoading ? 'Generating...' : '🏠 Generate Entry QR'}
                 </button>
             )}
-            {action === 'utilized' && (
-                <div style={{
-                    width: '100%',
-                    padding: '14px',
-                    borderRadius: '10px',
-                    background: 'rgba(100,100,100,0.8)',
-                    color: '#fff',
-                    fontWeight: 700,
-                    textAlign: 'center',
-                }}>
-                    ✓ Gatepass Utilized
-                </div>
-            )}
-            {action === 'expired' && (
-                <div style={{
-                    width: '100%',
-                    padding: '14px',
-                    borderRadius: '10px',
-                    background: 'rgba(220,38,38,0.2)',
-                    color: '#dc2626',
-                    fontWeight: 700,
-                    textAlign: 'center',
-                }}>
-                    Gatepass Expired (In-time passed)
-                </div>
-            )}
+            {action === 'utilized' && <div className="tg-utilized">✓ Gatepass Utilized</div>}
+            {action === 'expired' && <div className="tg-expired-badge">Gatepass Expired</div>}
         </div>
     );
 };
 
-// Progress Tracker Component (like delivery tracker ss-2)
-const ProgressTracker = ({ stages, isRejected }) => {
+const ProgressTracker = ({ stages }) => {
     return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
-            {/* Background line */}
-            <div style={{
-                position: 'absolute',
-                top: '50%',
-                left: '20px',
-                right: '20px',
-                height: '3px',
-                background: '#e0e0e0',
-                transform: 'translateY(-50%)',
-                zIndex: 0,
-            }} />
-
-            {stages.map((stage, idx) => {
-                let bgColor = '#e0e0e0';
-                let iconColor = '#999';
-                let icon = null;
-
-                if (stage.status === 'completed' || stage.status === 'approved') {
-                    bgColor = '#16a34a';
-                    iconColor = '#fff';
-                    icon = '✓';
-                } else if (stage.status === 'rejected') {
-                    bgColor = '#dc2626';
-                    iconColor = '#fff';
-                    icon = '✗';
-                } else if (stage.status === 'current') {
-                    bgColor = 'rgba(153, 4, 182, 1)';
-                    iconColor = '#fff';
-                    icon = '●';
-                }
+        <div className="tg-progress">
+            <div className="tg-progress-line"></div>
+            {stages.map((stage) => {
+                let nodeClass = 'pending';
+                let icon = '';
+                if (stage.status === 'completed' || stage.status === 'approved') { nodeClass = 'completed'; icon = '✓'; }
+                else if (stage.status === 'rejected') { nodeClass = 'rejected'; icon = '✗'; }
+                else if (stage.status === 'current') { nodeClass = 'current'; icon = '●'; }
 
                 return (
-                    <div key={stage.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 1, flex: 1 }}>
-                        <div style={{
-                            width: '32px',
-                            height: '32px',
-                            borderRadius: '50%',
-                            background: bgColor,
-                            color: iconColor,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontWeight: 700,
-                            fontSize: '14px',
-                            border: '3px solid #fff',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
-                        }}>
-                            {icon}
-                        </div>
-                        <div style={{
-                            marginTop: '6px',
-                            fontSize: '10px',
-                            fontWeight: 600,
-                            textAlign: 'center',
-                            color: stage.status === 'current' ? 'rgba(153,4,182,1)' : stage.status === 'pending' ? '#999' : '#333',
-                            maxWidth: '70px',
-                        }}>
-                            {stage.label}
-                        </div>
+                    <div key={stage.id} className="tg-progress-step">
+                        <div className={`tg-progress-node ${nodeClass}`}>{icon}</div>
+                        <div className={`tg-progress-label ${nodeClass}`}>{stage.label}</div>
                     </div>
                 );
             })}

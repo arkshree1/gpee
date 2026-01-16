@@ -97,6 +97,11 @@ const localGatepassSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    utilizationStatus: {
+      type: String,
+      enum: ['pending', 'in_use', 'completed'],
+      default: 'pending',
+    },
   },
   {
     timestamps: true,
