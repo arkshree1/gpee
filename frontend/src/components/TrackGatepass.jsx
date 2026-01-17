@@ -234,6 +234,7 @@ const TrackGatepass = () => {
                                 onEntryQR={handleOSEntryQR}
                                 formatDate={formatDate}
                                 formatTime12hr={formatTime12hr}
+                                onShowPopup={setPopupMessage}
                             />
                         )}
                     </>
@@ -276,11 +277,12 @@ const LocalGatepassList = ({ gatepasses, presence, localActiveGPNo, qrData, qrLo
 
     const getGatepassAction = (gp) => {
         if (gp.status !== 'approved') return null;
+        if (gp.utilized) return 'utilized';
+        if (hasGatepassExpired(gp)) return 'expired';
+        // If student is outside with this gatepass, show entry button
         if (presence === 'outside' && localActiveGPNo === gp.gatePassNo) return 'entry';
-        if (gp.utilized) return 'expired';
-        if (presence === 'inside' && hasGatepassExpired(gp)) return 'expired';
-        if (presence === 'inside') return 'exit';
-        return null;
+        // Otherwise show exit button (for approved, non-utilized, non-expired gatepasses)
+        return 'exit';
     };
 
     if (gatepasses.length === 0) return <p className="tg-empty">No local gatepasses found</p>;
@@ -313,7 +315,8 @@ const LocalGatepassList = ({ gatepasses, presence, localActiveGPNo, qrData, qrLo
                                 {qrLoading ? 'Generating...' : '🏠 Generate Entry QR'}
                             </button>
                         )}
-                        {action === 'expired' && <div className="tg-utilized">✓ Gatepass Utilized</div>}
+                        {action === 'utilized' && <div className="tg-utilized">✓ Gatepass Utilized</div>}
+                        {action === 'expired' && <div className="tg-expired-badge">⏰ Gatepass Expired</div>}
                     </div>
                 );
             })}
@@ -321,7 +324,7 @@ const LocalGatepassList = ({ gatepasses, presence, localActiveGPNo, qrData, qrLo
     );
 };
 
-const OutstationGatepassList = ({ gatepasses, presence, OSActiveGPNo, qrData, qrLoading, onExitQR, onEntryQR, formatDate, formatTime12hr }) => {
+const OutstationGatepassList = ({ gatepasses, presence, OSActiveGPNo, qrData, qrLoading, onExitQR, onEntryQR, formatDate, formatTime12hr, onShowPopup }) => {
     if (gatepasses.length === 0) return <p className="tg-empty">No outstation gatepasses found</p>;
 
     return (
@@ -338,13 +341,14 @@ const OutstationGatepassList = ({ gatepasses, presence, OSActiveGPNo, qrData, qr
                     onEntryQR={onEntryQR}
                     formatDate={formatDate}
                     formatTime12hr={formatTime12hr}
+                    onShowPopup={onShowPopup}
                 />
             ))}
         </div>
     );
 };
 
-const OutstationGatepassCard = ({ gp, presence, OSActiveGPNo, qrData, qrLoading, onExitQR, onEntryQR, formatDate, formatTime12hr }) => {
+const OutstationGatepassCard = ({ gp, presence, OSActiveGPNo, qrData, qrLoading, onExitQR, onEntryQR, formatDate, formatTime12hr, onShowPopup }) => {
     // Check if any previous stage was rejected
     function isRejectedBefore(gp, stage) {
         const stageOrder = ['officeSecretary', 'dugc', 'hod', 'hostelOffice'];
@@ -388,10 +392,19 @@ const OutstationGatepassCard = ({ gp, presence, OSActiveGPNo, qrData, qrLoading,
         if (gp.utilized) return 'utilized';
         const inDateTime = new Date(`${gp.dateIn}T${gp.timeIn}`);
         const hasInTimePassed = Date.now() > inDateTime.getTime();
+        if (hasInTimePassed) return 'expired';
+        // If student is outside with this gatepass, show entry button
         if (presence === 'outside' && OSActiveGPNo === gp.gatePassNo) return 'entry';
-        if (presence === 'inside' && !hasInTimePassed) return 'exit';
-        if (presence === 'inside' && hasInTimePassed) return 'expired';
-        return null;
+        // Otherwise show exit button (for approved, non-utilized, non-expired gatepasses)
+        return 'exit';
+    };
+
+    const handleExitClick = () => {
+        if (presence === 'outside') {
+            onShowPopup('You are already out of campus');
+        } else {
+            onExitQR(gp._id);
+        }
     };
 
     const action = getOSAction();
@@ -411,7 +424,7 @@ const OutstationGatepassCard = ({ gp, presence, OSActiveGPNo, qrData, qrLoading,
             <ProgressTracker stages={stages} />
 
             {action === 'exit' && !qrData && (
-                <button className="tg-action-btn exit" onClick={() => onExitQR(gp._id)} disabled={qrLoading}>
+                <button className="tg-action-btn exit" onClick={handleExitClick} disabled={qrLoading}>
                     {qrLoading ? 'Generating...' : '🚪 Generate Exit QR'}
                 </button>
             )}
@@ -421,7 +434,7 @@ const OutstationGatepassCard = ({ gp, presence, OSActiveGPNo, qrData, qrLoading,
                 </button>
             )}
             {action === 'utilized' && <div className="tg-utilized">✓ Gatepass Utilized</div>}
-            {action === 'expired' && <div className="tg-expired-badge">Gatepass Expired</div>}
+            {action === 'expired' && <div className="tg-expired-badge">⏰ Gatepass Expired</div>}
         </div>
     );
 };
