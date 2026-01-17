@@ -106,12 +106,17 @@ const outstationGatepassSchema = new mongoose.Schema(
     classesMissed: {
       type: String,
       enum: ['yes', 'no'],
-      required: true,
+      default: null,
     },
     missedDays: {
       type: Number,
-      required: true,
+      default: 0,
       min: 0,
+    },
+    proofFile: {
+      type: String,
+      default: null,
+      trim: true,
     },
     consent: {
       type: Boolean,

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   getSecretaryPendingGatepasses,
   getSecretaryGatepassDetails,
@@ -7,104 +8,119 @@ import {
   decideOutstationGatepass,
 } from '../api/api';
 import PopupBox from '../components/PopupBox';
-import '../styles/student.css';
-
-// Icons
-const IconGrid = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-    <rect x="3" y="3" width="7" height="7" rx="1" />
-    <rect x="14" y="3" width="7" height="7" rx="1" />
-    <rect x="3" y="14" width="7" height="7" rx="1" />
-    <rect x="14" y="14" width="7" height="7" rx="1" />
-  </svg>
-);
-
-const IconHistory = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <rect x="4" y="2" width="16" height="20" rx="2" />
-    <path d="M8 6h8M8 10h8M8 14h5" />
-    <circle cx="16" cy="18" r="2" fill="currentColor" />
-  </svg>
-);
+import '../styles/admin.css';
 
 const OfficeSecretaryPage = () => {
+  const navigate = useNavigate();
   const [activePage, setActivePage] = useState('requests');
   const [viewingGatepass, setViewingGatepass] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const sidebarItems = [
-    { id: 'requests', icon: <IconGrid />, label: 'Requests' },
-    { id: 'history', icon: <IconHistory />, label: 'History' },
+  // Prevent page scrolling
+  useEffect(() => {
+    document.documentElement.classList.add('admin-page-active');
+    document.body.classList.add('admin-page-active');
+    return () => {
+      document.documentElement.classList.remove('admin-page-active');
+      document.body.classList.remove('admin-page-active');
+    };
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
+
+  const handleNavClick = (pageId) => {
+    setActivePage(pageId);
+    setViewingGatepass(null);
+    setSidebarOpen(false);
+  };
+
+  const navItems = [
+    { id: 'requests', icon: '☐', label: 'Current Requests' },
+    { id: 'history', icon: '↺', label: 'History' },
   ];
 
   return (
-    <div className="guard-layout">
-      <header className="guard-header">
-        <div className="guard-header-brand">
-          <span className="guard-header-passly">GoThru</span>
-          <span className="guard-header-by">
-            by <strong>Watchr</strong>
-          </span>
+    <div className="admin-layout">
+      {/* Header */}
+      <header className="admin-header">
+        <div className="admin-header-brand">
+          <button className="admin-hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            ☰
+          </button>
+          <div className="admin-header-logo-wrap">
+            <span className="admin-header-logo">GoThru</span>
+            <span className="admin-header-subtitle">by Watchr</span>
+          </div>
         </div>
-        <div style={{
-          width: '36px',
-          height: '36px',
-          borderRadius: '50%',
-          background: 'rgba(255,255,255,0.2)',
-          border: '2px solid rgba(255,255,255,0.5)',
-        }} />
+        <div className="admin-header-right">
+          <span className="admin-header-role">CSE Office Secretary</span>
+          <button className="admin-logout-btn" onClick={handleLogout}>
+            Logout
+          </button>
+        </div>
       </header>
-      <div className="guard-body">
+
+      {/* Mobile Overlay */}
+      {sidebarOpen && <div className="admin-sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
+
+      {/* Body */}
+      <div className="admin-body">
         {/* Sidebar */}
-        <aside style={{
-          width: '70px',
-          background: 'linear-gradient(180deg, rgba(149, 147, 227, 1), rgba(82, 81, 125, 1))',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          paddingTop: '20px',
-          gap: '8px',
-        }}>
-          {sidebarItems.map((item) => (
+        <aside className={`admin-sidebar ${sidebarOpen ? 'mobile-open' : ''}`}>
+          <nav className="admin-sidebar-nav">
             <button
-              key={item.id}
-              onClick={() => { setActivePage(item.id); setViewingGatepass(null); }}
-              style={{
-                width: '50px',
-                height: '50px',
-                borderRadius: '10px',
-                border: activePage === item.id ? '2px solid rgba(255,255,255,0.8)' : 'none',
-                background: activePage === item.id ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.15)',
-                color: '#fff',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.2s',
-              }}
-              title={item.label}
+              className={`admin-nav-item ${activePage === 'requests' ? 'active' : ''}`}
+              onClick={() => handleNavClick('requests')}
             >
-              {item.icon}
+              <svg className="admin-nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              </svg>
+              <span className="admin-nav-label">Current Requests</span>
             </button>
-          ))}
+            <button
+              className={`admin-nav-item ${activePage === 'history' ? 'active' : ''}`}
+              onClick={() => handleNavClick('history')}
+            >
+              <svg className="admin-nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              <span className="admin-nav-label">History</span>
+            </button>
+          </nav>
         </aside>
 
         {/* Main Content */}
-        <main className="guard-main" style={{ padding: '20px', flexDirection: 'column', alignItems: 'stretch', overflow: 'auto' }}>
-          {activePage === 'requests' && !viewingGatepass && (
-            <RequestsCardView onViewDetails={setViewingGatepass} />
-          )}
-          {activePage === 'requests' && viewingGatepass && (
-            <GatepassDetailsView gatepassId={viewingGatepass} onBack={() => setViewingGatepass(null)} />
-          )}
-          {activePage === 'history' && <HistoryPage />}
+        <main className="admin-main">
+          {/* College Banner */}
+          <div className="admin-college-banner">
+            <h1 className="admin-college-name">RAJIV GANDHI INSTITUTE OF PETROLEUM TECHNOLOGY</h1>
+            <p className="admin-college-subtitle">(An Institute of National Importance Established Under an Act of Parliament)</p>
+            <h2 className="admin-college-name-hi">राजीव गाँधी पेट्रोलियम प्रौद्योगिकी संस्थान</h2>
+            <p className="admin-college-subtitle-hi">(संसद के अधिनियम द्वारा राष्ट्रीय महत्व का संस्थान)</p>
+          </div>
+
+          {/* Content Area */}
+          <div className="os-content-area">
+            {activePage === 'requests' && !viewingGatepass && (
+              <RequestsView onViewDetails={setViewingGatepass} />
+            )}
+            {activePage === 'requests' && viewingGatepass && (
+              <GatepassDetailsView gatepassId={viewingGatepass} onBack={() => setViewingGatepass(null)} />
+            )}
+            {activePage === 'history' && <HistoryView />}
+          </div>
         </main>
       </div>
     </div>
   );
 };
 
-// Card view for pending requests (ss-1 design)
-const RequestsCardView = ({ onViewDetails }) => {
+// ==================== REQUESTS VIEW ====================
+const RequestsView = ({ onViewDetails }) => {
   const [gatepasses, setGatepasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -127,86 +143,59 @@ const RequestsCardView = ({ onViewDetails }) => {
     return () => clearInterval(interval);
   }, []);
 
-  return (
-    <div>
-      <h2 style={{ marginBottom: '20px', fontWeight: 700 }}>OUTSTATION GATEPASS REQUESTS</h2>
+  // Format date/time for display
+  const formatDateTime = (dateStr) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    let hours = d.getHours();
+    const mins = String(d.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    return `${day}/${month}/${year} ${hours}:${mins} ${ampm}`;
+  };
 
-      {loading && <p>Loading requests...</p>}
-      {error && <p style={{ color: '#b00020', fontWeight: 600 }}>{error}</p>}
+  // Sort gatepasses - oldest first (ascending by createdAt)
+  const sortedGatepasses = [...gatepasses].sort((a, b) =>
+    new Date(a.createdAt) - new Date(b.createdAt)
+  );
+
+  return (
+    <div className="os-section">
+      <h2 className="os-section-title">Pending Outstation Gatepass Requests</h2>
+
+      {loading && <div className="os-loading">Loading requests...</div>}
+      {error && <div className="os-error">{error}</div>}
 
       {!loading && gatepasses.length === 0 && (
-        <p style={{ opacity: 0.7 }}>No pending outstation gatepass requests</p>
+        <div className="os-empty">No pending outstation gatepass requests</div>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-        {gatepasses.map((gp) => (
-          <div
-            key={gp._id}
-            style={{
-              background: '#fff',
-              borderRadius: '16px',
-              padding: '16px 20px',
-              border: '1px solid rgba(0,0,0,0.1)',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '16px',
-            }}
-          >
-            {/* Avatar/Photo */}
-            <div style={{
-              width: '60px',
-              height: '60px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #e0e0e0, #f5f5f5)',
-              border: '2px solid #ccc',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              overflow: 'hidden',
-              flexShrink: 0,
-            }}>
+      <div className="os-cards-grid">
+        {sortedGatepasses.map((gp) => (
+          <div key={gp._id} className="os-request-card">
+            <div className="os-card-avatar">
               {gp.student?.imageUrl ? (
                 <img
                   src={`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${gp.student.imageUrl}`}
                   alt="Student"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               ) : (
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="#999">
-                  <circle cx="12" cy="8" r="4" />
-                  <path d="M12 14c-4 0-8 2-8 4v2h16v-2c0-2-4-4-8-4z" />
-                </svg>
+                <span style={{ fontSize: '20px', color: '#fff' }}>●</span>
               )}
             </div>
-
-            {/* Info */}
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: '15px', marginBottom: '4px' }}>
-                Name: {gp.studentName}
+            <div className="os-card-info">
+              <div className="os-card-name">{gp.studentName}</div>
+              <div className="os-card-details">
+                <span>{gp.course}</span>
+                <span>{gp.rollnumber}</span>
               </div>
-              <div style={{ fontSize: '13px', color: '#555', lineHeight: 1.5 }}>
-                Course: {gp.course}<br />
-                Roll No: {gp.rollnumber}<br />
-                Branch: {gp.branch}<br />
-                Contact No: {gp.contact}
-              </div>
+              <div className="os-card-branch">{gp.branch || gp.department}</div>
+              <div className="os-card-applied">Applied: {formatDateTime(gp.createdAt)}</div>
             </div>
-
-            {/* View Details Button */}
-            <button
-              onClick={() => onViewDetails(gp._id)}
-              style={{
-                padding: '10px 20px',
-                borderRadius: '8px',
-                border: '1px solid #333',
-                background: '#fff',
-                color: '#333',
-                fontWeight: 600,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-              }}
-            >
+            <button className="os-view-btn" onClick={() => onViewDetails(gp._id)}>
               View Details
             </button>
           </div>
@@ -216,7 +205,7 @@ const RequestsCardView = ({ onViewDetails }) => {
   );
 };
 
-// Gatepass Details View with student history
+// ==================== GATEPASS DETAILS VIEW ====================
 const GatepassDetailsView = ({ gatepassId, onBack }) => {
   const [gatepass, setGatepass] = useState(null);
   const [studentHistory, setStudentHistory] = useState([]);
@@ -225,6 +214,10 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
   const [popupMessage, setPopupMessage] = useState('');
   const [deciding, setDeciding] = useState(false);
 
+  // Classes missed input (filled by secretary)
+  const [classesMissed, setClassesMissed] = useState('no');
+  const [missedDays, setMissedDays] = useState(0);
+
   useEffect(() => {
     const fetchDetails = async () => {
       try {
@@ -232,7 +225,6 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
         const gpRes = await getSecretaryGatepassDetails(gatepassId);
         setGatepass(gpRes.data.gatepass);
 
-        // Fetch student's OS gatepass history
         if (gpRes.data.gatepass?.student?._id) {
           const historyRes = await getStudentOSHistory(gpRes.data.gatepass.student._id);
           setStudentHistory(historyRes.data.gatepasses || []);
@@ -267,7 +259,12 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
   const handleDecision = async (decision) => {
     setDeciding(true);
     try {
-      const res = await decideOutstationGatepass({ gatepassId, decision });
+      const res = await decideOutstationGatepass({
+        gatepassId,
+        decision,
+        classesMissed,
+        missedDays: Number(missedDays)
+      });
       setPopupMessage(res.data.message);
       setTimeout(() => onBack(), 1500);
     } catch (err) {
@@ -277,145 +274,171 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
     }
   };
 
-  if (loading) return <p>Loading details...</p>;
-  if (error) return <p style={{ color: '#b00020' }}>{error}</p>;
-  if (!gatepass) return <p>Gatepass not found</p>;
+  if (loading) return <div className="os-loading">Loading details...</div>;
+  if (error) return <div className="os-error">{error}</div>;
+  if (!gatepass) return <div className="os-error">Gatepass not found</div>;
 
   return (
-    <div>
-      <button
-        onClick={onBack}
-        style={{
-          background: 'none',
-          border: 'none',
-          fontSize: '16px',
-          fontWeight: 600,
-          cursor: 'pointer',
-          marginBottom: '16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-        }}
-      >
+    <div className="os-details-view">
+      <button className="os-back-btn" onClick={onBack}>
         ← Back to Requests
       </button>
 
-      <h2 style={{ marginBottom: '16px', fontWeight: 700 }}>GATEPASS DETAILS</h2>
+      <h2 className="os-section-title">Gatepass Details</h2>
 
-      {/* Gatepass Details Card */}
-      <div style={{
-        background: 'rgba(227, 183, 236, 0.85)',
-        borderRadius: '14px',
-        padding: '20px',
-        marginBottom: '20px',
-      }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', fontSize: '14px' }}>
-          <div><b>Student Name:</b> {gatepass.studentName}</div>
-          <div><b>Roll Number:</b> {gatepass.rollnumber}</div>
-          <div><b>Course:</b> {gatepass.course}</div>
-          <div><b>Department:</b> {gatepass.department}</div>
-          <div><b>Room Number:</b> {gatepass.roomNumber}</div>
-          <div><b>Contact:</b> {gatepass.contact}</div>
-          <div><b>Leave Days:</b> {gatepass.leaveDays}</div>
-          <div><b>Classes Missed:</b> {gatepass.classesMissed} ({gatepass.missedDays} days)</div>
-          <div><b>Date Out:</b> {formatDate(gatepass.dateOut)}</div>
-          <div><b>Time Out:</b> {formatTime12hr(gatepass.timeOut)}</div>
-          <div><b>Date In:</b> {formatDate(gatepass.dateIn)}</div>
-          <div><b>Time In:</b> {formatTime12hr(gatepass.timeIn)}</div>
+      {/* Main Details Card */}
+      <div className="os-details-card">
+        <div className="os-details-grid">
+          <div className="os-detail-item">
+            <span className="os-detail-label">Student Name</span>
+            <span className="os-detail-value">{gatepass.studentName}</span>
+          </div>
+          <div className="os-detail-item">
+            <span className="os-detail-label">Roll Number</span>
+            <span className="os-detail-value">{gatepass.rollnumber}</span>
+          </div>
+          <div className="os-detail-item">
+            <span className="os-detail-label">Course</span>
+            <span className="os-detail-value">{gatepass.course}</span>
+          </div>
+          <div className="os-detail-item">
+            <span className="os-detail-label">Department</span>
+            <span className="os-detail-value">{gatepass.department}</span>
+          </div>
+          <div className="os-detail-item">
+            <span className="os-detail-label">Room Number</span>
+            <span className="os-detail-value">{gatepass.roomNumber}</span>
+          </div>
+          <div className="os-detail-item">
+            <span className="os-detail-label">Contact</span>
+            <span className="os-detail-value">{gatepass.contact}</span>
+          </div>
+          <div className="os-detail-item">
+            <span className="os-detail-label">Leave Days</span>
+            <span className="os-detail-value">{gatepass.leaveDays}</span>
+          </div>
+          <div className="os-detail-item">
+            <span className="os-detail-label">Exit</span>
+            <span className="os-detail-value">{formatDate(gatepass.dateOut)} {formatTime12hr(gatepass.timeOut)}</span>
+          </div>
+          <div className="os-detail-item">
+            <span className="os-detail-label">Return</span>
+            <span className="os-detail-value">{formatDate(gatepass.dateIn)} {formatTime12hr(gatepass.timeIn)}</span>
+          </div>
         </div>
-        <div style={{ marginTop: '12px', fontSize: '14px' }}>
-          <div><b>Address During Leave:</b> {gatepass.address}</div>
-          <div><b>Nature of Leave:</b> {gatepass.natureOfLeave}</div>
-          <div><b>Reason:</b> {gatepass.reasonOfLeave}</div>
+
+        <div className="os-detail-full">
+          <span className="os-detail-label">Address During Leave</span>
+          <span className="os-detail-value">{gatepass.address}</span>
+        </div>
+        <div className="os-detail-full">
+          <span className="os-detail-label">Nature of Leave</span>
+          <span className="os-detail-value">{gatepass.natureOfLeave}</span>
+        </div>
+        <div className="os-detail-full">
+          <span className="os-detail-label">Reason for Leave</span>
+          <span className="os-detail-value">{gatepass.reasonOfLeave}</span>
+        </div>
+
+        {/* Proof File Display */}
+        {gatepass.proofFile && (
+          <div className="os-detail-full" style={{ marginTop: '16px' }}>
+            <span className="os-detail-label">Supporting Document</span>
+            <div style={{ marginTop: '8px' }}>
+              <a
+                href={`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${gatepass.proofFile}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: 'inline-block', cursor: 'pointer' }}
+              >
+                {gatepass.proofFile.endsWith('.pdf') ? (
+                  <span style={{ color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'underline' }}>
+                    View PDF Document
+                  </span>
+                ) : (
+                  <img
+                    src={`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${gatepass.proofFile}`}
+                    alt="Proof Document - Click to open"
+                    style={{ maxWidth: '300px', maxHeight: '200px', borderRadius: '8px', border: '1px solid var(--color-border)', cursor: 'pointer' }}
+                  />
+                )}
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* Classes Missed Input (Secretary fills this) */}
+        <div className="os-classes-section">
+          <h4>Classes Missed (Fill by Secretary)</h4>
+          <div className="os-classes-row">
+            <label>
+              <input
+                type="radio"
+                name="classesMissed"
+                value="no"
+                checked={classesMissed === 'no'}
+                onChange={(e) => setClassesMissed(e.target.value)}
+              />
+              No classes missed
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="classesMissed"
+                value="yes"
+                checked={classesMissed === 'yes'}
+                onChange={(e) => setClassesMissed(e.target.value)}
+              />
+              Classes will be missed
+            </label>
+            {classesMissed === 'yes' && (
+              <input
+                type="number"
+                min="0"
+                value={missedDays}
+                onChange={(e) => setMissedDays(e.target.value)}
+                placeholder="Days"
+                className="os-days-input"
+              />
+            )}
+          </div>
         </div>
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '16px', marginTop: '20px' }}>
+        <div className="os-action-btns">
           <button
+            className="os-reject-btn"
             onClick={() => handleDecision('rejected')}
             disabled={deciding}
-            style={{
-              flex: 1,
-              padding: '14px',
-              borderRadius: '10px',
-              border: 'none',
-              background: '#dc2626',
-              color: '#fff',
-              fontWeight: 700,
-              fontSize: '15px',
-              cursor: deciding ? 'not-allowed' : 'pointer',
-              opacity: deciding ? 0.6 : 1,
-            }}
           >
             Reject
           </button>
           <button
+            className="os-approve-btn"
             onClick={() => handleDecision('approved')}
             disabled={deciding}
-            style={{
-              flex: 1,
-              padding: '14px',
-              borderRadius: '10px',
-              border: 'none',
-              background: '#16a34a',
-              color: '#fff',
-              fontWeight: 700,
-              fontSize: '15px',
-              cursor: deciding ? 'not-allowed' : 'pointer',
-              opacity: deciding ? 0.6 : 1,
-            }}
           >
-            Approve (pass to DUGC)
+            Approve & Pass to DUGC
           </button>
         </div>
       </div>
 
-      {/* Student's OS Gatepass History */}
-      <h3 style={{ fontWeight: 700, marginBottom: '12px' }}>Student's Outstation Gatepass History</h3>
-      <div style={{
-        maxHeight: '300px',
-        overflowY: 'auto',
-        background: 'rgba(255,255,255,0.7)',
-        borderRadius: '10px',
-        padding: '12px',
-      }}>
-        {studentHistory.length === 0 && (
-          <p style={{ opacity: 0.7, textAlign: 'center' }}>No previous outstation gatepasses</p>
+      {/* Student History */}
+      <h3 className="os-history-title">Student's Previous Outstation Gatepasses</h3>
+      <div className="os-history-list">
+        {studentHistory.filter(h => h._id !== gatepassId).length === 0 && (
+          <div className="os-empty">No previous outstation gatepasses</div>
         )}
         {studentHistory.filter(h => h._id !== gatepassId).map((h) => (
-          <div
-            key={h._id}
-            style={{
-              padding: '12px',
-              marginBottom: '10px',
-              background: h.finalStatus === 'approved' ? 'rgba(200, 240, 200, 0.8)'
-                : h.finalStatus === 'rejected' ? 'rgba(255, 200, 200, 0.8)'
-                  : 'rgba(255, 240, 200, 0.8)',
-              borderRadius: '8px',
-              fontSize: '13px',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-              <span style={{ fontWeight: 700 }}>{h.reasonOfLeave}</span>
-              <span style={{
-                fontWeight: 700,
-                fontSize: '11px',
-                padding: '2px 8px',
-                borderRadius: '4px',
-                background: h.finalStatus === 'approved' ? 'rgba(22,163,74,0.2)'
-                  : h.finalStatus === 'rejected' ? 'rgba(220,38,38,0.2)' : 'rgba(245,158,11,0.2)',
-                color: h.finalStatus === 'approved' ? '#16a34a'
-                  : h.finalStatus === 'rejected' ? '#dc2626' : '#f59e0b',
-              }}>
+          <div key={h._id} className={`os-history-item ${h.finalStatus}`}>
+            <div className="os-history-header">
+              <span className="os-history-reason">{h.reasonOfLeave}</span>
+              <span className={`os-status-badge ${h.finalStatus}`}>
                 {h.finalStatus?.toUpperCase() || 'PENDING'}
               </span>
             </div>
-            <div style={{ opacity: 0.85, lineHeight: 1.5 }}>
-              <div><b>Out:</b> {formatDate(h.dateOut)} | <b>In:</b> {formatDate(h.dateIn)}</div>
-              {h.address && <div><b>Address:</b> {h.address}</div>}
-              {h.classesMissed === 'yes' && h.missedDays > 0 && (
-                <div><b>Classes Missed:</b> {h.missedDays} days</div>
-              )}
+            <div className="os-history-dates">
+              Out: {formatDate(h.dateOut)} → In: {formatDate(h.dateIn)}
             </div>
           </div>
         ))}
@@ -426,8 +449,8 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
   );
 };
 
-// History Page
-const HistoryPage = () => {
+// ==================== HISTORY VIEW ====================
+const HistoryView = () => {
   const [gatepasses, setGatepasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -463,62 +486,41 @@ const HistoryPage = () => {
   };
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h2 style={{ fontWeight: 700, margin: 0 }}>GATEPASS HISTORY</h2>
-        <form onSubmit={handleSearch}>
+    <div className="os-section">
+      <div className="os-history-header-row">
+        <h2 className="os-section-title">Gatepass History</h2>
+        <form onSubmit={handleSearch} className="os-search-form">
           <input
             type="text"
-            placeholder="Search student"
+            placeholder="Search by name or roll number..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{
-              padding: '10px 20px',
-              borderRadius: '999px',
-              border: '1px solid rgba(0,0,0,0.2)',
-              background: '#fff',
-              width: '200px',
-            }}
+            className="os-search-input"
           />
+          <button type="submit" className="os-search-btn">🔍</button>
         </form>
       </div>
 
-      {loading && <p>Loading history...</p>}
-      {error && <p style={{ color: '#b00020' }}>{error}</p>}
+      {loading && <div className="os-loading">Loading history...</div>}
+      {error && <div className="os-error">{error}</div>}
 
       {!loading && gatepasses.length === 0 && (
-        <p style={{ opacity: 0.7 }}>No history found</p>
+        <div className="os-empty">No history found</div>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div className="os-history-table">
         {gatepasses.map((gp) => (
-          <div
-            key={gp._id}
-            style={{
-              background: gp.stageStatus?.officeSecretary?.status === 'approved'
-                ? 'rgba(200, 240, 200, 0.8)'
-                : 'rgba(255, 200, 200, 0.8)',
-              borderRadius: '10px',
-              padding: '12px 16px',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontWeight: 700 }}>{gp.studentName}</div>
-                <div style={{ fontSize: '12px', opacity: 0.8 }}>
-                  {gp.rollnumber} | {gp.course} | {gp.department}
-                </div>
-              </div>
-              <span style={{
-                fontWeight: 700,
-                fontSize: '12px',
-                color: gp.stageStatus?.officeSecretary?.status === 'approved' ? '#16a34a' : '#dc2626',
-              }}>
-                {gp.stageStatus?.officeSecretary?.status === 'approved' ? 'PASSED TO DUGC' : 'REJECTED'}
-              </span>
+          <div key={gp._id} className={`os-history-row ${gp.stageStatus?.officeSecretary?.status}`}>
+            <div className="os-history-student">
+              <div className="os-history-name">{gp.studentName}</div>
+              <div className="os-history-meta">{gp.rollnumber} • {gp.course} • {gp.department}</div>
             </div>
-            <div style={{ fontSize: '12px', marginTop: '6px' }}>
-              <b>Leave:</b> {formatDate(gp.dateOut)} - {formatDate(gp.dateIn)} | <b>Reason:</b> {gp.reasonOfLeave}
+            <div className="os-history-leave">
+              <span>{formatDate(gp.dateOut)} - {formatDate(gp.dateIn)}</span>
+              <span className="os-history-reason-text">{gp.reasonOfLeave}</span>
+            </div>
+            <div className={`os-status-badge ${gp.stageStatus?.officeSecretary?.status}`}>
+              {gp.stageStatus?.officeSecretary?.status === 'approved' ? 'PASSED TO DUGC' : 'REJECTED'}
             </div>
           </div>
         ))}

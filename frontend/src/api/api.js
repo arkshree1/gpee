@@ -43,8 +43,12 @@ export const getStudentStatus = async () => apiClient.get('/api/student/status')
 export const applyGate = async (payload) => apiClient.post('/api/student/apply', payload);
 export const cancelGate = async () => apiClient.post('/api/student/cancel');
 export const createLocalGatepass = async (payload) => apiClient.post('/api/student/local-gatepass', payload);
-export const createOutstationGatepass = async (payload) =>
-  apiClient.post('/api/student/outstation-gatepass', payload);
+export const createOutstationGatepass = async (formData) =>
+  apiClient.post('/api/student/outstation-gatepass', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
 export const getStudentLogs = async () => apiClient.get('/api/student/logs');
 export const getMyGatepasses = async () => apiClient.get('/api/student/my-gatepasses');
 export const applyGatepassExit = async (payload) => apiClient.post('/api/student/gatepass-exit', payload);

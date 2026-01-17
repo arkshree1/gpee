@@ -18,8 +18,6 @@ exports.createOutstationGatepass = async (req, res) => {
     address,
     natureOfLeave,
     reasonOfLeave,
-    classesMissed,
-    missedDays,
     consent,
   } = req.body;
 
@@ -30,16 +28,13 @@ exports.createOutstationGatepass = async (req, res) => {
     !course ||
     !department ||
     !contact ||
-    !leaveDays ||
     !dateOut ||
     !timeOut ||
     !dateIn ||
     !timeIn ||
     !address ||
     !natureOfLeave ||
-    !reasonOfLeave ||
-    !classesMissed ||
-    missedDays === undefined
+    !reasonOfLeave
   ) {
     return res.status(400).json({ message: 'All fields are required' });
   }
@@ -54,20 +49,14 @@ exports.createOutstationGatepass = async (req, res) => {
     return res.status(400).json({ message: 'Contact number must be 10 digits.' });
   }
 
-  const parsedLeaveDays = Number(leaveDays);
-  const parsedMissedDays = Number(missedDays);
+  // Calculate leaveDays from dateOut and dateIn
+  const outDate = new Date(dateOut);
+  const inDate = new Date(dateIn);
+  const diffTime = inDate.getTime() - outDate.getTime();
+  const calculatedLeaveDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
 
-  if (Number.isNaN(parsedLeaveDays) || parsedLeaveDays < 1) {
-    return res.status(400).json({ message: 'No. of leave days must be at least 1.' });
-  }
-
-  if (Number.isNaN(parsedMissedDays) || parsedMissedDays < 0) {
-    return res.status(400).json({ message: 'No. of days classes missed cannot be negative.' });
-  }
-
-  if (!['yes', 'no'].includes(classesMissed)) {
-    return res.status(400).json({ message: 'classesMissed must be yes or no.' });
-  }
+  // Handle proof file upload
+  const proofFile = req.file ? `/uploads/OS_GatePass_Proofs/${req.file.filename}` : null;
 
   const doc = await OutstationGatepass.create({
     student: studentId,
@@ -78,7 +67,7 @@ exports.createOutstationGatepass = async (req, res) => {
     department,
     branch,
     contact,
-    leaveDays: parsedLeaveDays,
+    leaveDays: calculatedLeaveDays,
     dateOut,
     timeOut,
     dateIn,
@@ -86,8 +75,7 @@ exports.createOutstationGatepass = async (req, res) => {
     address,
     natureOfLeave,
     reasonOfLeave,
-    classesMissed,
-    missedDays: parsedMissedDays,
+    proofFile,
     consent: !!consent,
   });
 

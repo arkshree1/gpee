@@ -4,6 +4,7 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const requireRole = require('../middleware/requireRole');
 const asyncHandler = require('../utils/asyncHandler');
+const proofUpload = require('../utils/proofUpload');
 const studentController = require('../controllers/studentController');
 const studentLogsController = require('../controllers/studentLogsController');
 const localGatepassController = require('../controllers/localGatepassController');
@@ -18,6 +19,7 @@ router.post(
 	'/outstation-gatepass',
 	auth,
 	requireRole(['student']),
+	proofUpload.single('proofFile'),
 	asyncHandler(outstationGatepassController.createOutstationGatepass)
 );
 

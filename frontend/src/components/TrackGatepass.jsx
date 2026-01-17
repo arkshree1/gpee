@@ -249,9 +249,11 @@ const TrackGatepass = () => {
                 <div className="sd-modal-overlay">
                     <div className="sa-confirm-modal">
                         <div className="sa-confirm-title">Cancel QR?</div>
-                        <p className="sa-confirm-text">Are you sure you want to cancel this QR? You'll need to generate a new one.</p>
+                        <p className="sa-confirm-text">
+                            Don't worry! Your gatepass won't be discarded. You can generate a new QR anytime within your gatepass validity period.
+                        </p>
                         <div className="sa-confirm-btns">
-                            <button className="sa-confirm-yes" onClick={handleDismissQR}>Yes, Cancel</button>
+                            <button className="sa-confirm-yes" onClick={handleDismissQR}>Yes, Cancel QR</button>
                             <button className="sa-confirm-no" onClick={() => setShowConfirmModal(false)}>No, Keep QR</button>
                         </div>
                     </div>

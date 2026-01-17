@@ -113,7 +113,7 @@ exports.getGatepassHistory = async (req, res) => {
 // Approve or reject an outstation gatepass
 exports.decideGatepass = async (req, res) => {
     const secretaryId = req.user.userId;
-    const { gatepassId, decision } = req.body;
+    const { gatepassId, decision, classesMissed, missedDays } = req.body;
 
     if (!gatepassId || !decision) {
         return res.status(400).json({ message: 'Gatepass ID and decision are required' });
@@ -150,6 +150,14 @@ exports.decideGatepass = async (req, res) => {
         decidedBy: secretaryId,
         decidedAt: new Date(),
     };
+
+    // Update classes missed fields if provided (filled by office secretary)
+    if (classesMissed && ['yes', 'no'].includes(classesMissed)) {
+        gatepass.classesMissed = classesMissed;
+    }
+    if (missedDays !== undefined && missedDays !== null) {
+        gatepass.missedDays = Number(missedDays);
+    }
 
     if (decision === 'approved') {
         // Move to next stage (DUGC)

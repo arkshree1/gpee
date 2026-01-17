@@ -30,6 +30,7 @@ const OutstationGatepass = () => {
   const [popup, setPopup] = useState({ open: false, message: '' });
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [proofFile, setProofFile] = useState(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -95,7 +96,6 @@ const OutstationGatepass = () => {
       { key: 'course', label: 'Course' },
       { key: 'department', label: 'Department' },
       { key: 'contact', label: 'Contact Number' },
-      { key: 'leaveDays', label: 'Leave Days' },
       { key: 'dateOut', label: 'Exit Date' },
       { key: 'timeOut', label: 'Exit Time' },
       { key: 'dateIn', label: 'Return Date' },
@@ -106,8 +106,10 @@ const OutstationGatepass = () => {
     ];
 
     const missingField = requiredFields.find(field => !form[field.key]);
+    console.log('Form state:', form);
+    console.log('Missing field:', missingField);
     if (missingField) {
-      setPopup({ open: true, message: `Missing required field: ${missingField.label}` });
+      setPopup({ open: true, message: `Missing: ${missingField.label}` });
       return;
     }
 
@@ -136,7 +138,17 @@ const OutstationGatepass = () => {
     }
 
     setLoading(true);
-    createOutstationGatepass({ ...form, leaveDays: Number(leaveDays) })
+
+    // Build FormData for file upload
+    const formData = new FormData();
+    Object.keys(form).forEach(key => {
+      formData.append(key, form[key]);
+    });
+    if (proofFile) {
+      formData.append('proofFile', proofFile);
+    }
+
+    createOutstationGatepass(formData)
       .then(() => {
         setSubmitSuccess(true);
         setPopup({ open: true, message: 'Outstation gatepass applied successfully!' });
@@ -253,9 +265,30 @@ const OutstationGatepass = () => {
               <input className="lg-input" type="text" name="natureOfLeave" placeholder="e.g., Personal, Medical, Family" value={form.natureOfLeave} onChange={handleChange} />
             </div>
 
-            <div className="lg-field" style={{ marginBottom: 0 }}>
+            <div className="lg-field">
               <label className="lg-label">Reason for Leave</label>
               <input className="lg-input" type="text" name="reasonOfLeave" placeholder="Detailed reason" value={form.reasonOfLeave} onChange={handleChange} />
+            </div>
+
+            <div className="lg-field" style={{ marginBottom: 0 }}>
+              <label className="lg-label">Upload Supporting File (Optional)</label>
+              <input
+                className="lg-input"
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file && file.size > 2 * 1024 * 1024) {
+                    setPopup({ open: true, message: 'File size must be less than 2MB' });
+                    e.target.value = '';
+                    return;
+                  }
+                  setProofFile(file);
+                }}
+              />
+              <span style={{ fontSize: '12px', color: '#888', marginTop: '4px', display: 'block' }}>
+                PDF or Image (JPG, PNG) • Max 2MB
+              </span>
             </div>
           </div>
 
