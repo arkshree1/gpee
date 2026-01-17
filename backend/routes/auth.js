@@ -14,6 +14,8 @@ router.post('/signup', (req, res, next) => {
 	});
 });
 
+//hey
+
 // Verify OTP after signup
 router.post('/verify-otp', authController.verifyOtp);
 
