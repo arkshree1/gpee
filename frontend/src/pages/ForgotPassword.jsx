@@ -10,7 +10,7 @@ const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
-
+//g
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email) {
