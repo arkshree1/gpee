@@ -3,6 +3,7 @@ import axios from 'axios';
 const apiClient = axios.create({
   baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000',
   withCredentials: false,
+  timeout: 15000, // 15 second timeout to prevent hanging requests
 });
 
 apiClient.interceptors.request.use((config) => {
@@ -57,7 +58,7 @@ export const applyOSGatepassExit = async (payload) => apiClient.post('/api/stude
 export const applyOSGatepassEntry = async (payload) => apiClient.post('/api/student/os-gatepass-entry', payload);
 
 // Guard APIs
-export const getGuardDashboard = async () => apiClient.get('/api/guard/dashboard');
+export const getGuardDashboard = async (options = {}) => apiClient.get('/api/guard/dashboard', options);
 export const scanQrToken = async (payload) => apiClient.post('/api/guard/scan', payload);
 export const decideRequest = async (payload) => apiClient.post('/api/guard/decide', payload);
 export const getGuardEntryExitLogs = async () => apiClient.get('/api/guard/entry-exit-logs');
@@ -82,13 +83,27 @@ export const searchAdminStudents = async (q) =>
 export const getStudentLogsById = async (studentId) =>
   apiClient.get(`/api/admin/student-logs/${studentId}`);
 
-// Hostel Office APIs
+// Hostel Office APIs - Local Gatepass
 export const getPendingGatepasses = async () => apiClient.get('/api/hostel-office/pending-gatepasses');
 export const getGatepassHistory = async (search) =>
   apiClient.get('/api/hostel-office/gatepass-history', { params: { search } });
 export const getEntryExitLogs = async (date, search) =>
   apiClient.get('/api/hostel-office/entry-exit-logs', { params: { date, search } });
 export const decideGatepass = async (payload) => apiClient.post('/api/hostel-office/decide-gatepass', payload);
+export const getLocalStudentHistory = async (studentId) =>
+  apiClient.get(`/api/hostel-office/local-student-history/${studentId}`);
+
+// Hostel Office APIs - Outstation Gatepass
+export const getHostelOfficeOSPendingGatepasses = async () =>
+  apiClient.get('/api/hostel-office/os-pending-gatepasses');
+export const getHostelOfficeOSGatepassDetails = async (gatepassId) =>
+  apiClient.get(`/api/hostel-office/os-gatepass/${gatepassId}`);
+export const getHostelOfficeOSStudentHistory = async (studentId) =>
+  apiClient.get(`/api/hostel-office/os-student-history/${studentId}`);
+export const getHostelOfficeOSGatepassHistory = async (search) =>
+  apiClient.get('/api/hostel-office/os-gatepass-history', { params: { search } });
+export const decideHostelOfficeOSGatepass = async (payload) =>
+  apiClient.post('/api/hostel-office/os-decide-gatepass', payload);
 
 // Office Secretary APIs
 export const getSecretaryPendingGatepasses = async () =>

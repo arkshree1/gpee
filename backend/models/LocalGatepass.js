@@ -102,6 +102,14 @@ const localGatepassSchema = new mongoose.Schema(
       enum: ['pending', 'in_use', 'completed'],
       default: 'pending',
     },
+    actualExitAt: {
+      type: Date,
+      default: null,
+    },
+    actualEntryAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

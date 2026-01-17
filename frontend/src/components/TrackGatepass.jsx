@@ -187,7 +187,7 @@ const TrackGatepass = () => {
                             <div className="sa-qr-timer">Expires in <span className="sa-qr-time">{formatTime(countdown)}</span></div>
                         </div>
                         <button className="sa-cancel-btn" onClick={() => setShowConfirmModal(true)}>
-                            Not going outside? Cancel
+                            {qrData.direction === 'exit' ? 'Not going outside? Cancel' : 'Not going inside? Cancel'}
                         </button>
                     </>
                 ) : (
@@ -345,24 +345,40 @@ const OutstationGatepassList = ({ gatepasses, presence, OSActiveGPNo, qrData, qr
 };
 
 const OutstationGatepassCard = ({ gp, presence, OSActiveGPNo, qrData, qrLoading, onExitQR, onEntryQR, formatDate, formatTime12hr }) => {
-    const stages = [
-        { id: 'applied', label: 'Applied', status: 'completed' },
-        { id: 'officeSecretary', label: 'Secretary', status: getStageStatus(gp, 'officeSecretary') },
-        { id: 'dugc', label: 'DUGC', status: getStageStatus(gp, 'dugc') },
-        { id: 'hod', label: 'HOD', status: getStageStatus(gp, 'hod') },
-    ];
+    // Check if any previous stage was rejected
+    function isRejectedBefore(gp, stage) {
+        const stageOrder = ['officeSecretary', 'dugc', 'hod', 'hostelOffice'];
+        const stageIdx = stageOrder.indexOf(stage);
+        for (let i = 0; i < stageIdx; i++) {
+            if (gp.stageStatus?.[stageOrder[i]]?.status === 'rejected') {
+                return true;
+            }
+        }
+        return false;
+    }
 
     function getStageStatus(gp, stage) {
+        // If any previous stage was rejected, this stage is not applicable
+        if (isRejectedBefore(gp, stage)) return 'not-applicable';
+        
         const stageData = gp.stageStatus?.[stage];
         if (stageData?.status === 'approved') return 'approved';
         if (stageData?.status === 'rejected') return 'rejected';
         if (gp.currentStage === stage) return 'current';
-        const stageOrder = ['officeSecretary', 'dugc', 'hod', 'completed'];
+        const stageOrder = ['officeSecretary', 'dugc', 'hod', 'hostelOffice', 'completed'];
         const currentIdx = stageOrder.indexOf(gp.currentStage);
         const stageIdx = stageOrder.indexOf(stage);
         if (currentIdx > stageIdx) return 'completed';
         return 'pending';
     }
+
+    const stages = [
+        { id: 'applied', label: 'Applied', status: 'completed' },
+        { id: 'officeSecretary', label: 'Secretary', status: getStageStatus(gp, 'officeSecretary') },
+        { id: 'dugc', label: 'DUGC', status: getStageStatus(gp, 'dugc') },
+        { id: 'hod', label: 'HOD', status: getStageStatus(gp, 'hod') },
+        { id: 'hostelOffice', label: 'Hostel', status: getStageStatus(gp, 'hostelOffice') },
+    ];
 
     const isRejected = gp.finalStatus === 'rejected';
     const isApproved = gp.finalStatus === 'approved';
@@ -417,12 +433,16 @@ const ProgressTracker = ({ stages }) => {
             {stages.map((stage) => {
                 let nodeClass = 'pending';
                 let icon = '';
+                let statusLabel = '';
                 if (stage.status === 'completed' || stage.status === 'approved') { nodeClass = 'completed'; icon = '✓'; }
-                else if (stage.status === 'rejected') { nodeClass = 'rejected'; icon = '✗'; }
-                else if (stage.status === 'current') { nodeClass = 'current'; icon = '●'; }
+                else if (stage.status === 'rejected') { nodeClass = 'rejected'; icon = '✗'; statusLabel = 'rejected'; }
+                else if (stage.status === 'not-applicable') { nodeClass = 'not-applicable'; icon = '!'; }
+                else if (stage.status === 'current') { nodeClass = 'current'; icon = '●'; statusLabel = 'waiting'; }
+                else if (stage.status === 'pending') { statusLabel = ''; } // future stages, no label
 
                 return (
                     <div key={stage.id} className="tg-progress-step">
+                        {statusLabel && <div className={`tg-progress-status ${nodeClass}`}>{statusLabel}</div>}
                         <div className={`tg-progress-node ${nodeClass}`}>{icon}</div>
                         <div className={`tg-progress-label ${nodeClass}`}>{stage.label}</div>
                     </div>

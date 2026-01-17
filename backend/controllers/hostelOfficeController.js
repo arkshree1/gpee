@@ -1,10 +1,12 @@
 const LocalGatepass = require('../models/LocalGatepass');
+const OutstationGatepass = require('../models/OutstationGatepass');
 const GateLog = require('../models/GateLog');
 const User = require('../models/User');
 
 // Get all pending local gatepasses for hostel office to review
 exports.getPendingGatepasses = async (req, res) => {
     const gatepasses = await LocalGatepass.find({ status: 'pending' })
+        .populate('student', 'imageUrl')
         .sort({ createdAt: -1 })
         .select('-__v');
 
@@ -125,6 +127,164 @@ exports.decideGatepass = async (req, res) => {
             _id: gatepass._id,
             gatePassNo: gatepass.gatePassNo,
             status: gatepass.status,
+        },
+    });
+};
+
+// ==================== OUTSTATION GATEPASS ENDPOINTS ====================
+
+// Get student's local gatepass history with actual entry/exit times
+exports.getLocalStudentHistory = async (req, res) => {
+    const { studentId } = req.params;
+
+    // Get all local gatepasses for this student (excluding pending ones)
+    // Now includes actualExitAt and actualEntryAt directly from LocalGatepass
+    const gatepasses = await LocalGatepass.find({
+        student: studentId,
+        status: { $in: ['approved', 'denied'] },
+    })
+        .sort({ createdAt: -1 })
+        .select('gatePassNo status place purpose timeOut timeIn dateOut dateIn createdAt decidedAt utilized utilizationStatus actualExitAt actualEntryAt')
+        .limit(20);
+
+    return res.json({ gatepasses });
+};
+
+// Get pending outstation gatepasses for hostel office (approved by HOD)
+exports.getOSPendingGatepasses = async (req, res) => {
+    const gatepasses = await OutstationGatepass.find({
+        currentStage: 'hostelOffice',
+    })
+        .sort({ createdAt: -1 })
+        .select('studentName rollnumber course department branch contact roomNumber student createdAt')
+        .populate('student', 'imageUrl branch');
+
+    // For existing records without branch, use the student's branch
+    const mappedGatepasses = gatepasses.map(gp => {
+        const gpObj = gp.toObject();
+        if (!gpObj.branch && gpObj.student?.branch) {
+            gpObj.branch = gpObj.student.branch;
+        }
+        return gpObj;
+    });
+
+    return res.json({ gatepasses: mappedGatepasses });
+};
+
+// Get single outstation gatepass details
+exports.getOSGatepassDetails = async (req, res) => {
+    const { gatepassId } = req.params;
+
+    const gatepass = await OutstationGatepass.findById(gatepassId)
+        .populate('student', 'imageUrl name rollnumber');
+
+    if (!gatepass) {
+        return res.status(404).json({ message: 'Gatepass not found' });
+    }
+
+    return res.json({ gatepass });
+};
+
+// Get student's OS gatepass history
+exports.getOSStudentHistory = async (req, res) => {
+    const { studentId } = req.params;
+
+    const gatepasses = await OutstationGatepass.find({
+        student: studentId,
+    })
+        .sort({ createdAt: -1 })
+        .select('gatePassNo currentStage finalStatus stageStatus createdAt dateOut dateIn reasonOfLeave address classesMissed missedDays');
+
+    return res.json({ gatepasses });
+};
+
+// Get outstation gatepass history (approved/rejected by hostel office)
+exports.getOSGatepassHistory = async (req, res) => {
+    const { search } = req.query;
+
+    let query = {
+        'stageStatus.hostelOffice.status': { $in: ['approved', 'rejected'] },
+    };
+
+    if (search && search.trim()) {
+        const searchRegex = new RegExp(search.trim(), 'i');
+        query.$or = [
+            { studentName: searchRegex },
+            { rollnumber: searchRegex },
+        ];
+    }
+
+    const gatepasses = await OutstationGatepass.find(query)
+        .sort({ 'stageStatus.hostelOffice.decidedAt': -1, createdAt: -1 })
+        .select('-__v');
+
+    return res.json({ gatepasses });
+};
+
+// Approve or reject an outstation gatepass
+exports.decideOSGatepass = async (req, res) => {
+    const hostelOfficeId = req.user.userId;
+    const { gatepassId, decision } = req.body;
+
+    if (!gatepassId || !decision) {
+        return res.status(400).json({ message: 'Gatepass ID and decision are required' });
+    }
+
+    if (!['approved', 'rejected'].includes(decision)) {
+        return res.status(400).json({ message: 'Decision must be either approved or rejected' });
+    }
+
+    const gatepass = await OutstationGatepass.findById(gatepassId);
+
+    if (!gatepass) {
+        return res.status(404).json({ message: 'Gatepass not found' });
+    }
+
+    if (gatepass.currentStage !== 'hostelOffice') {
+        return res.status(400).json({ message: 'This gatepass is not at Hostel Office stage' });
+    }
+
+    // Update stage status
+    gatepass.stageStatus.hostelOffice = {
+        status: decision,
+        decidedBy: hostelOfficeId,
+        decidedAt: new Date(),
+    };
+
+    if (decision === 'approved') {
+        // Final approval - gatepass is approved
+        gatepass.finalStatus = 'approved';
+        gatepass.currentStage = 'completed';
+        gatepass.utilizationStatus = 'pending'; // Awaiting student exit
+        // Generate sequential 5-digit gatepass number (OS-00001, OS-00002, etc.)
+        const lastGatepass = await OutstationGatepass.findOne({ gatePassNo: { $ne: null } })
+            .sort({ gatePassNo: -1 })
+            .select('gatePassNo');
+        let nextNum = 1;
+        if (lastGatepass?.gatePassNo) {
+            const match = lastGatepass.gatePassNo.match(/OS-(\d+)/);
+            if (match) {
+                nextNum = parseInt(match[1], 10) + 1;
+            }
+        }
+        gatepass.gatePassNo = `OS-${String(nextNum).padStart(5, '0')}`;
+    } else {
+        // Rejected - end the workflow
+        gatepass.finalStatus = 'rejected';
+        gatepass.currentStage = 'completed';
+    }
+
+    await gatepass.save();
+
+    return res.json({
+        message: decision === 'approved'
+            ? 'Gatepass approved successfully'
+            : 'Gatepass rejected',
+        gatepass: {
+            _id: gatepass._id,
+            currentStage: gatepass.currentStage,
+            finalStatus: gatepass.finalStatus,
+            gatePassNo: gatepass.gatePassNo,
         },
     });
 };

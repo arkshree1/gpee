@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { decideRequest, getGuardDashboard, getGuardEntryExitLogs, scanQrToken } from '../api/api';
 import GuardScanner from '../components/GuardScanner';
 import GuardEntryExitTable from '../components/GuardEntryExitTable';
 import GuardManualEntry from '../components/GuardManualEntry';
-import '../styles/student.css';
+import '../styles/guard.css';
 
 const normalizeImageUrl = (imageUrl) => {
   if (!imageUrl) return '';
@@ -13,6 +14,7 @@ const normalizeImageUrl = (imageUrl) => {
 };
 
 const GuardPage = () => {
+  const navigate = useNavigate();
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -30,8 +32,16 @@ const GuardPage = () => {
   });
 
   const [pending, setPending] = useState(null);
-  // pending = { requestId, direction, purpose, place, student{..., outPurpose, outPlace, outTime} }
   const [decisionLoading, setDecisionLoading] = useState(false);
+  
+  const isMountedRef = useRef(true);
+  const refreshInProgressRef = useRef(false);
+  const abortControllerRef = useRef(null);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
 
   const formatOutTime = (value) => {
     if (!value) return '';
@@ -52,21 +62,52 @@ const GuardPage = () => {
     return `${day}/${month}/${year}, ${hours}:${minutes}:${seconds} ${ampm}`;
   };
 
-  const refresh = async () => {
-    try {
-      const res = await getGuardDashboard();
-      setDashboard(res.data);
-    } finally {
-      setLoading(false);
+  const refresh = useCallback(async () => {
+    // Prevent overlapping requests
+    if (refreshInProgressRef.current) return;
+    
+    // Cancel any pending request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
-  };
+    
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController();
+    refreshInProgressRef.current = true;
+    
+    try {
+      const res = await getGuardDashboard({ signal: abortControllerRef.current.signal });
+      // Only update state if component is still mounted
+      if (isMountedRef.current) {
+        setDashboard(res.data);
+      }
+    } catch (error) {
+      // Silently ignore abort errors and network errors during polling
+      // Only log non-abort errors for debugging
+      if (error?.name !== 'AbortError' && error?.code !== 'ERR_CANCELED') {
+        console.debug('Guard dashboard refresh failed:', error?.message || 'Network error');
+      }
+    } finally {
+      refreshInProgressRef.current = false;
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
+    }
+  }, []);
 
   useEffect(() => {
+    isMountedRef.current = true;
     refresh();
     const id = setInterval(refresh, 5000);
-    return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return () => {
+      isMountedRef.current = false;
+      clearInterval(id);
+      // Cancel any pending request on unmount
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [refresh]);
 
   useEffect(() => {
     if (activeTab !== 'logs' || logsLoading || entryExitLogs.length) return;
@@ -190,78 +231,133 @@ const GuardPage = () => {
     <div className="guard-layout">
       <header className="guard-header">
         <div className="guard-header-brand">
-          <span className="guard-header-passly">GoThru</span>
-          <span className="guard-header-by">
-            by <strong>Watchr</strong>
-          </span>
+          <div className="guard-header-logo-wrap">
+            <span className="guard-header-logo">GoThru</span>
+            <span className="guard-header-subtitle">by Watchr</span>
+          </div>
+        </div>
+        <div className="guard-header-right">
+          <span className="guard-header-role">Security Guard</span>
+          <button className="guard-logout-btn" onClick={handleLogout}>
+            Logout
+          </button>
         </div>
       </header>
 
       <div className="guard-body">
         <aside className="guard-sidebar">
-          <button
-            type="button"
-            className={`guard-nav-item ${activeTab === 'scan' ? 'active' : ''}`}
-            onClick={() => setActiveTab('scan')}
-          >
-            <div className="guard-nav-icon">
-              <span className="guard-nav-label">Scan</span>
-            </div>
-          </button>
+          <nav className="guard-sidebar-nav">
+            <button
+              type="button"
+              className={`guard-nav-item ${activeTab === 'scan' ? 'active' : ''}`}
+              onClick={() => setActiveTab('scan')}
+            >
+              <svg className="guard-nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+              <span className="guard-nav-label">Scan QR</span>
+            </button>
 
-          <button
-            type="button"
-            className={`guard-nav-item ${activeTab === 'logs' ? 'active' : ''}`}
-            onClick={() => setActiveTab('logs')}
-          >
-            <div className="guard-nav-icon">
-              <span className="guard-nav-label">Entry</span>
-            </div>
-          </button>
+            <button
+              type="button"
+              className={`guard-nav-item ${activeTab === 'logs' ? 'active' : ''}`}
+              onClick={() => setActiveTab('logs')}
+            >
+              <svg className="guard-nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+              </svg>
+              <span className="guard-nav-label">Entry Logs</span>
+            </button>
 
-          <button
-            type="button"
-            className={`guard-nav-item ${activeTab === 'manual' ? 'active' : ''}`}
-            onClick={() => setActiveTab('manual')}
-          >
-            <div className="guard-nav-icon">
-              <span className="guard-nav-label">Manual</span>
-            </div>
-          </button>
+            <button
+              type="button"
+              className={`guard-nav-item ${activeTab === 'manual' ? 'active' : ''}`}
+              onClick={() => setActiveTab('manual')}
+            >
+              <svg className="guard-nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+              <span className="guard-nav-label">Manual Entry</span>
+            </button>
+          </nav>
         </aside>
 
         <main className="guard-main">
           {activeTab === 'scan' && (
             <div className="guard-scan-page">
-              {scanError && <div className="guard-error-banner">{scanError}</div>}
-              <button
-                className="guard-scan-button"
-                type="button"
-                onClick={() => setScannerOpen(true)}
-              >
-                SCAN
-              </button>
+              <div className="guard-scan-content">
+                {scanError && (
+                  <div className="guard-error-banner">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    <span>{scanError}</span>
+                    <button onClick={() => setScanError('')}>×</button>
+                  </div>
+                )}
+
+                <div className="guard-scan-card">
+                  <div className="guard-scan-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <rect x="3" y="3" width="7" height="7" rx="1" />
+                      <rect x="14" y="3" width="7" height="7" rx="1" />
+                      <rect x="3" y="14" width="7" height="7" rx="1" />
+                      <path d="M14 14h3v3h-3zM17 17h4v4h-4zM14 17h3v4h-3zM17 14h4v3h-4z" />
+                    </svg>
+                  </div>
+                  <h2 className="guard-scan-title">Ready to Scan</h2>
+                  <p className="guard-scan-subtitle">Tap the button below to scan student's QR code</p>
+                  <button
+                    className="guard-scan-button"
+                    type="button"
+                    onClick={() => setScannerOpen(true)}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="3" width="7" height="7" rx="1" />
+                      <rect x="14" y="3" width="7" height="7" rx="1" />
+                      <rect x="3" y="14" width="7" height="7" rx="1" />
+                      <rect x="14" y="14" width="7" height="7" rx="1" />
+                    </svg>
+                    <span>Scan QR Code</span>
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
           {activeTab === 'logs' && (
             <div className="guard-logs-page">
-              <div className="guard-logs-header-row">
-                <div className="guard-logs-title">ENTRY-EXIT LOG</div>
-                <div className="guard-logs-date">
-                  <input
-                    type="date"
-                    value={logsDate}
-                    onChange={(e) => setLogsDate(e.target.value)}
-                  />
-                </div>
-                <div className="guard-logs-search">
-                  <input
-                    type="text"
-                    placeholder="Search"
-                    value={logsSearch}
-                    onChange={(e) => setLogsSearch(e.target.value)}
-                  />
+              <div className="guard-logs-header">
+                <h2 className="guard-logs-title">Entry-Exit Logs</h2>
+                <div className="guard-logs-filters">
+                  <div className="guard-filter-group">
+                    <label>Date</label>
+                    <input
+                      type="date"
+                      value={logsDate}
+                      onChange={(e) => setLogsDate(e.target.value)}
+                      className="guard-date-input"
+                    />
+                  </div>
+                  <div className="guard-filter-group">
+                    <label>Search</label>
+                    <input
+                      type="text"
+                      placeholder="Name or Roll No..."
+                      value={logsSearch}
+                      onChange={(e) => setLogsSearch(e.target.value)}
+                      className="guard-search-input"
+                    />
+                  </div>
                 </div>
               </div>
               <GuardEntryExitTable
@@ -283,173 +379,83 @@ const GuardPage = () => {
         </main>
       </div>
 
+      {/* Approval Modal */}
       {pending && (
         <div className="guard-approval-overlay">
-          <div className="guard-approval-card">
+          <div className="guard-approval-modal">
             <div className="guard-approval-header">
-              <div className="guard-approval-title">Approval Screen</div>
-              <div className="guard-pill" style={{ textTransform: 'capitalize' }}>
-                {pending.direction}
-              </div>
+              <h3>Student {prettyDirection} Request</h3>
+              <span className={`guard-direction-badge ${pending.direction}`}>
+                {prettyDirection}
+              </span>
             </div>
 
             <div className="guard-approval-body">
-              <div className="guard-approval-photo-col">
-                <img className="guard-photo-xl" src={photoSrc} alt="Student" />
+              <div className="guard-approval-photo-section">
+                <img className="guard-approval-photo" src={photoSrc} alt="Student" />
               </div>
 
-              <div className="guard-approval-info">
-                <div className="guard-approval-name">{pending.student?.name}</div>
-                <div className="guard-approval-roll">Roll No: {pending.student?.rollnumber}</div>
+              <div className="guard-approval-details">
+                <div className="guard-student-name">{pending.student?.name}</div>
+                <div className="guard-student-roll">{pending.student?.rollnumber}</div>
 
-                <div className="guard-approval-fields">
-                  {pending.direction === 'exit' && (
+                {pending.gatePassNo && (
+                  <div className="guard-gatepass-badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                      <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16" />
+                    </svg>
+                    <span>{pending.gatePassNo}</span>
+                  </div>
+                )}
+
+                <div className="guard-info-grid">
+                  {pending.direction === 'exit' ? (
                     <>
-                      {/* Gatepass Badge */}
-                      {pending.gatePassNo && (
-                        <div style={{
-                          background: 'linear-gradient(135deg, #9904b6 0%, #6b0080 100%)',
-                          color: '#fff',
-                          padding: '8px 16px',
-                          borderRadius: '12px',
-                          fontWeight: 700,
-                          fontSize: '16px',
-                          textAlign: 'center',
-                          marginBottom: '12px',
-                          boxShadow: '0 2px 8px rgba(153, 4, 182, 0.4)',
-                        }}>
-                          🎫 Gatepass: {pending.gatePassNo}
-                        </div>
-                      )}
-                      <div>
+                      <div className="guard-info-item">
                         <label>Purpose</label>
-                        <div className="guard-approval-value">{pending.purpose}</div>
+                        <div className="guard-info-value">{pending.purpose || '-'}</div>
                       </div>
-                      <div>
+                      <div className="guard-info-item">
                         <label>Place</label>
-                        <div className="guard-approval-value">{pending.place}</div>
+                        <div className="guard-info-value">{pending.place || '-'}</div>
                       </div>
-                      {/* Gatepass Scheduled Times */}
                       {pending.gatepassDetails && (
-                        <>
-                          <div style={{
-                            marginTop: '10px',
-                            padding: '10px',
-                            background: 'rgba(255,255,255,0.1)',
-                            borderRadius: '8px',
-                            border: '1px solid rgba(255,255,255,0.2)',
-                          }}>
-                            <div style={{ fontSize: '11px', opacity: 0.7, marginBottom: '6px', fontWeight: 600 }}>
-                              SCHEDULED TIMES
-                            </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '13px' }}>
-                              <div>
-                                <span style={{ opacity: 0.7 }}>Out: </span>
-                                <span style={{ fontWeight: 600 }}>
-                                  {(() => {
-                                    const dt = pending.gatepassDetails.gatepassOutTime;
-                                    if (!dt) return '-';
-                                    const [datePart, timePart] = dt.split('T');
-                                    const dateFormatted = datePart?.split('-').reverse().join('/') || '';
-                                    const t = timePart?.split(':');
-                                    if (!t || t.length < 2) return dateFormatted;
-                                    let h = parseInt(t[0], 10);
-                                    const m = t[1];
-                                    const ampm = h >= 12 ? 'PM' : 'AM';
-                                    h = h % 12 || 12;
-                                    return `${dateFormatted} ${h}:${m} ${ampm}`;
-                                  })()}
-                                </span>
-                              </div>
-                              <div>
-                                <span style={{ opacity: 0.7 }}>In: </span>
-                                <span style={{ fontWeight: 600 }}>
-                                  {(() => {
-                                    const dt = pending.gatepassDetails.gatepassInTime;
-                                    if (!dt) return '-';
-                                    const [datePart, timePart] = dt.split('T');
-                                    const dateFormatted = datePart?.split('-').reverse().join('/') || '';
-                                    const t = timePart?.split(':');
-                                    if (!t || t.length < 2) return dateFormatted;
-                                    let h = parseInt(t[0], 10);
-                                    const m = t[1];
-                                    const ampm = h >= 12 ? 'PM' : 'AM';
-                                    h = h % 12 || 12;
-                                    return `${dateFormatted} ${h}:${m} ${ampm}`;
-                                  })()}
-                                </span>
-                              </div>
-                            </div>
+                        <div className="guard-info-item full-width">
+                          <label>Scheduled Times</label>
+                          <div className="guard-scheduled-times">
+                            <span>
+                              <strong>Out:</strong> {formatScheduledTime(pending.gatepassDetails.gatepassOutTime)}
+                            </span>
+                            <span>
+                              <strong>In:</strong> {formatScheduledTime(pending.gatepassDetails.gatepassInTime)}
+                            </span>
                           </div>
-                        </>
+                        </div>
                       )}
                     </>
-                  )}
-
-                  {pending.direction === 'entry' && (
+                  ) : (
                     <>
-                      {/* Gatepass Badge for Entry */}
-                      {pending.gatePassNo && (
-                        <div style={{
-                          background: 'linear-gradient(135deg, #16a34a 0%, #0f6d32 100%)',
-                          color: '#fff',
-                          padding: '8px 16px',
-                          borderRadius: '12px',
-                          fontWeight: 700,
-                          fontSize: '16px',
-                          textAlign: 'center',
-                          marginBottom: '12px',
-                          boxShadow: '0 2px 8px rgba(22, 163, 74, 0.4)',
-                        }}>
-                          🎫 Gatepass Entry: {pending.gatePassNo}
-                        </div>
-                      )}
-                      <div>
+                      <div className="guard-info-item">
                         <label>Out Purpose</label>
-                        <div className="guard-approval-value">{pending.student?.outPurpose || '-'}</div>
+                        <div className="guard-info-value">{pending.student?.outPurpose || '-'}</div>
                       </div>
-                      <div>
+                      <div className="guard-info-item">
                         <label>Out Place</label>
-                        <div className="guard-approval-value">{pending.student?.outPlace || '-'}</div>
+                        <div className="guard-info-value">{pending.student?.outPlace || '-'}</div>
                       </div>
-                      <div>
-                        <label>Actual Out Time</label>
-                        <div className="guard-approval-value">
-                          {pending.student?.outTime
-                            ? formatOutTime(pending.student.outTime)
-                            : '-'}
-                        </div>
+                      <div className="guard-info-item">
+                        <label>Exit Time</label>
+                        <div className="guard-info-value">{formatOutTime(pending.student?.outTime) || '-'}</div>
                       </div>
-                      <div>
-                        <label>Total Time Out</label>
-                        <div className="guard-approval-value">{totalTimeOut || '-'}</div>
+                      <div className="guard-info-item">
+                        <label>Time Outside</label>
+                        <div className="guard-info-value highlight">{totalTimeOut || '-'}</div>
                       </div>
-                      {/* Gatepass Scheduled Return Time */}
                       {pending.gatepassDetails?.gatepassInTime && (
-                        <div style={{
-                          marginTop: '10px',
-                          padding: '8px 10px',
-                          background: 'rgba(255,255,255,0.1)',
-                          borderRadius: '8px',
-                          border: '1px solid rgba(255,255,255,0.2)',
-                          fontSize: '12px',
-                        }}>
-                          <span style={{ opacity: 0.7 }}>Scheduled Return: </span>
-                          <span style={{ fontWeight: 600 }}>
-                            {(() => {
-                              const dt = pending.gatepassDetails.gatepassInTime;
-                              if (!dt) return '-';
-                              const [datePart, timePart] = dt.split('T');
-                              const dateFormatted = datePart?.split('-').reverse().join('/') || '';
-                              const t = timePart?.split(':');
-                              if (!t || t.length < 2) return dateFormatted;
-                              let h = parseInt(t[0], 10);
-                              const m = t[1];
-                              const ampm = h >= 12 ? 'PM' : 'AM';
-                              h = h % 12 || 12;
-                              return `${dateFormatted} ${h}:${m} ${ampm}`;
-                            })()}
-                          </span>
+                        <div className="guard-info-item full-width">
+                          <label>Scheduled Return</label>
+                          <div className="guard-info-value">{formatScheduledTime(pending.gatepassDetails.gatepassInTime)}</div>
                         </div>
                       )}
                     </>
@@ -458,20 +464,34 @@ const GuardPage = () => {
 
                 <div className="guard-approval-actions">
                   <button
-                    className="guard-btn danger"
+                    className="guard-action-btn reject"
                     type="button"
                     disabled={decisionLoading}
                     onClick={() => doDecide('reject')}
                   >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="15" y1="9" x2="9" y2="15" />
+                      <line x1="9" y1="9" x2="15" y2="15" />
+                    </svg>
                     Reject
                   </button>
                   <button
-                    className="guard-btn"
+                    className="guard-action-btn approve"
                     type="button"
                     disabled={decisionLoading}
                     onClick={() => doDecide('approve')}
                   >
-                    {decisionLoading ? 'Saving...' : 'Approve'}
+                    {decisionLoading ? (
+                      <span>Processing...</span>
+                    ) : (
+                      <>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Approve
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -481,8 +501,65 @@ const GuardPage = () => {
       )}
 
       {scannerOpen && <GuardScanner onToken={onToken} onClose={() => setScannerOpen(false)} />}
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="guard-mobile-nav">
+        <button
+          type="button"
+          className={`guard-mobile-nav-item ${activeTab === 'scan' ? 'active' : ''}`}
+          onClick={() => setActiveTab('scan')}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="3" y="3" width="7" height="7" rx="1" />
+            <rect x="14" y="3" width="7" height="7" rx="1" />
+            <rect x="3" y="14" width="7" height="7" rx="1" />
+            <rect x="14" y="14" width="7" height="7" rx="1" />
+          </svg>
+          <span>Scan</span>
+        </button>
+        <button
+          type="button"
+          className={`guard-mobile-nav-item ${activeTab === 'logs' ? 'active' : ''}`}
+          onClick={() => setActiveTab('logs')}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+          </svg>
+          <span>Logs</span>
+        </button>
+        <button
+          type="button"
+          className={`guard-mobile-nav-item ${activeTab === 'manual' ? 'active' : ''}`}
+          onClick={() => setActiveTab('manual')}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+          </svg>
+          <span>Manual</span>
+        </button>
+      </nav>
     </div>
   );
+};
+
+// Helper function for formatting scheduled times
+const formatScheduledTime = (dt) => {
+  if (!dt) return '-';
+  const [datePart, timePart] = dt.split('T');
+  const [year, month, day] = datePart?.split('-') || [];
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const formattedDate = `${parseInt(day, 10)} ${monthNames[parseInt(month, 10) - 1]}`;
+  const t = timePart?.split(':');
+  if (!t || t.length < 2) return formattedDate;
+  let h = parseInt(t[0], 10);
+  const m = t[1];
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return `${formattedDate} ${h}:${m} ${ampm}`;
 };
 
 export default GuardPage;

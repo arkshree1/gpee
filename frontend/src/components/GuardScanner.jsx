@@ -134,8 +134,11 @@ const GuardScanner = ({ onToken, onClose }) => {
       <div className="guard-scanner-modal">
         <div className="guard-scanner-header">
           <div className="guard-scanner-title">Scan QR</div>
-          <button className="guard-btn ghost" type="button" onClick={onClose}>
-            Close
+          <button className="guard-scanner-close-btn" type="button" onClick={onClose}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
           </button>
         </div>
 

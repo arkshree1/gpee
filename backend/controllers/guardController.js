@@ -182,11 +182,11 @@ exports.decide = async (req, res) => {
           );
         } else if (requestDoc.gatePassNo.startsWith('L-')) {
           student.localActiveGPNo = requestDoc.gatePassNo;
-          // Set local gatepass status to in_use
+          // Set local gatepass status to in_use and record actual exit time
           const LocalGatepass = require('../models/LocalGatepass');
           await LocalGatepass.findOneAndUpdate(
             { gatePassNo: requestDoc.gatePassNo },
-            { utilizationStatus: 'in_use' }
+            { actualExitAt: decidedAt, utilizationStatus: 'in_use' }
           );
         }
       }
@@ -205,7 +205,7 @@ exports.decide = async (req, res) => {
         const LocalGatepass = require('../models/LocalGatepass');
         await LocalGatepass.findOneAndUpdate(
           { gatePassNo: student.localActiveGPNo },
-          { utilized: true, utilizationStatus: 'completed' }
+          { utilized: true, actualEntryAt: decidedAt, utilizationStatus: 'completed' }
         );
       }
       student.outPurpose = null;

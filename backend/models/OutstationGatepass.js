@@ -126,13 +126,14 @@ const outstationGatepassSchema = new mongoose.Schema(
     // Multi-stage workflow fields
     currentStage: {
       type: String,
-      enum: ['applied', 'officeSecretary', 'dugc', 'hod', 'completed'],
+      enum: ['applied', 'officeSecretary', 'dugc', 'hod', 'hostelOffice', 'completed'],
       default: 'officeSecretary', // Goes to office secretary immediately after submission
     },
     stageStatus: {
       officeSecretary: { type: stageDecisionSchema, default: () => ({}) },
       dugc: { type: stageDecisionSchema, default: () => ({}) },
       hod: { type: stageDecisionSchema, default: () => ({}) },
+      hostelOffice: { type: stageDecisionSchema, default: () => ({}) },
     },
     finalStatus: {
       type: String,

@@ -8,6 +8,7 @@ import {
   decideDugcGatepass,
 } from '../api/api';
 import PopupBox from '../components/PopupBox';
+import ConfirmModal from '../components/ConfirmModal';
 import '../styles/admin.css';
 
 const DugcPage = () => {
@@ -204,6 +205,7 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
   const [error, setError] = useState('');
   const [popupMessage, setPopupMessage] = useState('');
   const [deciding, setDeciding] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({ open: false, decision: null });
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -256,14 +258,24 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
     return `${day}/${month}/${year} ${hours}:${mins} ${ampm}`;
   };
 
+  const openConfirmModal = (decision) => {
+    setConfirmModal({ open: true, decision });
+  };
+
+  const closeConfirmModal = () => {
+    setConfirmModal({ open: false, decision: null });
+  };
+
   const handleDecision = async (decision) => {
     setDeciding(true);
     try {
       const res = await decideDugcGatepass({ gatepassId, decision });
+      closeConfirmModal();
       setPopupMessage(res.data.message);
       setTimeout(() => onBack(), 1500);
     } catch (err) {
       setPopupMessage(err?.response?.data?.message || 'Failed to process decision');
+      closeConfirmModal();
     } finally {
       setDeciding(false);
     }
@@ -392,14 +404,14 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
         <div className="os-action-btns">
           <button
             className="os-reject-btn"
-            onClick={() => handleDecision('rejected')}
+            onClick={() => openConfirmModal('rejected')}
             disabled={deciding}
           >
             Reject
           </button>
           <button
             className="os-approve-btn"
-            onClick={() => handleDecision('approved')}
+            onClick={() => openConfirmModal('approved')}
             disabled={deciding}
           >
             Approve & Pass to HOD
@@ -427,6 +439,16 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
         ))}
       </div>
 
+      <ConfirmModal
+        isOpen={confirmModal.open}
+        onClose={closeConfirmModal}
+        onConfirm={() => handleDecision(confirmModal.decision)}
+        decision={confirmModal.decision}
+        studentName={gatepass?.studentName}
+        rollNumber={gatepass?.rollnumber}
+        reasonOfLeave={gatepass?.reasonOfLeave}
+        isProcessing={deciding}
+      />
       <PopupBox message={popupMessage} onClose={() => setPopupMessage('')} />
     </div>
   );

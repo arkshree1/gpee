@@ -152,22 +152,8 @@ exports.decideGatepass = async (req, res) => {
     };
 
     if (decision === 'approved') {
-        // Final approval - gatepass is approved
-        gatepass.finalStatus = 'approved';
-        gatepass.currentStage = 'completed';
-        gatepass.utilizationStatus = 'pending'; // Awaiting student exit
-        // Generate sequential 5-digit gatepass number (OS-00001, OS-00002, etc.)
-        const lastGatepass = await OutstationGatepass.findOne({ gatePassNo: { $ne: null } })
-            .sort({ gatePassNo: -1 })
-            .select('gatePassNo');
-        let nextNum = 1;
-        if (lastGatepass?.gatePassNo) {
-            const match = lastGatepass.gatePassNo.match(/OS-(\d+)/);
-            if (match) {
-                nextNum = parseInt(match[1], 10) + 1;
-            }
-        }
-        gatepass.gatePassNo = `OS-${String(nextNum).padStart(5, '0')}`;
+        // Move to hostel office for final approval
+        gatepass.currentStage = 'hostelOffice';
     } else {
         // Rejected - end the workflow
         gatepass.finalStatus = 'rejected';
@@ -178,7 +164,7 @@ exports.decideGatepass = async (req, res) => {
 
     return res.json({
         message: decision === 'approved'
-            ? 'Gatepass approved successfully'
+            ? 'Gatepass approved and passed to Hostel Office'
             : 'Gatepass rejected',
         gatepass: {
             _id: gatepass._id,

@@ -233,8 +233,14 @@ const StudentHome = () => {
         </div>
 
         {status?.hasPendingRequest && status?.pendingRequest && (
-          <div className="sd-hint">
-            A request is already pending. Ask the guard to scan your QR from the Apply page.
+          <div className="sd-hint sd-hint-with-action">
+            <span>A request is already pending. Ask the guard to scan your QR from the Apply page.</span>
+            <button 
+              className="sd-hint-btn"
+              onClick={() => navigate('/student/apply')}
+            >
+              Go to QR →
+            </button>
           </div>
         )}
 
