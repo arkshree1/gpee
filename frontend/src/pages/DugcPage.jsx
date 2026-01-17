@@ -15,7 +15,7 @@ const DugcPage = () => {
   const [activePage, setActivePage] = useState('requests');
   const [viewingGatepass, setViewingGatepass] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
+//hey
   useEffect(() => {
     document.documentElement.classList.add('admin-page-active');
     document.body.classList.add('admin-page-active');
