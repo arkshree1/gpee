@@ -38,55 +38,66 @@ const ForgotPassword = () => {
 
   return (
     <div className="gothru-auth-page">
-      <div className="gothru-auth-card">
-        {/* Brand */}
-        <div className="gothru-brand">
-          <span className="gothru-brand-name">GoThru</span>
-          <span className="gothru-brand-tagline">by Watchr</span>
-        </div>
+      {/* Institutional Banner */}
+      <div className="gothru-institution-banner">
+        <img
+          src="/rgipt-banner.png"
+          alt="RGIPT - An Institution of National Importance, Government of India"
+        />
+      </div>
 
-        {/* Title */}
-        <h1 className="gothru-form-title">Forgot Password</h1>
-
-        {/* Subtitle */}
-        <p className="gothru-form-subtitle">
-          Enter your registered email to receive an OTP
-        </p>
-
-        {/* Form */}
-        <form className="gothru-form" onSubmit={handleSubmit}>
-          {/* Email */}
-          <div className="gothru-input-group">
-            <label className="gothru-label" htmlFor="email">College Email</label>
-            <div className="gothru-input-wrapper">
-              <input
-                id="email"
-                type="email"
-                className="gothru-input"
-                placeholder="Enter your college email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-              <span className="gothru-input-icon">✉</span>
-            </div>
+      {/* Auth Content */}
+      <div className="gothru-auth-content">
+        <div className="gothru-auth-card">
+          {/* Brand */}
+          <div className="gothru-brand">
+            <span className="gothru-brand-name">GoThru</span>
+            <span className="gothru-brand-tagline">by Watchr</span>
           </div>
 
-          {/* Submit Button */}
-          <button type="submit" disabled={loading} className="gothru-btn">
-            {loading ? 'Sending OTP...' : 'Send OTP'}
-          </button>
-        </form>
+          {/* Title */}
+          <h1 className="gothru-form-title">Forgot Password</h1>
 
-        {/* Footer */}
-        <div className="gothru-footer">
-          Remember your password?{' '}
-          <span
-            className="gothru-footer-link"
-            onClick={() => navigate('/login')}
-          >
-            Login
-          </span>
+          {/* Subtitle */}
+          <p className="gothru-form-subtitle">
+            Enter your registered email to receive an OTP
+          </p>
+
+          {/* Form */}
+          <form className="gothru-form" onSubmit={handleSubmit}>
+            {/* Email */}
+            <div className="gothru-input-group">
+              <label className="gothru-label" htmlFor="email">College Email</label>
+              <div className="gothru-input-wrapper">
+                <input
+                  id="email"
+                  type="email"
+                  className="gothru-input"
+                  placeholder="Enter your college email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+                <span className="gothru-input-icon">✉</span>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <button type="submit" disabled={loading} className="gothru-btn">
+              {loading ? 'Sending OTP...' : 'Send OTP'}
+            </button>
+          </form>
+
+          {/* Footer */}
+          <div className="gothru-footer">
+            Remember your password?{' '}
+            <span
+              className="gothru-footer-link"
+              onClick={() => navigate('/login')}
+            >
+              Login
+            </span>
+          </div>
         </div>
       </div>
 

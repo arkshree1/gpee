@@ -182,84 +182,95 @@ const Login = () => {
 
   return (
     <div className="gothru-auth-page">
-      <div className="gothru-auth-card">
-        {/* Brand */}
-        <div className="gothru-brand">
-          <span className="gothru-brand-name">GoThru</span>
-          <span className="gothru-brand-tagline">by Watchr</span>
-        </div>
+      {/* Institutional Banner */}
+      <div className="gothru-institution-banner">
+        <img
+          src="/rgipt-banner.png"
+          alt="RGIPT - An Institution of National Importance, Government of India"
+        />
+      </div>
 
-        {/* Title */}
-        <h1 className="gothru-form-title">Login</h1>
-
-        {/* Form */}
-        <form className="gothru-form" onSubmit={handleSubmit}>
-          {/* Email */}
-          <div className="gothru-input-group">
-            <label className="gothru-label" htmlFor="email">Email</label>
-            <div className="gothru-input-wrapper">
-              <input
-                id="email"
-                type="email"
-                name="email"
-                className="gothru-input"
-                placeholder="Enter your email"
-                value={formValues.email}
-                onChange={handleChange}
-                required
-              />
-              <span className="gothru-input-icon">✓</span>
-            </div>
+      {/* Auth Content */}
+      <div className="gothru-auth-content">
+        <div className="gothru-auth-card">
+          {/* Brand */}
+          <div className="gothru-brand">
+            <span className="gothru-brand-name">GoThru</span>
+            <span className="gothru-brand-tagline">by Watchr</span>
           </div>
 
-          {/* Password */}
-          <div className="gothru-input-group">
-            <label className="gothru-label" htmlFor="password">Password</label>
-            <div className="gothru-input-wrapper">
-              <input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                className="gothru-input gothru-input-password"
-                placeholder="Enter your password"
-                value={formValues.password}
-                onChange={handleChange}
-                required
-              />
-              <button
-                type="button"
-                className="gothru-password-toggle"
-                onClick={() => setShowPassword((prev) => !prev)}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? '◡' : '◎'}
-              </button>
+          {/* Title */}
+          <h1 className="gothru-form-title">Login</h1>
+
+          {/* Form */}
+          <form className="gothru-form" onSubmit={handleSubmit}>
+            {/* Email */}
+            <div className="gothru-input-group">
+              <label className="gothru-label" htmlFor="email">Email</label>
+              <div className="gothru-input-wrapper">
+                <input
+                  id="email"
+                  type="email"
+                  name="email"
+                  className="gothru-input"
+                  placeholder="Enter your email"
+                  value={formValues.email}
+                  onChange={handleChange}
+                  required
+                />
+                <span className="gothru-input-icon">✓</span>
+              </div>
             </div>
+
+            {/* Password */}
+            <div className="gothru-input-group">
+              <label className="gothru-label" htmlFor="password">Password</label>
+              <div className="gothru-input-wrapper">
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  className="gothru-input gothru-input-password"
+                  placeholder="Enter your password"
+                  value={formValues.password}
+                  onChange={handleChange}
+                  required
+                />
+                <button
+                  type="button"
+                  className="gothru-password-toggle"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? '◡' : '◎'}
+                </button>
+              </div>
+            </div>
+
+            {/* Forgot Password */}
+            <span
+              className="gothru-link gothru-forgot-link"
+              onClick={() => navigate('/forgot-password')}
+            >
+              Forgot Password?
+            </span>
+
+            {/* Submit Button */}
+            <button type="submit" disabled={loading} className="gothru-btn">
+              {loading ? 'Logging in...' : 'Login'}
+            </button>
+          </form>
+
+          {/* Footer */}
+          <div className="gothru-footer">
+            I'm a new user?{' '}
+            <span
+              className="gothru-footer-link"
+              onClick={() => navigate('/signup')}
+            >
+              Sign Up
+            </span>
           </div>
-
-          {/* Forgot Password */}
-          <span
-            className="gothru-link gothru-forgot-link"
-            onClick={() => navigate('/forgot-password')}
-          >
-            Forgot Password?
-          </span>
-
-          {/* Submit Button */}
-          <button type="submit" disabled={loading} className="gothru-btn">
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
-
-        {/* Footer */}
-        <div className="gothru-footer">
-          I'm a new user?{' '}
-          <span
-            className="gothru-footer-link"
-            onClick={() => navigate('/signup')}
-          >
-            Sign Up
-          </span>
         </div>
       </div>
 

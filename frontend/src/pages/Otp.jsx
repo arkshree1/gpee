@@ -1,8 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { verifyOtp } from '../api/api';
-import '../styles/login.css';
-import '../styles/otp.css';
+import '../styles/gothru-auth.css';
 import PopupBox from '../components/PopupBox';
 
 const Otp = () => {
@@ -31,6 +30,20 @@ const Otp = () => {
       newDigits[index - 1] = '';
       setOtpDigits(newDigits);
       inputsRef.current[index - 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (pastedData) {
+      const newDigits = [...otpDigits];
+      for (let i = 0; i < pastedData.length; i++) {
+        newDigits[i] = pastedData[i];
+      }
+      setOtpDigits(newDigits);
+      const nextIndex = Math.min(pastedData.length, 5);
+      inputsRef.current[nextIndex]?.focus();
     }
   };
 
@@ -65,45 +78,72 @@ const Otp = () => {
   };
 
   return (
-    <div className="login-wrapper">
-      <header className="login-header">
-        <div className="login-header-text">
-          <span className="login-brand">GoThru</span>
-          <span className="login-subbrand">by Watchr</span>
-        </div>
-      </header>
+    <div className="gothru-auth-page">
+      {/* Institutional Banner */}
+      <div className="gothru-institution-banner">
+        <img
+          src="/rgipt-banner.png"
+          alt="RGIPT - An Institution of National Importance, Government of India"
+        />
+      </div>
 
-      <div className="banner">BANNER</div>
+      {/* Auth Content */}
+      <div className="gothru-auth-content">
+        <div className="gothru-auth-card">
+          {/* Brand */}
+          <div className="gothru-brand">
+            <span className="gothru-brand-name">GoThru</span>
+            <span className="gothru-brand-tagline">by Watchr</span>
+          </div>
 
-      <h3 className="login-title">ENTER OTP</h3>
+          {/* Title */}
+          <h1 className="gothru-form-title">Enter OTP</h1>
 
-      <form className="login-card" onSubmit={handleSubmit}>
-        <p className="auth-subtitle">An OTP has been sent to your email.</p>
+          {/* Subtitle */}
+          <p className="gothru-form-subtitle">
+            An OTP has been sent to your email
+          </p>
 
-        <div className="input-group">
-          <label className="input-label">6-digit OTP</label>
-          <div className="otp-inputs">
-            {otpDigits.map((digit, index) => (
-              <input
-                key={index}
-                type="text"
-                inputMode="numeric"
-                maxLength={1}
-                className="otp-box"
-                value={digit}
-                onChange={(e) => handleChange(index, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(index, e)}
-                ref={(el) => (inputsRef.current[index] = el)}
-                required
-              />
-            ))}
+          {/* Form */}
+          <form className="gothru-form" onSubmit={handleSubmit}>
+            {/* OTP Input */}
+            <div className="gothru-input-group">
+              <label className="gothru-label">6-digit OTP</label>
+              <div className="gothru-otp-container" onPaste={handlePaste}>
+                {otpDigits.map((digit, index) => (
+                  <input
+                    key={index}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    className="gothru-otp-box"
+                    value={digit}
+                    onChange={(e) => handleChange(index, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(index, e)}
+                    ref={(el) => (inputsRef.current[index] = el)}
+                    required
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <button type="submit" disabled={loading} className="gothru-btn">
+              {loading ? 'Verifying...' : 'Verify OTP'}
+            </button>
+          </form>
+
+          {/* Footer */}
+          <div className="gothru-footer">
+            <span
+              className="gothru-footer-link"
+              onClick={() => navigate('/login')}
+            >
+              Back to Login
+            </span>
           </div>
         </div>
-
-        <button type="submit" disabled={loading} className="login-btn">
-          {loading ? 'Verifying...' : 'VERIFY OTP'}
-        </button>
-      </form>
+      </div>
 
       <PopupBox
         message={popupMessage}

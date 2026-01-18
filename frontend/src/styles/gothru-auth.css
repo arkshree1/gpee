@@ -41,23 +41,83 @@
     min-height: 100vh;
     min-height: 100dvh;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    justify-content: flex-start;
     align-items: center;
-    padding: 20px;
+    padding: 0;
     box-sizing: border-box;
     font-family: var(--gothru-font);
     background: var(--gothru-apple-core);
     position: relative;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 /* Subtle vignette effect */
 .gothru-auth-page::before {
     content: '';
-    position: absolute;
+    position: fixed;
     inset: 0;
     background: radial-gradient(ellipse at center, transparent 40%, rgba(107, 122, 143, 0.08) 100%);
     pointer-events: none;
+    z-index: 0;
+}
+
+/* ========================================
+   Institutional Banner Header
+   ======================================== */
+.gothru-institution-banner {
+    width: 100%;
+    background: #6B7A8F;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 12px 16px;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+}
+
+.gothru-institution-banner img {
+    max-width: 100%;
+    height: auto;
+    max-height: 60px;
+    object-fit: contain;
+}
+
+/* Desktop banner sizing */
+@media (min-width: 769px) {
+    .gothru-institution-banner {
+        padding: 16px 24px;
+    }
+
+    .gothru-institution-banner img {
+        max-height: 70px;
+    }
+}
+
+/* ========================================
+   Auth Content Container
+   ======================================== */
+.gothru-auth-content {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px 20px;
+    width: 100%;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 1;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    .gothru-auth-content {
+        padding: 16px 16px 24px;
+        align-items: center;
+    }
 }
 
 /* ========================================

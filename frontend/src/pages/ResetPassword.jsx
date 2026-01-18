@@ -102,106 +102,117 @@ const ResetPassword = () => {
 
   return (
     <div className="gothru-auth-page">
-      <div className="gothru-auth-card">
-        {/* Brand */}
-        <div className="gothru-brand">
-          <span className="gothru-brand-name">GoThru</span>
-          <span className="gothru-brand-tagline">by Watchr</span>
-        </div>
+      {/* Institutional Banner */}
+      <div className="gothru-institution-banner">
+        <img
+          src="/rgipt-banner.png"
+          alt="RGIPT - An Institution of National Importance, Government of India"
+        />
+      </div>
 
-        {/* Title */}
-        <h1 className="gothru-form-title">Reset Password</h1>
+      {/* Auth Content */}
+      <div className="gothru-auth-content">
+        <div className="gothru-auth-card">
+          {/* Brand */}
+          <div className="gothru-brand">
+            <span className="gothru-brand-name">GoThru</span>
+            <span className="gothru-brand-tagline">by Watchr</span>
+          </div>
 
-        {/* Subtitle */}
-        <p className="gothru-form-subtitle">
-          Enter the OTP sent to your email and create a new password
-        </p>
+          {/* Title */}
+          <h1 className="gothru-form-title">Reset Password</h1>
 
-        {/* Form */}
-        <form className="gothru-form" onSubmit={handleSubmit}>
-          {/* OTP Input */}
-          <div className="gothru-input-group">
-            <label className="gothru-label">6-digit OTP</label>
-            <div className="gothru-otp-container" onPaste={handlePaste}>
-              {otpDigits.map((digit, index) => (
+          {/* Subtitle */}
+          <p className="gothru-form-subtitle">
+            Enter the OTP sent to your email and create a new password
+          </p>
+
+          {/* Form */}
+          <form className="gothru-form" onSubmit={handleSubmit}>
+            {/* OTP Input */}
+            <div className="gothru-input-group">
+              <label className="gothru-label">6-digit OTP</label>
+              <div className="gothru-otp-container" onPaste={handlePaste}>
+                {otpDigits.map((digit, index) => (
+                  <input
+                    key={index}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    className="gothru-otp-box"
+                    value={digit}
+                    onChange={(e) => handleOtpChange(index, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(index, e)}
+                    ref={(el) => (inputsRef.current[index] = el)}
+                    required
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* New Password */}
+            <div className="gothru-input-group">
+              <label className="gothru-label" htmlFor="newPassword">New Password</label>
+              <div className="gothru-input-wrapper">
                 <input
-                  key={index}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  className="gothru-otp-box"
-                  value={digit}
-                  onChange={(e) => handleOtpChange(index, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(index, e)}
-                  ref={(el) => (inputsRef.current[index] = el)}
+                  id="newPassword"
+                  type={showPassword ? 'text' : 'password'}
+                  className="gothru-input gothru-input-password"
+                  placeholder="Enter new password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
                   required
                 />
-              ))}
+                <button
+                  type="button"
+                  className="gothru-password-toggle"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? '◡' : '◎'}
+                </button>
+              </div>
             </div>
-          </div>
 
-          {/* New Password */}
-          <div className="gothru-input-group">
-            <label className="gothru-label" htmlFor="newPassword">New Password</label>
-            <div className="gothru-input-wrapper">
-              <input
-                id="newPassword"
-                type={showPassword ? 'text' : 'password'}
-                className="gothru-input gothru-input-password"
-                placeholder="Enter new password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-              />
-              <button
-                type="button"
-                className="gothru-password-toggle"
-                onClick={() => setShowPassword((prev) => !prev)}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? '◡' : '◎'}
-              </button>
+            {/* Confirm Password */}
+            <div className="gothru-input-group">
+              <label className="gothru-label" htmlFor="confirmPassword">Confirm Password</label>
+              <div className="gothru-input-wrapper">
+                <input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  className="gothru-input gothru-input-password"
+                  placeholder="Confirm new password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  className="gothru-password-toggle"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showConfirmPassword ? '◡' : '◎'}
+                </button>
+              </div>
             </div>
+
+            {/* Submit Button */}
+            <button type="submit" disabled={loading} className="gothru-btn">
+              {loading ? 'Resetting...' : 'Reset Password'}
+            </button>
+          </form>
+
+          {/* Footer */}
+          <div className="gothru-footer">
+            <span
+              className="gothru-footer-link"
+              onClick={() => navigate('/login')}
+            >
+              Back to Login
+            </span>
           </div>
-
-          {/* Confirm Password */}
-          <div className="gothru-input-group">
-            <label className="gothru-label" htmlFor="confirmPassword">Confirm Password</label>
-            <div className="gothru-input-wrapper">
-              <input
-                id="confirmPassword"
-                type={showConfirmPassword ? 'text' : 'password'}
-                className="gothru-input gothru-input-password"
-                placeholder="Confirm new password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
-              <button
-                type="button"
-                className="gothru-password-toggle"
-                onClick={() => setShowConfirmPassword((prev) => !prev)}
-                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-              >
-                {showConfirmPassword ? '◡' : '◎'}
-              </button>
-            </div>
-          </div>
-
-          {/* Submit Button */}
-          <button type="submit" disabled={loading} className="gothru-btn">
-            {loading ? 'Resetting...' : 'Reset Password'}
-          </button>
-        </form>
-
-        {/* Footer */}
-        <div className="gothru-footer">
-          <span
-            className="gothru-footer-link"
-            onClick={() => navigate('/login')}
-          >
-            Back to Login
-          </span>
         </div>
       </div>
 
