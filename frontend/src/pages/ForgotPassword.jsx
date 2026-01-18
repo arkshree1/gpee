@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { forgotPassword } from '../api/api';
-import '../styles/login.css';
-import '../styles/forgotpassword.css';
+import '../styles/gothru-auth.css';
 import PopupBox from '../components/PopupBox';
 
 const ForgotPassword = () => {
@@ -10,7 +9,7 @@ const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
-//g
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email) {
@@ -38,43 +37,58 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="login-wrapper">
-      <header className="login-header">
-        <div className="login-header-text">
-          <span className="login-brand">GoThru</span>
-          <span className="login-subbrand">by Watchr</span>
-        </div>
-      </header>
-
-      <div className="banner">BANNER</div>
-
-      <h3 className="login-title">FORGOT PASSWORD</h3>
-
-      <form className="login-card" onSubmit={handleSubmit}>
-        <p className="auth-subtitle">Enter your registered email to receive an OTP</p>
-
-        <div className="input-group">
-          <label className="input-label" htmlFor="email">College Email</label>
-          <div className="input-shell">
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
+    <div className="gothru-auth-page">
+      <div className="gothru-auth-card">
+        {/* Brand */}
+        <div className="gothru-brand">
+          <span className="gothru-brand-name">GoThru</span>
+          <span className="gothru-brand-tagline">by Watchr</span>
         </div>
 
-        <button type="submit" disabled={loading} className="login-btn">
-          {loading ? 'Sending OTP...' : 'SEND OTP'}
-        </button>
+        {/* Title */}
+        <h1 className="gothru-form-title">Forgot Password</h1>
 
-        <p className="footer-text">
-          Remember your password?{' '}
-          <span className="reg-link" onClick={() => navigate('/login')}>Login</span>
+        {/* Subtitle */}
+        <p className="gothru-form-subtitle">
+          Enter your registered email to receive an OTP
         </p>
-      </form>
+
+        {/* Form */}
+        <form className="gothru-form" onSubmit={handleSubmit}>
+          {/* Email */}
+          <div className="gothru-input-group">
+            <label className="gothru-label" htmlFor="email">College Email</label>
+            <div className="gothru-input-wrapper">
+              <input
+                id="email"
+                type="email"
+                className="gothru-input"
+                placeholder="Enter your college email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              <span className="gothru-input-icon">✉</span>
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <button type="submit" disabled={loading} className="gothru-btn">
+            {loading ? 'Sending OTP...' : 'Send OTP'}
+          </button>
+        </form>
+
+        {/* Footer */}
+        <div className="gothru-footer">
+          Remember your password?{' '}
+          <span
+            className="gothru-footer-link"
+            onClick={() => navigate('/login')}
+          >
+            Login
+          </span>
+        </div>
+      </div>
 
       <PopupBox
         message={popupMessage}

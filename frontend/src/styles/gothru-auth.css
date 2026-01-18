@@ -175,6 +175,56 @@
 }
 
 /* ========================================
+   Form Subtitle (for Forgot Password, etc.)
+   ======================================== */
+.gothru-form-subtitle {
+    font-size: 13px;
+    color: rgba(220, 199, 170, 0.7);
+    margin: -16px 0 8px 0;
+    line-height: 1.5;
+    position: relative;
+    z-index: 1;
+}
+
+/* ========================================
+   OTP Input Boxes
+   ======================================== */
+.gothru-otp-container {
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+}
+
+.gothru-otp-box {
+    width: 44px;
+    height: 52px;
+    font-family: var(--gothru-font);
+    font-size: 20px;
+    font-weight: 600;
+    text-align: center;
+    color: #1a202c;
+    background: rgba(220, 199, 170, 0.4);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(247, 195, 49, 0.2);
+    border-radius: 12px;
+    box-shadow: var(--gothru-input-shadow);
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.gothru-otp-box:focus {
+    border-color: var(--gothru-citrus);
+    box-shadow:
+        var(--gothru-input-shadow),
+        0 0 0 3px rgba(247, 195, 49, 0.15);
+}
+
+.gothru-otp-box::placeholder {
+    color: rgba(74, 85, 104, 0.4);
+}
+
+/* ========================================
    Input Groups
    ======================================== */
 .gothru-input-group {

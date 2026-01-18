@@ -1,9 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { resetPassword } from '../api/api';
-import '../styles/login.css';
-import '../styles/otp.css';
-import '../styles/resetpassword.css';
+import '../styles/gothru-auth.css';
 import PopupBox from '../components/PopupBox';
 
 const ResetPassword = () => {
@@ -13,6 +11,8 @@ const ResetPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const inputsRef = useRef([]);
 
   const email = localStorage.getItem('resetEmail') || '';
@@ -34,6 +34,21 @@ const ResetPassword = () => {
       newDigits[index - 1] = '';
       setOtpDigits(newDigits);
       inputsRef.current[index - 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (pastedData) {
+      const newDigits = [...otpDigits];
+      for (let i = 0; i < pastedData.length; i++) {
+        newDigits[i] = pastedData[i];
+      }
+      setOtpDigits(newDigits);
+      // Focus the next empty input or last input
+      const nextIndex = Math.min(pastedData.length, 5);
+      inputsRef.current[nextIndex]?.focus();
     }
   };
 
@@ -86,75 +101,109 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="login-wrapper">
-      <header className="login-header">
-        <div className="login-header-text">
-          <span className="login-brand">GoThru</span>
-          <span className="login-subbrand">by Watchr</span>
+    <div className="gothru-auth-page">
+      <div className="gothru-auth-card">
+        {/* Brand */}
+        <div className="gothru-brand">
+          <span className="gothru-brand-name">GoThru</span>
+          <span className="gothru-brand-tagline">by Watchr</span>
         </div>
-      </header>
 
-      <div className="banner">BANNER</div>
+        {/* Title */}
+        <h1 className="gothru-form-title">Reset Password</h1>
 
-      <h3 className="login-title">RESET PASSWORD</h3>
+        {/* Subtitle */}
+        <p className="gothru-form-subtitle">
+          Enter the OTP sent to your email and create a new password
+        </p>
 
-      <form className="login-card" onSubmit={handleSubmit}>
-        <p className="auth-subtitle">Enter the OTP sent to your email and create a new password</p>
+        {/* Form */}
+        <form className="gothru-form" onSubmit={handleSubmit}>
+          {/* OTP Input */}
+          <div className="gothru-input-group">
+            <label className="gothru-label">6-digit OTP</label>
+            <div className="gothru-otp-container" onPaste={handlePaste}>
+              {otpDigits.map((digit, index) => (
+                <input
+                  key={index}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  className="gothru-otp-box"
+                  value={digit}
+                  onChange={(e) => handleOtpChange(index, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(index, e)}
+                  ref={(el) => (inputsRef.current[index] = el)}
+                  required
+                />
+              ))}
+            </div>
+          </div>
 
-        <div className="input-group">
-          <label className="input-label">6-digit OTP</label>
-          <div className="otp-inputs">
-            {otpDigits.map((digit, index) => (
+          {/* New Password */}
+          <div className="gothru-input-group">
+            <label className="gothru-label" htmlFor="newPassword">New Password</label>
+            <div className="gothru-input-wrapper">
               <input
-                key={index}
-                type="text"
-                inputMode="numeric"
-                maxLength={1}
-                className="otp-box"
-                value={digit}
-                onChange={(e) => handleOtpChange(index, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(index, e)}
-                ref={(el) => (inputsRef.current[index] = el)}
+                id="newPassword"
+                type={showPassword ? 'text' : 'password'}
+                className="gothru-input gothru-input-password"
+                placeholder="Enter new password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
                 required
               />
-            ))}
+              <button
+                type="button"
+                className="gothru-password-toggle"
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? '◡' : '◎'}
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div className="input-group">
-          <label className="input-label" htmlFor="newPassword">New Password</label>
-          <div className="input-shell">
-            <input
-              id="newPassword"
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              required
-            />
+          {/* Confirm Password */}
+          <div className="gothru-input-group">
+            <label className="gothru-label" htmlFor="confirmPassword">Confirm Password</label>
+            <div className="gothru-input-wrapper">
+              <input
+                id="confirmPassword"
+                type={showConfirmPassword ? 'text' : 'password'}
+                className="gothru-input gothru-input-password"
+                placeholder="Confirm new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                className="gothru-password-toggle"
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+              >
+                {showConfirmPassword ? '◡' : '◎'}
+              </button>
+            </div>
           </div>
+
+          {/* Submit Button */}
+          <button type="submit" disabled={loading} className="gothru-btn">
+            {loading ? 'Resetting...' : 'Reset Password'}
+          </button>
+        </form>
+
+        {/* Footer */}
+        <div className="gothru-footer">
+          <span
+            className="gothru-footer-link"
+            onClick={() => navigate('/login')}
+          >
+            Back to Login
+          </span>
         </div>
-
-        <div className="input-group">
-          <label className="input-label" htmlFor="confirmPassword">Confirm Password</label>
-          <div className="input-shell">
-            <input
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-            />
-          </div>
-        </div>
-
-        <button type="submit" disabled={loading} className="login-btn">
-          {loading ? 'Resetting...' : 'RESET PASSWORD'}
-        </button>
-
-        <p className="footer-text">
-          <span className="reg-link" onClick={() => navigate('/login')}>Back to Login</span>
-        </p>
-      </form>
+      </div>
 
       <PopupBox
         message={popupMessage}
