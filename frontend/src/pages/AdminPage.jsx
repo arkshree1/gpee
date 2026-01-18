@@ -13,6 +13,7 @@ import {
 } from '../api/api';
 import LiveActivityLogs from '../components/LiveActivityLogs';
 import DonutChart from '../components/DonutChart';
+import DonutChartMobile from '../components/DonutChartMobile';
 import '../styles/admin.css';
 import '../styles/student.css';
 
@@ -48,12 +49,22 @@ const AdminPage = () => {
   const [studentLogs, setStudentLogs] = useState([]);
   const [studentLogsLoading, setStudentLogsLoading] = useState(false);
 
+  // Mobile detection for responsive component rendering
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
   // Load recent searches from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('adminRecentSearches');
     if (saved) {
       setRecentSearches(JSON.parse(saved));
     }
+  }, []);
+
+  // Listen for window resize to update isMobile
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Handle nav item click (close sidebar on mobile after selection)
@@ -260,37 +271,68 @@ const AdminPage = () => {
             <div className="admin-dashboard-main">
               {/* Left: Donut Chart Container */}
               <div className="admin-donut-container">
-                <DonutChart
-                  size={240}
-                  strokeWidth={32}
-                  totalStudents={totalStudents}
-                  data={[
-                    {
-                      value: overview?.studentsInside || 0,
-                      color: '#34B1AA',
-                      label: 'Students Inside Campus'
-                    },
-                    {
-                      value: overview?.normalExits || 0,
-                      color: '#F29F67',
-                      label: 'Students Outside (Normal)'
-                    },
-                    {
-                      value: overview?.localGatepassExits || 0,
-                      color: '#3B8FF3',
-                      label: 'Students Outside (Local Gatepass)'
-                    },
-                    {
-                      value: overview?.outstationGatepassExits || 0,
-                      color: '#1E1E2C',
-                      label: 'Students Outside (Outstation Gatepass)'
-                    }
-                  ]}
-                />
+                {/* Desktop: Full DonutChart with radial labels */}
+                <div className="desktop-only">
+                  <DonutChart
+                    size={240}
+                    strokeWidth={32}
+                    totalStudents={totalStudents}
+                    data={[
+                      {
+                        value: overview?.studentsInside || 0,
+                        color: '#34B1AA',
+                        label: 'Students Inside Campus'
+                      },
+                      {
+                        value: overview?.normalExits || 0,
+                        color: '#F29F67',
+                        label: 'Students Outside (Normal)'
+                      },
+                      {
+                        value: overview?.localGatepassExits || 0,
+                        color: '#3B8FF3',
+                        label: 'Students Outside (Local Gatepass)'
+                      },
+                      {
+                        value: overview?.outstationGatepassExits || 0,
+                        color: '#1E1E2C',
+                        label: 'Students Outside (Outstation Gatepass)'
+                      }
+                    ]}
+                  />
+                </div>
+                {/* Mobile: Compact DonutChartMobile with legend below */}
+                <div className="mobile-only">
+                  <DonutChartMobile
+                    totalStudents={totalStudents}
+                    data={[
+                      {
+                        value: overview?.studentsInside || 0,
+                        color: '#34B1AA',
+                        label: 'Students Inside Campus'
+                      },
+                      {
+                        value: overview?.normalExits || 0,
+                        color: '#F29F67',
+                        label: 'Students Outside (Normal)'
+                      },
+                      {
+                        value: overview?.localGatepassExits || 0,
+                        color: '#3B8FF3',
+                        label: 'Students Outside (Local Gatepass)'
+                      },
+                      {
+                        value: overview?.outstationGatepassExits || 0,
+                        color: '#1E1E2C',
+                        label: 'Students Outside (Outstation Gatepass)'
+                      }
+                    ]}
+                  />
+                </div>
               </div>
 
-              {/* Right: Metrics Panel - Vertical Stack */}
-              <div className="admin-metrics-panel">
+              {/* Right: Metrics Panel - Vertical Stack (Desktop Only) */}
+              <div className="admin-metrics-panel desktop-only">
                 {/* Total Students */}
                 <div className="admin-metric-card clickable" style={{ borderLeft: '4px solid #6366f1' }} onClick={() => handleCardClick('total')}>
                   <div className="admin-metric-title">TOTAL STUDENTS</div>
@@ -322,10 +364,17 @@ const AdminPage = () => {
                 </div>
               </div>
             </div>
+
+            {/* Mobile-only: Scrollable Live Activity Log */}
+            <div className="mobile-live-activity-container mobile-only">
+              <LiveActivityLogs />
+            </div>
           </div>
 
-          {/* Live Activity Logs Panel */}
-          <LiveActivityLogs />
+          {/* Live Activity Logs Panel (Desktop Only) */}
+          <div className="desktop-only">
+            <LiveActivityLogs />
+          </div>
         </div>
       );
     }
@@ -542,9 +591,19 @@ const AdminPage = () => {
 
         {/* Sidebar */}
         <nav className={`admin-sidebar ${sidebarOpen ? 'open' : ''}`}>
+          {/* Mobile Sidebar Toggle - FIRST ITEM (visible only on mobile) */}
+          <button
+            className="admin-sidebar-toggle-btn"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+          >
+            <span className="sidebar-toggle-icon">{sidebarOpen ? '✕' : '☰'}</span>
+            <span className="sidebar-toggle-label">{sidebarOpen ? 'Close' : 'Menu'}</span>
+          </button>
+
           {/* Sidebar Brand Header */}
           <div className="admin-sidebar-brand">
-            <span className="admin-sidebar-brand-icon">☰</span>
+            <span className="admin-sidebar-brand-icon">◈</span>
             <span className="admin-sidebar-brand-text">GoThru</span>
           </div>
 
