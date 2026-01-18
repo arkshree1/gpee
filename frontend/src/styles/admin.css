@@ -2683,13 +2683,33 @@ body {
         margin-bottom: 2px;
     }
 
-    .local-history-gpno::before { content: "GP No."; }
-    .local-history-status::before { content: "Status"; }
-    .local-history-place::before { content: "Place"; }
-    .local-history-time:nth-of-type(1)::before { content: "Req. Out"; }
-    .local-history-time:nth-of-type(2)::before { content: "Req. In"; }
-    .local-history-time:nth-of-type(3)::before { content: "Actual Out"; }
-    .local-history-time:nth-of-type(4)::before { content: "Actual In"; }
+    .local-history-gpno::before {
+        content: "GP No.";
+    }
+
+    .local-history-status::before {
+        content: "Status";
+    }
+
+    .local-history-place::before {
+        content: "Place";
+    }
+
+    .local-history-time:nth-of-type(1)::before {
+        content: "Req. Out";
+    }
+
+    .local-history-time:nth-of-type(2)::before {
+        content: "Req. In";
+    }
+
+    .local-history-time:nth-of-type(3)::before {
+        content: "Actual Out";
+    }
+
+    .local-history-time:nth-of-type(4)::before {
+        content: "Actual In";
+    }
 
     /* Mobile sidebar - collapsed to icons only */
     .admin-hamburger {
@@ -2702,6 +2722,10 @@ body {
     }
 
     .admin-sidebar .admin-nav-label {
+        display: none;
+    }
+
+    .admin-sidebar .admin-sidebar-brand {
         display: none;
     }
 
@@ -2739,6 +2763,10 @@ body {
         display: none;
     }
 
+    .admin-sidebar .admin-sidebar-brand {
+        display: none;
+    }
+
     .admin-sidebar .admin-nav-section-title {
         display: none;
     }
@@ -2769,8 +2797,13 @@ body {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 .confirm-modal {
@@ -2788,6 +2821,7 @@ body {
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);

@@ -15,7 +15,7 @@ const getDirectionFromPresence = (presence) => {
 exports.getStatus = async (req, res) => {
   const userId = req.user.userId;
 
-  const student = await User.findById(userId).select('presence role name rollnumber imageUrl department branch roomNumber contactNumber hostelName');
+  const student = await User.findById(userId).select('presence role name rollnumber imageUrl department branch course roomNumber contactNumber hostelName');
   if (!student) return res.status(404).json({ message: 'Student not found' });
 
   const pendingRequest = await GateRequest.findOne({
@@ -35,6 +35,7 @@ exports.getStatus = async (req, res) => {
     rollnumber: student.rollnumber,
     department: student.department,
     branch: student.branch,
+    course: student.course,
     roomNumber: student.roomNumber,
     contactNumber: student.contactNumber,
     hostelName: student.hostelName,

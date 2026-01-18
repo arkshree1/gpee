@@ -11,6 +11,7 @@ const LocalGatepass = () => {
     studentName: '',
     rollnumber: '',
     department: '',
+    course: '',
     roomNumber: '',
     semester: '',
     dateOut: '',
@@ -31,12 +32,13 @@ const LocalGatepass = () => {
     const fetchProfile = async () => {
       try {
         const res = await getStudentStatus();
-        const { studentName, rollnumber, department, roomNumber, contactNumber } = res.data;
+        const { studentName, rollnumber, department, course, roomNumber, contactNumber } = res.data;
         setForm((prev) => ({
           ...prev,
           studentName: studentName || '',
           rollnumber: rollnumber || '',
           department: department || '',
+          course: course || '',
           roomNumber: roomNumber || '',
           contact: contactNumber || '',
         }));
@@ -171,6 +173,10 @@ const LocalGatepass = () => {
               <div className="lg-info-item">
                 <span className="lg-info-label">Department</span>
                 <span className="lg-info-value">{form.department || '—'}</span>
+              </div>
+              <div className="lg-info-item">
+                <span className="lg-info-label">Course</span>
+                <span className="lg-info-value">{form.course || '—'}</span>
               </div>
               <div className="lg-info-item">
                 <span className="lg-info-label">Room No.</span>

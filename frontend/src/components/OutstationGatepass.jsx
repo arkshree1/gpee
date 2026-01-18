@@ -36,12 +36,13 @@ const OutstationGatepass = () => {
     const fetchProfile = async () => {
       try {
         const res = await getStudentStatus();
-        const { studentName, rollnumber, department, branch, roomNumber, contactNumber } = res.data;
+        const { studentName, rollnumber, department, branch, course, roomNumber, contactNumber } = res.data;
         setForm((prev) => ({
           ...prev,
           studentName: studentName || '',
           rollnumber: rollnumber || '',
           roomNumber: roomNumber || '',
+          course: course || '',
           department: department || '',
           branch: branch || '',
           contact: contactNumber || '',
@@ -210,17 +211,12 @@ const OutstationGatepass = () => {
             </div>
           </div>
 
-          {/* Course Selection */}
+          {/* Course (from profile) */}
           <div className="lg-section">
             <div className="lg-section-label">COURSE</div>
-            <div className="lg-field" style={{ marginBottom: 0 }}>
-              <label className="lg-label">Select Course</label>
-              <select className="lg-input" name="course" value={form.course} onChange={handleChange}>
-                <option value="">Select Course</option>
-                <option value="BTech">BTech</option>
-                <option value="MBA">MBA</option>
-                <option value="PhD">PhD</option>
-              </select>
+            <div className="lg-info-item full">
+              <span className="lg-info-label">Course</span>
+              <span className="lg-info-value">{form.course || '—'}</span>
             </div>
           </div>
 

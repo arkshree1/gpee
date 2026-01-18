@@ -22,6 +22,12 @@ const userSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
+    course: {
+      type: String,
+      enum: ['BTech', 'MBA', 'PhD'],
+      trim: true,
+      default: null,
+    },
     email: {
       type: String,
       required: true,

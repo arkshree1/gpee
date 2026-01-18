@@ -78,9 +78,9 @@ const getDepartmentFromBranch = (branch) => {
 
 exports.signup = async (req, res) => {
   try {
-    const { name, rollnumber, branch, email, password, confirmPassword, hostelName, roomNumber, contactNumber } = req.body;
+    const { name, rollnumber, course, branch, email, password, confirmPassword, hostelName, roomNumber, contactNumber } = req.body;
 
-    if (!name || !rollnumber || !branch || !email || !password || !confirmPassword || !hostelName || !roomNumber || !contactNumber) {
+    if (!name || !rollnumber || !course || !branch || !email || !password || !confirmPassword || !hostelName || !roomNumber || !contactNumber) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
@@ -119,6 +119,7 @@ exports.signup = async (req, res) => {
       // User exists but not verified - update their data and resend OTP
       existingUser.name = name;
       existingUser.rollnumber = rollnumber;
+      existingUser.course = course;
       existingUser.branch = branch;
       existingUser.department = department;
       existingUser.password = hashedPassword;
@@ -135,6 +136,7 @@ exports.signup = async (req, res) => {
       user = await User.create({
         name,
         rollnumber,
+        course,
         branch,
         department,
         email: email.toLowerCase(),
