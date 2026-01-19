@@ -1,47 +1,53 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { BrowserMultiFormatReader } from '@zxing/browser';
 
 const GuardScanner = ({ onToken, onClose }) => {
   const videoRef = useRef(null);
+  const canvasRef = useRef(null);
   const streamRef = useRef(null);
   const [error, setError] = useState('');
   const [starting, setStarting] = useState(true);
 
+  // 5️⃣ Pre-warm ZXing reader - instantiate once, reuse across renders
+  const reader = useMemo(() => new BrowserMultiFormatReader(), []);
+
   useEffect(() => {
     let stopped = false;
-    const reader = new BrowserMultiFormatReader();
-    // Capture ref value at start of effect for use in cleanup
+    let decodeTimeoutId = null;
+    // Capture ref values at start of effect for cleanup
     const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d', { willReadFrequently: true });
 
     const startScanner = async () => {
       try {
         let stream = null;
 
-        // Try different camera conhfigurations in order of preference
+        // 1️⃣ Reduced camera resolution: 640x480 for faster decoding
         const cameraConfigs = [
-          // 1. Try back camera (mobile)
+          // 1. Try back camera (mobile) - reduced resolution
           {
             video: {
               facingMode: { exact: 'environment' },
-              width: { ideal: 1280 },
-              height: { ideal: 720 },
+              width: { ideal: 640 },
+              height: { ideal: 480 },
             },
             audio: false,
           },
-          // 2. Try ideal back camera (fallback)
+          // 2. Try ideal back camera (fallback) - reduced resolution
           {
             video: {
               facingMode: { ideal: 'environment' },
-              width: { ideal: 1280 },
-              height: { ideal: 720 },
+              width: { ideal: 640 },
+              height: { ideal: 480 },
             },
             audio: false,
           },
-          // 3. Try any available camera (laptops, front cameras)
+          // 3. Try any available camera (laptops, front cameras) - reduced resolution
           {
             video: {
-              width: { ideal: 1280 },
-              height: { ideal: 720 },
+              width: { ideal: 640 },
+              height: { ideal: 480 },
             },
             audio: false,
           },
@@ -81,15 +87,55 @@ const GuardScanner = ({ onToken, onClose }) => {
 
         setStarting(false);
 
-        // Start QR decoding from the video element
-        reader.decodeFromVideoElement(videoRef.current, (result, err) => {
+        // 3️⃣ & 4️⃣ Throttled manual decode loop with center crop (ROI)
+        const decodeLoop = () => {
           if (stopped) return;
-          if (result) {
-            stopped = true;
-            onToken(result.getText());
+
+          const videoEl = videoRef.current;
+          if (!videoEl || !ctx || videoEl.readyState !== 4) {
+            // Video not ready, retry after delay
+            decodeTimeoutId = setTimeout(decodeLoop, 100);
+            return;
           }
-          // Ignore NotFoundException - just means no QR in frame
-        });
+
+          try {
+            const vw = videoEl.videoWidth;
+            const vh = videoEl.videoHeight;
+
+            if (vw > 0 && vh > 0) {
+              // 4️⃣ Center crop: take center 60% of the frame
+              const cropRatio = 0.6;
+              const cropSize = Math.min(vw, vh) * cropRatio;
+              const sx = (vw - cropSize) / 2;
+              const sy = (vh - cropSize) / 2;
+
+              // Draw cropped region to 400x400 canvas for faster decode
+              const targetSize = 400;
+              canvas.width = targetSize;
+              canvas.height = targetSize;
+              ctx.drawImage(videoEl, sx, sy, cropSize, cropSize, 0, 0, targetSize, targetSize);
+
+              // Decode from the cropped canvas
+              const result = reader.decodeFromCanvas(canvas);
+              if (result && !stopped) {
+                stopped = true;
+                onToken(result.getText());
+                return; // Success - stop loop
+              }
+            }
+          } catch (e) {
+            // NotFoundException is expected when no QR in frame - ignore
+            // Other errors are also non-fatal, just continue scanning
+          }
+
+          // Continue scanning at ~10 fps (100ms interval)
+          if (!stopped) {
+            decodeTimeoutId = setTimeout(decodeLoop, 100);
+          }
+        };
+
+        // Start the manual decode loop
+        decodeLoop();
 
       } catch (e) {
         if (stopped) return;
@@ -112,6 +158,10 @@ const GuardScanner = ({ onToken, onClose }) => {
 
     return () => {
       stopped = true;
+      // Clear decode timeout
+      if (decodeTimeoutId) {
+        clearTimeout(decodeTimeoutId);
+      }
       // Safely try to reset reader
       try {
         if (reader && typeof reader.reset === 'function') {
@@ -129,7 +179,7 @@ const GuardScanner = ({ onToken, onClose }) => {
         video.srcObject = null;
       }
     };
-  }, [onToken]);
+  }, [onToken, reader]);
 
   return (
     <div className="guard-scanner-overlay">
@@ -153,6 +203,12 @@ const GuardScanner = ({ onToken, onClose }) => {
           style={{ backgroundColor: '#000' }}
         />
 
+        {/* Hidden canvas for center-crop decoding */}
+        <canvas
+          ref={canvasRef}
+          style={{ display: 'none' }}
+        />
+
         {starting && (
           <div className="guard-muted" style={{ textAlign: 'center', padding: '10px' }}>
             Starting camera...
@@ -168,3 +224,4 @@ const GuardScanner = ({ onToken, onClose }) => {
 };
 
 export default GuardScanner;
+
