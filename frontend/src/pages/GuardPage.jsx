@@ -16,8 +16,7 @@ const normalizeImageUrl = (imageUrl) => {
 const GuardPage = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [dashboard, setDashboard] = useState(null);
-  const [loading, setLoading] = useState(true);
+
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanError, setScanError] = useState('');
   const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'scan');
@@ -39,7 +38,7 @@ const GuardPage = () => {
 
   const [pending, setPending] = useState(null);
   const [decisionLoading, setDecisionLoading] = useState(false);
-  
+
   const isMountedRef = useRef(true);
   const refreshInProgressRef = useRef(false);
   const abortControllerRef = useRef(null);
@@ -71,21 +70,21 @@ const GuardPage = () => {
   const refresh = useCallback(async () => {
     // Prevent overlapping requests
     if (refreshInProgressRef.current) return;
-    
+
     // Cancel any pending request
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
-    
+
     // Create new abort controller for this request
     abortControllerRef.current = new AbortController();
     refreshInProgressRef.current = true;
-    
+
     try {
       const res = await getGuardDashboard({ signal: abortControllerRef.current.signal });
       // Only update state if component is still mounted
       if (isMountedRef.current) {
-        setDashboard(res.data);
+        // Dashboard data loaded
       }
     } catch (error) {
       // Silently ignore abort errors and network errors during polling
@@ -96,7 +95,7 @@ const GuardPage = () => {
     } finally {
       refreshInProgressRef.current = false;
       if (isMountedRef.current) {
-        setLoading(false);
+        // Loading complete
       }
     }
   }, []);
@@ -557,7 +556,7 @@ const GuardPage = () => {
 const formatScheduledTime = (dt) => {
   if (!dt) return '-';
   const [datePart, timePart] = dt.split('T');
-  const [year, month, day] = datePart?.split('-') || [];
+  const [, month, day] = datePart?.split('-') || [];
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const formattedDate = `${parseInt(day, 10)} ${monthNames[parseInt(month, 10) - 1]}`;
   const t = timePart?.split(':');

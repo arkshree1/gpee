@@ -79,8 +79,6 @@ const AdminPage = () => {
   const [gatepassModalLoading, setGatepassModalLoading] = useState(false);
 
 
-  // Mobile detection for responsive component rendering
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   // Load recent searches from localStorage (limit to 5)
   useEffect(() => {
     const saved = localStorage.getItem('adminRecentSearches');
@@ -90,12 +88,7 @@ const AdminPage = () => {
     }
   }, []);
 
-  // Listen for window resize to update isMobile
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+
 
   // Handle nav item click (close sidebar on mobile after selection)
   const handleNavClick = (pageId) => {
