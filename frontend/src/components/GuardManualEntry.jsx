@@ -278,7 +278,11 @@ const GuardManualEntry = ({ onExitCompleted }) => {
       {showSuccessModal && (
         <div className="guard-manual-modal-backdrop">
           <div className="guard-manual-modal">
-            <div className="guard-manual-modal-icon">✓</div>
+            <div className="guard-manual-modal-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
             <div className="guard-manual-modal-title">
               {lastAction === 'entry' ? 'Entry done' : 'Exit done'}
             </div>

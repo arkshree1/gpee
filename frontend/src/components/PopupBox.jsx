@@ -25,7 +25,16 @@ const PopupBox = ({ message, onClose }) => {
     <div className="sd-modal-overlay" onClick={onClose}>
       <div className="sd-popup-card" onClick={(e) => e.stopPropagation()}>
         <div className={`sd-popup-icon ${isError ? 'error' : 'success'}`}>
-          {isError ? '✕' : '✓'}
+          {isError ? (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          )}
         </div>
         <p className="sd-popup-message">{message}</p>
         <button type="button" className="sd-popup-btn" onClick={onClose}>

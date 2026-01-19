@@ -206,6 +206,13 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
   const [popupMessage, setPopupMessage] = useState('');
   const [deciding, setDeciding] = useState(false);
   const [confirmModal, setConfirmModal] = useState({ open: false, decision: null });
+  
+  // Rejection modal state
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+  
+  // Document popup state
+  const [showDocPopup, setShowDocPopup] = useState(false);
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -259,11 +266,33 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
   };
 
   const openConfirmModal = (decision) => {
-    setConfirmModal({ open: true, decision });
+    if (decision === 'rejected') {
+      setShowRejectModal(true);
+    } else {
+      setConfirmModal({ open: true, decision });
+    }
   };
 
   const closeConfirmModal = () => {
     setConfirmModal({ open: false, decision: null });
+  };
+
+  const handleRejectConfirm = async () => {
+    if (!rejectionReason.trim()) {
+      setPopupMessage('Please enter a reason for rejection');
+      return;
+    }
+    setDeciding(true);
+    try {
+      const res = await decideHodGatepass({ gatepassId, decision: 'rejected', rejectionReason });
+      setShowRejectModal(false);
+      setPopupMessage(res.data.message);
+      setTimeout(() => onBack(), 1500);
+    } catch (err) {
+      setPopupMessage(err?.response?.data?.message || 'Failed to process decision');
+    } finally {
+      setDeciding(false);
+    }
   };
 
   const handleDecision = async (decision) => {
@@ -294,23 +323,26 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
       <h2 className="os-section-title">Gatepass Details</h2>
 
       <div className="os-details-card">
+        {/* Student Profile Section */}
+        <div className="os-student-profile-section">
+          <div className="os-student-photo-large">
+            {gatepass.student?.imageUrl ? (
+              <img
+                src={`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${gatepass.student.imageUrl}`}
+                alt={gatepass.studentName}
+              />
+            ) : (
+              <div className="os-photo-placeholder">👤</div>
+            )}
+          </div>
+          <div className="os-student-basic-info">
+            <h3 className="os-student-name">{gatepass.studentName}</h3>
+            <p className="os-student-roll">{gatepass.rollnumber}</p>
+            <p className="os-student-branch">{gatepass.branch || gatepass.department} • {gatepass.course}</p>
+          </div>
+        </div>
+
         <div className="os-details-grid">
-          <div className="os-detail-item">
-            <span className="os-detail-label">Student Name</span>
-            <span className="os-detail-value">{gatepass.studentName}</span>
-          </div>
-          <div className="os-detail-item">
-            <span className="os-detail-label">Roll Number</span>
-            <span className="os-detail-value">{gatepass.rollnumber}</span>
-          </div>
-          <div className="os-detail-item">
-            <span className="os-detail-label">Course</span>
-            <span className="os-detail-value">{gatepass.course}</span>
-          </div>
-          <div className="os-detail-item">
-            <span className="os-detail-label">Department</span>
-            <span className="os-detail-value">{gatepass.department}</span>
-          </div>
           <div className="os-detail-item">
             <span className="os-detail-label">Room Number</span>
             <span className="os-detail-value">{gatepass.roomNumber}</span>
@@ -346,6 +378,14 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
           <span className="os-detail-value">{gatepass.reasonOfLeave}</span>
         </div>
 
+        {/* Previous Leaves Taken (filled by Office Secretary) */}
+        {gatepass.previousLeavesTaken && (
+          <div className="os-detail-full os-previous-leaves-display" style={{ marginTop: '12px' }}>
+            <span className="os-detail-label">Previous Leaves Taken (by Office Secretary)</span>
+            <span className="os-detail-value">{gatepass.previousLeavesTaken}</span>
+          </div>
+        )}
+
         {/* Classes Missed (filled by Office Secretary) */}
         <div className="os-detail-full" style={{ marginTop: '12px' }}>
           <span className="os-detail-label">Classes Missed</span>
@@ -358,29 +398,18 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
           </span>
         </div>
 
-        {/* Proof File Display */}
+        {/* Proof File Display - Opens in Popup */}
         {gatepass.proofFile && (
           <div className="os-detail-full" style={{ marginTop: '16px' }}>
             <span className="os-detail-label">Supporting Document</span>
             <div style={{ marginTop: '8px' }}>
-              <a
-                href={`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${gatepass.proofFile}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ display: 'inline-block', cursor: 'pointer' }}
+              <button
+                type="button"
+                onClick={() => setShowDocPopup(true)}
+                className="os-view-doc-btn"
               >
-                {gatepass.proofFile.endsWith('.pdf') ? (
-                  <span style={{ color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'underline' }}>
-                    View PDF Document
-                  </span>
-                ) : (
-                  <img
-                    src={`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${gatepass.proofFile}`}
-                    alt="Proof Document - Click to open"
-                    style={{ maxWidth: '300px', maxHeight: '200px', borderRadius: '8px', border: '1px solid var(--color-border)', cursor: 'pointer' }}
-                  />
-                )}
-              </a>
+                {gatepass.proofFile.endsWith('.pdf') ? '📄 View PDF Document' : '🖼️ View Image Document'}
+              </button>
             </div>
           </div>
         )}
@@ -455,6 +484,74 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
         reasonOfLeave={gatepass?.reasonOfLeave}
         isProcessing={deciding}
       />
+      
+      {/* Rejection Reason Modal */}
+      {showRejectModal && (
+        <div className="confirm-modal-overlay" onClick={() => setShowRejectModal(false)}>
+          <div className="confirm-modal rejection-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="confirm-modal-close" onClick={() => setShowRejectModal(false)}>×</button>
+            <div className="confirm-modal-header" style={{ borderLeftColor: '#e74c3c' }}>
+              <h3>Reject Gatepass</h3>
+            </div>
+            <div className="confirm-modal-body">
+              <p className="confirm-modal-question">
+                Are you sure you want to <strong style={{ color: '#e74c3c' }}>reject</strong> this gatepass?
+              </p>
+              <div className="confirm-modal-details">
+                <div className="confirm-modal-detail-row">
+                  <span className="confirm-modal-label">Student:</span>
+                  <span className="confirm-modal-value">{gatepass?.studentName} ({gatepass?.rollnumber})</span>
+                </div>
+              </div>
+              <div className="rejection-reason-input">
+                <label>Reason for Rejection <span style={{ color: '#e74c3c' }}>*</span></label>
+                <textarea
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  placeholder="Enter reason for rejection..."
+                  rows={4}
+                />
+              </div>
+            </div>
+            <div className="confirm-modal-actions">
+              <button className="confirm-modal-cancel" onClick={() => setShowRejectModal(false)} disabled={deciding}>
+                Cancel
+              </button>
+              <button 
+                className="confirm-modal-confirm" 
+                style={{ backgroundColor: '#e74c3c' }}
+                onClick={handleRejectConfirm}
+                disabled={deciding || !rejectionReason.trim()}
+              >
+                {deciding ? 'Processing...' : 'Confirm Rejection'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Document Popup */}
+      {showDocPopup && gatepass.proofFile && (
+        <div className="confirm-modal-overlay doc-popup-overlay" onClick={() => setShowDocPopup(false)}>
+          <div className="doc-popup-content" onClick={(e) => e.stopPropagation()}>
+            <button className="doc-popup-close" onClick={() => setShowDocPopup(false)}>×</button>
+            {gatepass.proofFile.endsWith('.pdf') ? (
+              <iframe
+                src={`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${gatepass.proofFile}`}
+                title="Supporting Document"
+                className="doc-popup-iframe"
+              />
+            ) : (
+              <img
+                src={`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${gatepass.proofFile}`}
+                alt="Supporting Document"
+                className="doc-popup-image"
+              />
+            )}
+          </div>
+        </div>
+      )}
+      
       <PopupBox message={popupMessage} onClose={() => setPopupMessage('')} />
     </div>
   );

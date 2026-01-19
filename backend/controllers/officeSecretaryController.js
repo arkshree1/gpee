@@ -43,7 +43,7 @@ exports.getGatepassDetails = async (req, res) => {
     }
 
     const gatepass = await OutstationGatepass.findById(gatepassId)
-        .populate('student', 'imageUrl name rollnumber');
+        .populate('student', 'imageUrl name rollnumber branch department course');
 
     if (!gatepass) {
         return res.status(404).json({ message: 'Gatepass not found' });
@@ -113,7 +113,7 @@ exports.getGatepassHistory = async (req, res) => {
 // Approve or reject an outstation gatepass
 exports.decideGatepass = async (req, res) => {
     const secretaryId = req.user.userId;
-    const { gatepassId, decision, classesMissed, missedDays } = req.body;
+    const { gatepassId, decision, classesMissed, missedDays, previousLeavesTaken, rejectionReason } = req.body;
 
     if (!gatepassId || !decision) {
         return res.status(400).json({ message: 'Gatepass ID and decision are required' });
@@ -121,6 +121,11 @@ exports.decideGatepass = async (req, res) => {
 
     if (!['approved', 'rejected'].includes(decision)) {
         return res.status(400).json({ message: 'Decision must be either approved or rejected' });
+    }
+
+    // If rejecting, require a reason
+    if (decision === 'rejected' && (!rejectionReason || !rejectionReason.trim())) {
+        return res.status(400).json({ message: 'Rejection reason is required' });
     }
 
     // Get secretary's department
@@ -159,6 +164,11 @@ exports.decideGatepass = async (req, res) => {
         gatepass.missedDays = Number(missedDays);
     }
 
+    // Save previous leaves taken (filled by office secretary)
+    if (previousLeavesTaken && previousLeavesTaken.trim()) {
+        gatepass.previousLeavesTaken = previousLeavesTaken.trim();
+    }
+
     if (decision === 'approved') {
         // Move to next stage (DUGC)
         gatepass.currentStage = 'dugc';
@@ -166,6 +176,12 @@ exports.decideGatepass = async (req, res) => {
         // Rejected - end the workflow
         gatepass.finalStatus = 'rejected';
         gatepass.currentStage = 'completed';
+        gatepass.rejectionReason = rejectionReason.trim();
+        gatepass.rejectedBy = {
+            stage: 'officeSecretary',
+            decidedBy: secretaryId,
+            decidedAt: new Date(),
+        };
     }
 
     await gatepass.save();

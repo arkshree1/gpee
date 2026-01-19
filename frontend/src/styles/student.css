@@ -1128,6 +1128,11 @@
   font-weight: 700;
 }
 
+.guard-manual-modal-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
 .guard-manual-modal-title {
   font-size: 16px;
   font-weight: 700;

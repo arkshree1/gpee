@@ -1,8 +1,46 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signup } from '../api/api';
 import '../styles/gothru-auth.css';
 import PopupBox from '../components/PopupBox';
+import Cropper from 'react-easy-crop';
+
+// Helper function to create cropped image
+const createImage = (url) =>
+  new Promise((resolve, reject) => {
+    const image = new Image();
+    image.addEventListener('load', () => resolve(image));
+    image.addEventListener('error', (error) => reject(error));
+    image.setAttribute('crossOrigin', 'anonymous');
+    image.src = url;
+  });
+
+const getCroppedImg = async (imageSrc, pixelCrop) => {
+  const image = await createImage(imageSrc);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  canvas.width = pixelCrop.width;
+  canvas.height = pixelCrop.height;
+
+  ctx.drawImage(
+    image,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    pixelCrop.width,
+    pixelCrop.height
+  );
+
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => {
+      resolve(blob);
+    }, 'image/jpeg', 0.9);
+  });
+};
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -26,6 +64,17 @@ const Signup = () => {
   const [popupMessage, setPopupMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Cropping states
+  const [showCropper, setShowCropper] = useState(false);
+  const [originalImage, setOriginalImage] = useState(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+
+  const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -54,10 +103,36 @@ const Signup = () => {
   const handleImageChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setImageFile(file);
       const previewUrl = URL.createObjectURL(file);
-      setImagePreview(previewUrl);
+      setOriginalImage(previewUrl);
+      setShowCropper(true);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
     }
+  };
+
+  const handleCropConfirm = async () => {
+    try {
+      const croppedBlob = await getCroppedImg(originalImage, croppedAreaPixels);
+      const croppedFile = new File([croppedBlob], 'profile.jpg', { type: 'image/jpeg' });
+      setImageFile(croppedFile);
+      const croppedPreview = URL.createObjectURL(croppedBlob);
+      setImagePreview(croppedPreview);
+      setShowCropper(false);
+      if (originalImage) {
+        URL.revokeObjectURL(originalImage);
+      }
+    } catch (err) {
+      setPopupMessage('Failed to crop image. Please try again.');
+    }
+  };
+
+  const handleCropCancel = () => {
+    setShowCropper(false);
+    if (originalImage) {
+      URL.revokeObjectURL(originalImage);
+    }
+    setOriginalImage(null);
   };
 
   useEffect(() => {
@@ -428,6 +503,52 @@ const Signup = () => {
         message={popupMessage}
         onClose={() => setPopupMessage('')}
       />
+
+      {/* Image Cropper Modal */}
+      {showCropper && (
+        <div className="crop-modal-overlay">
+          <div className="crop-modal">
+            <h3 className="crop-modal-title">Crop Profile Photo</h3>
+            <p className="crop-modal-subtitle">Adjust to fit a 1:1 square ratio</p>
+            
+            <div className="crop-container">
+              <Cropper
+                image={originalImage}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                onCropChange={setCrop}
+                onCropComplete={onCropComplete}
+                onZoomChange={setZoom}
+                cropShape="round"
+                showGrid={false}
+              />
+            </div>
+
+            <div className="crop-zoom-control">
+              <span className="crop-zoom-label">Zoom</span>
+              <input
+                type="range"
+                value={zoom}
+                min={1}
+                max={3}
+                step={0.1}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="crop-zoom-slider"
+              />
+            </div>
+
+            <div className="crop-modal-actions">
+              <button className="crop-btn crop-btn-cancel" onClick={handleCropCancel}>
+                Cancel
+              </button>
+              <button className="crop-btn crop-btn-confirm" onClick={handleCropConfirm}>
+                Confirm Crop
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

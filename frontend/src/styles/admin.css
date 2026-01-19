@@ -321,6 +321,38 @@ body {
     font-size: 13px;
     font-weight: 500;
     white-space: nowrap;
+    flex: 1;
+}
+
+/* Pending Count Badge */
+.admin-nav-badge {
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 10px;
+    background: #dc3545;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+}
+
+.admin-nav-badge.pulse {
+    animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.5);
+    }
+    50% {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 6px rgba(220, 53, 69, 0);
+    }
 }
 
 /* ==================== SIDEBAR SECTION TITLE ==================== */
@@ -3596,5 +3628,307 @@ body {
     
     .gp-timeline {
         grid-template-columns: 1fr;
+    }
+}
+
+/* ============== NEW STYLES FOR ENHANCED APPROVAL WORKFLOW ============== */
+
+/* Student Profile Section in View Details */
+.os-student-profile-section {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    margin-bottom: 20px;
+    border: 1px solid var(--color-border);
+}
+
+.os-student-photo-large {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 3px solid var(--color-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.os-student-photo-large img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.os-student-photo-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--color-primary), #4a69bd);
+    color: white;
+    font-size: 42px;
+    font-weight: 600;
+}
+
+.os-student-basic-info {
+    flex: 1;
+}
+
+.os-student-basic-info h3 {
+    margin: 0 0 6px 0;
+    font-size: 1.4rem;
+    color: var(--color-text-primary);
+}
+
+.os-student-basic-info p {
+    margin: 0 0 4px 0;
+    color: var(--color-text-secondary);
+    font-size: 0.95rem;
+}
+
+/* View Document Button */
+.os-view-doc-btn {
+    padding: 10px 20px;
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.os-view-doc-btn:hover {
+    background: #4a69bd;
+    transform: translateY(-1px);
+}
+
+/* Document Popup Overlay */
+.doc-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(4px);
+}
+
+.doc-popup-content {
+    position: relative;
+    background: white;
+    border-radius: 12px;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.doc-popup-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    font-size: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+    transition: background 0.2s ease;
+}
+
+.doc-popup-close:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.doc-popup-iframe {
+    width: 80vw;
+    height: 85vh;
+    border: none;
+}
+
+.doc-popup-image {
+    max-width: 85vw;
+    max-height: 85vh;
+    object-fit: contain;
+    display: block;
+}
+
+/* Previous Leaves Textarea */
+.os-previous-leaves-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    resize: none;
+    min-height: 80px;
+    transition: border-color 0.2s ease;
+}
+
+.os-previous-leaves-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+}
+
+.os-previous-leaves-input::placeholder {
+    color: #b0b0b0;
+    font-style: italic;
+    opacity: 0.7;
+}
+
+/* Previous Leaves Display */
+.os-previous-leaves-display {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 8px;
+    padding: 16px !important;
+    margin-top: 16px;
+}
+
+.os-previous-leaves-display .os-detail-label {
+    color: #856404;
+    font-weight: 600;
+}
+
+.os-previous-leaves-display .os-detail-value {
+    color: #664d03;
+}
+
+/* Rejection Reason Input */
+.rejection-reason-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    resize: vertical;
+    min-height: 100px;
+    font-family: inherit;
+}
+
+.rejection-reason-input:focus {
+    outline: none;
+    border-color: #dc3545;
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+}
+
+/* Request Card Student Photo */
+.os-request-card-photo {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 2px solid var(--color-border);
+}
+
+.os-request-card-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.os-request-card-photo-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--color-primary), #4a69bd);
+    color: white;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+/* Student Rejection Reason Display */
+.gatepass-rejection-reason {
+    margin-top: 16px;
+    padding: 16px;
+    background: #f8d7da;
+    border: 1px solid #f5c2c7;
+    border-radius: 8px;
+}
+
+.gatepass-rejection-reason .rejection-label {
+    font-weight: 600;
+    color: #842029;
+    margin-bottom: 6px;
+}
+
+.gatepass-rejection-reason .rejection-text {
+    color: #58151c;
+}
+
+/* Profile Photo Placeholder */
+.os-photo-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--color-primary), #4a69bd);
+    color: white;
+    font-size: 42px;
+}
+
+/* Student Name/Roll/Branch styles in profile */
+.os-student-name {
+    margin: 0 0 6px 0;
+    font-size: 1.4rem;
+    color: var(--color-text-primary);
+    font-weight: 700;
+}
+
+.os-student-roll {
+    margin: 0 0 4px 0;
+    color: var(--color-text-secondary);
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.os-student-branch {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 0.95rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    .os-student-profile-section {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .os-student-photo-large {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .os-student-basic-info h3 {
+        font-size: 1.2rem;
+    }
+    
+    .doc-popup-iframe {
+        width: 95vw;
+        height: 80vh;
+    }
+    
+    .doc-popup-image {
+        max-width: 95vw;
     }
 }

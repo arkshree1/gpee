@@ -894,7 +894,9 @@ const AdminPage = () => {
             onClick={() => setSidebarOpen(!sidebarOpen)}
             aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
           >
-            <span className="sidebar-toggle-icon">{sidebarOpen ? '✕' : '☰'}</span>
+            <span className="sidebar-toggle-icon">{sidebarOpen ? (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            ) : '☰'}</span>
             <span className="sidebar-toggle-label">{sidebarOpen ? 'Close' : 'Menu'}</span>
           </button>
 

@@ -164,6 +164,34 @@ const outstationGatepassSchema = new mongoose.Schema(
       enum: ['pending', 'in_use', 'completed'],
       default: 'pending',
     },
+    // Previous leaves taken - filled by Office Secretary
+    previousLeavesTaken: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    // Rejection reason - filled by whoever rejects (Secretary/DUGC/HOD/HostelOffice)
+    rejectionReason: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    // Who rejected and at which stage
+    rejectedBy: {
+      stage: {
+        type: String,
+        enum: ['officeSecretary', 'dugc', 'hod', 'hostelOffice'],
+        default: null,
+      },
+      decidedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        default: null,
+      },
+      decidedAt: {
+        type: Date,
+        default: null,
+      },
+    },
   },
   {
     timestamps: true,

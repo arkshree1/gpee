@@ -176,7 +176,7 @@ exports.getOSGatepassDetails = async (req, res) => {
     const { gatepassId } = req.params;
 
     const gatepass = await OutstationGatepass.findById(gatepassId)
-        .populate('student', 'imageUrl name rollnumber');
+        .populate('student', 'imageUrl name rollnumber branch department course');
 
     if (!gatepass) {
         return res.status(404).json({ message: 'Gatepass not found' });
@@ -224,7 +224,7 @@ exports.getOSGatepassHistory = async (req, res) => {
 // Approve or reject an outstation gatepass
 exports.decideOSGatepass = async (req, res) => {
     const hostelOfficeId = req.user.userId;
-    const { gatepassId, decision } = req.body;
+    const { gatepassId, decision, rejectionReason } = req.body;
 
     if (!gatepassId || !decision) {
         return res.status(400).json({ message: 'Gatepass ID and decision are required' });
@@ -232,6 +232,11 @@ exports.decideOSGatepass = async (req, res) => {
 
     if (!['approved', 'rejected'].includes(decision)) {
         return res.status(400).json({ message: 'Decision must be either approved or rejected' });
+    }
+
+    // If rejecting, require a reason
+    if (decision === 'rejected' && (!rejectionReason || !rejectionReason.trim())) {
+        return res.status(400).json({ message: 'Rejection reason is required' });
     }
 
     const gatepass = await OutstationGatepass.findById(gatepassId);
@@ -272,6 +277,12 @@ exports.decideOSGatepass = async (req, res) => {
         // Rejected - end the workflow
         gatepass.finalStatus = 'rejected';
         gatepass.currentStage = 'completed';
+        gatepass.rejectionReason = rejectionReason.trim();
+        gatepass.rejectedBy = {
+            stage: 'hostelOffice',
+            decidedBy: hostelOfficeId,
+            decidedAt: new Date(),
+        };
     }
 
     await gatepass.save();

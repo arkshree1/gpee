@@ -15,7 +15,7 @@ const getDirectionFromPresence = (presence) => {
 exports.getStatus = async (req, res) => {
   const userId = req.user.userId;
 
-  const student = await User.findById(userId).select('presence role name rollnumber imageUrl department branch course roomNumber contactNumber hostelName');
+  const student = await User.findById(userId).select('presence role name rollnumber imageUrl department branch course roomNumber contactNumber hostelName localActiveGPNo OSActiveGPNo');
   if (!student) return res.status(404).json({ message: 'Student not found' });
 
   const pendingRequest = await GateRequest.findOne({
@@ -25,11 +25,16 @@ exports.getStatus = async (req, res) => {
     expiresAt: { $gt: new Date() },
   }).select('_id direction purpose place expiresAt createdAt');
 
+  // Determine active gatepass number (OS takes priority)
+  const activeGatePassNo = student.OSActiveGPNo || student.localActiveGPNo || null;
+
   return res.json({
     presence: student.presence,
     nextAction: getDirectionFromPresence(student.presence),
     hasPendingRequest: !!pendingRequest,
     pendingRequest,
+    // Active gatepass info
+    activeGatePassNo,
     // Student profile data for forms
     studentName: student.name,
     rollnumber: student.rollnumber,
@@ -71,6 +76,7 @@ exports.apply = async (req, res) => {
   let gatepassId = null;
   let gatepassOutTime = null;
   let gatepassInTime = null;
+  let isOutstation = false;
 
   if (direction === 'exit') {
     if (!effectivePurpose || !effectivePlace) {
@@ -84,8 +90,26 @@ exports.apply = async (req, res) => {
       return res.status(400).json({ message: 'No previous exit details found for entry request' });
     }
 
+    // Check if student has an active outstation gatepass - if so, include gatepass info
+    if (student.OSActiveGPNo) {
+      const osGatepass = await OutstationGatepass.findOne({ gatePassNo: student.OSActiveGPNo });
+      if (osGatepass) {
+        gatePassNo = osGatepass.gatePassNo;
+        gatepassId = osGatepass._id;
+        gatepassOutTime = osGatepass.dateOut && osGatepass.timeOut
+          ? `${osGatepass.dateOut}T${osGatepass.timeOut}`
+          : null;
+        gatepassInTime = osGatepass.dateIn && osGatepass.timeIn
+          ? `${osGatepass.dateIn}T${osGatepass.timeIn}`
+          : null;
+        isOutstation = true;
+        // Use gatepass purpose/place if available
+        effectivePurpose = osGatepass.reasonOfLeave || effectivePurpose;
+        effectivePlace = osGatepass.address || effectivePlace;
+      }
+    }
     // Check if student has an active local gatepass - if so, include gatepass info
-    if (student.localActiveGPNo) {
+    else if (student.localActiveGPNo) {
       const gatepass = await LocalGatepass.findOne({ gatePassNo: student.localActiveGPNo });
       if (gatepass) {
         gatePassNo = gatepass.gatePassNo;
@@ -118,6 +142,7 @@ exports.apply = async (req, res) => {
     gatepassId,
     gatepassOutTime,
     gatepassInTime,
+    isOutstation,
   });
 
   // QR contains token + gatepass number if applicable

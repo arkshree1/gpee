@@ -315,7 +315,7 @@ const LocalGatepassList = ({ gatepasses, presence, localActiveGPNo, qrData, qrLo
                                 {qrLoading ? 'Generating...' : '🏠 Generate Entry QR'}
                             </button>
                         )}
-                        {action === 'utilized' && <div className="tg-utilized">✓ Gatepass Utilized</div>}
+                        {action === 'utilized' && <div className="tg-utilized"><svg className="tg-utilized-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Gatepass Utilized</div>}
                         {action === 'expired' && <div className="tg-expired-badge">⏰ Gatepass Expired</div>}
                     </div>
                 );
@@ -410,6 +410,20 @@ const OutstationGatepassCard = ({ gp, presence, OSActiveGPNo, qrData, qrLoading,
     const action = getOSAction();
     const cardClass = isRejected ? 'denied' : isApproved ? 'approved' : 'pending';
 
+    // Find rejection reason if rejected
+    const getRejectionInfo = () => {
+        if (!isRejected) return null;
+        if (gp.rejectionReason) return { reason: gp.rejectionReason, by: gp.rejectedBy?.stage };
+        // Check each stage for rejection
+        for (const stage of ['officeSecretary', 'dugc', 'hod', 'hostelOffice']) {
+            if (gp.stageStatus?.[stage]?.status === 'rejected') {
+                return { reason: gp.stageStatus[stage].rejectionReason, by: stage };
+            }
+        }
+        return null;
+    };
+    const rejectionInfo = getRejectionInfo();
+
     return (
         <div className={`tg-card os-card ${cardClass}`}>
             {gp.gatePassNo && <div className="tg-os-badge">{gp.gatePassNo}</div>}
@@ -423,6 +437,19 @@ const OutstationGatepassCard = ({ gp, presence, OSActiveGPNo, qrData, qrLoading,
 
             <ProgressTracker stages={stages} />
 
+            {/* Rejection Reason Display */}
+            {isRejected && rejectionInfo?.reason && (
+                <div className="gatepass-rejection-reason">
+                    <div className="rejection-label">
+                        Rejected by {rejectionInfo.by === 'officeSecretary' ? 'Office Secretary' : 
+                                    rejectionInfo.by === 'dugc' ? 'DUGC' : 
+                                    rejectionInfo.by === 'hod' ? 'HOD' : 
+                                    rejectionInfo.by === 'hostelOffice' ? 'Hostel Office' : 'Authority'}
+                    </div>
+                    <div className="rejection-text">{rejectionInfo.reason}</div>
+                </div>
+            )}
+
             {action === 'exit' && !qrData && (
                 <button className="tg-action-btn exit" onClick={handleExitClick} disabled={qrLoading}>
                     {qrLoading ? 'Generating...' : '🚪 Generate Exit QR'}
@@ -433,7 +460,7 @@ const OutstationGatepassCard = ({ gp, presence, OSActiveGPNo, qrData, qrLoading,
                     {qrLoading ? 'Generating...' : '🏠 Generate Entry QR'}
                 </button>
             )}
-            {action === 'utilized' && <div className="tg-utilized">✓ Gatepass Utilized</div>}
+            {action === 'utilized' && <div className="tg-utilized"><svg className="tg-utilized-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Gatepass Utilized</div>}
             {action === 'expired' && <div className="tg-expired-badge">⏰ Gatepass Expired</div>}
         </div>
     );
@@ -447,8 +474,8 @@ const ProgressTracker = ({ stages }) => {
                 let nodeClass = 'pending';
                 let icon = '';
                 let statusLabel = '';
-                if (stage.status === 'completed' || stage.status === 'approved') { nodeClass = 'completed'; icon = '✓'; }
-                else if (stage.status === 'rejected') { nodeClass = 'rejected'; icon = '✗'; statusLabel = 'rejected'; }
+                if (stage.status === 'completed' || stage.status === 'approved') { nodeClass = 'completed'; icon = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>; }
+                else if (stage.status === 'rejected') { nodeClass = 'rejected'; icon = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>; statusLabel = 'rejected'; }
                 else if (stage.status === 'not-applicable') { nodeClass = 'not-applicable'; icon = '!'; }
                 else if (stage.status === 'current') { nodeClass = 'current'; icon = '●'; statusLabel = 'waiting'; }
                 else if (stage.status === 'pending') { statusLabel = ''; } // future stages, no label
