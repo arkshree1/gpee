@@ -79,6 +79,19 @@ const GuardScanner = ({ onToken, onClose }) => {
 
         streamRef.current = stream;
 
+        // Force camera to operate at low resolution (post-acquisition enforcement)
+        try {
+          const videoTrack = stream.getVideoTracks()[0];
+          if (videoTrack) {
+            await videoTrack.applyConstraints({
+              width: { exact: 640 },
+              height: { exact: 480 },
+            });
+          }
+        } catch {
+          // Device doesn't support exact constraints - continue with whatever resolution was acquired
+        }
+
         // Attach stream directly to video element
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
