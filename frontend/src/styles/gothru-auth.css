@@ -3,8 +3,8 @@
    Netflix-level, Production-Ready Design
    ======================================== */
 
-/* Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+/* Google Fonts - Poppins */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
 /* ========================================
    CSS Custom Properties (Design Tokens)
@@ -20,7 +20,7 @@
     --gothru-apple-core-light: #E8D8C4;
 
     /* Typography */
-    --gothru-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --gothru-font: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
     /* Spacing */
     --gothru-card-radius: 32px;
@@ -47,20 +47,10 @@
     padding: 0;
     box-sizing: border-box;
     font-family: var(--gothru-font);
-    background: var(--gothru-apple-core);
+    background: #EDE3D4;
     position: relative;
     overflow-x: hidden;
     overflow-y: auto;
-}
-
-/* Subtle vignette effect */
-.gothru-auth-page::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(ellipse at center, transparent 40%, rgba(107, 122, 143, 0.08) 100%);
-    pointer-events: none;
-    z-index: 0;
 }
 
 /* ========================================
@@ -98,14 +88,119 @@
 }
 
 /* ========================================
+   Feature Section (Animation + Headline)
+   ======================================== */
+.gothru-feature-section {
+    width: 100%;
+    max-width: 380px;
+    height: 200px;
+    background: #F7C331;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    padding: 12px 16px 10px;
+    box-sizing: border-box;
+    gap: 8px;
+    flex-shrink: 0;
+    border-radius: 24px;
+    margin-top: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(247, 195, 49, 0.2);
+    border: 2px solid #F7882F;
+}
+
+/* Animation Area - Left Column */
+.gothru-animation-area {
+    width: 42%;
+    flex: 0 0 42%;
+    min-height: 150px;
+    background-color: transparent;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    box-sizing: border-box;
+    overflow: visible;
+}
+
+/* Headline Area - Right Column */
+.gothru-headline-area {
+    width: 58%;
+    flex: 1 1 58%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 0 4px 0 0;
+    box-sizing: border-box;
+}
+
+/* Poppins Font Classes */
+.poppins-semibold {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+}
+
+.poppins-medium {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+}
+
+/* Headline Text Styles */
+.gothru-headline-line {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 24px;
+    color: #FFFFFF;
+    line-height: 1.1;
+    margin: 0;
+    text-align: left;
+}
+
+.gothru-headline-dynamic {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 24px;
+    color: #FFFFFF;
+    line-height: 1.1;
+    margin: 0;
+    text-align: left;
+    min-height: 28px;
+}
+
+.gothru-headline-tagline {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    font-size: 18px;
+    color: #5A3D00;
+    line-height: 1.2;
+    margin: 6px 0 0 0;
+    text-align: left;
+}
+
+/* Version Footer */
+.gothru-version-footer {
+    width: 100%;
+    text-align: center;
+    padding: 16px 20px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    color: #6B7A8F;
+    opacity: 0.8;
+    margin-top: auto;
+}
+
+/* ========================================
    Auth Content Container
    ======================================== */
 .gothru-auth-content {
     flex: 1;
     display: flex;
     justify-content: center;
-    align-items: center;
-    padding: 24px 20px;
+    align-items: flex-start;
+    padding: 0 20px 24px;
     width: 100%;
     box-sizing: border-box;
     position: relative;
@@ -115,8 +210,8 @@
 /* Mobile adjustments */
 @media (max-width: 768px) {
     .gothru-auth-content {
-        padding: 16px 16px 24px;
-        align-items: center;
+        padding: 0 16px 24px;
+        align-items: flex-start;
     }
 }
 
@@ -128,9 +223,9 @@
     width: 100%;
     max-width: 380px;
     background: linear-gradient(180deg, #5A6A7E 0%, var(--gothru-blueberry) 40%, var(--gothru-blueberry-light) 100%);
-    border-radius: var(--gothru-card-radius);
-    padding: 48px 32px 40px;
-    box-shadow: var(--gothru-card-shadow);
+    border-radius: 24px;
+    padding: 32px 32px 40px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2), 0 6px 20px rgba(107, 122, 143, 0.15);
     overflow: hidden;
     z-index: 1;
 }
