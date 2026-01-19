@@ -29,7 +29,7 @@ const OutstationGatepass = () => {
   const [loading, setLoading] = useState(false);
   const [popup, setPopup] = useState({ open: false, message: '' });
   const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [profileLoading, setProfileLoading] = useState(true);
+  const [, setProfileLoading] = useState(true);
   const [proofFile, setProofFile] = useState(null);
 
   useEffect(() => {

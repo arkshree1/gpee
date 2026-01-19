@@ -110,6 +110,8 @@ const GuardScanner = ({ onToken, onClose }) => {
 
     return () => {
       stopped = true;
+      // Capture ref value for cleanup
+      const video = videoRef.current;
       // Safely try to reset reader
       try {
         if (reader && typeof reader.reset === 'function') {
@@ -123,8 +125,8 @@ const GuardScanner = ({ onToken, onClose }) => {
         streamRef.current.getTracks().forEach(track => track.stop());
         streamRef.current = null;
       }
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
+      if (video) {
+        video.srcObject = null;
       }
     };
   }, [onToken]);

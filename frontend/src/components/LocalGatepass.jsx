@@ -25,7 +25,7 @@ const LocalGatepass = () => {
   });
   const [loading, setLoading] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
-  const [profileLoading, setProfileLoading] = useState(true);
+  const [, setProfileLoading] = useState(true);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
   useEffect(() => {

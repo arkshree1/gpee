@@ -11,7 +11,7 @@ const normalizeImageUrl = (imageUrl) => {
 const GuardManualEntry = ({ onExitCompleted }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
-  const [searchLoading, setSearchLoading] = useState(false);
+  const [, setSearchLoading] = useState(false);
   const [selected, setSelected] = useState(null);
   const [suppressNextSearch, setSuppressNextSearch] = useState(false);
   const [place, setPlace] = useState('');
@@ -270,8 +270,8 @@ const GuardManualEntry = ({ onExitCompleted }) => {
           {submitLoading
             ? 'PROCESSING...'
             : mode === 'entry'
-            ? 'MAKE ENTRY'
-            : 'MAKE EXIT'}
+              ? 'MAKE ENTRY'
+              : 'MAKE EXIT'}
         </button>
       </form>
 
