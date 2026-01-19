@@ -10,6 +10,8 @@ const GuardScanner = ({ onToken, onClose }) => {
   useEffect(() => {
     let stopped = false;
     const reader = new BrowserMultiFormatReader();
+    // Capture ref value at start of effect for use in cleanup
+    const video = videoRef.current;
 
     const startScanner = async () => {
       try {
@@ -110,8 +112,6 @@ const GuardScanner = ({ onToken, onClose }) => {
 
     return () => {
       stopped = true;
-      // Capture ref value for cleanup
-      const video = videoRef.current;
       // Safely try to reset reader
       try {
         if (reader && typeof reader.reset === 'function') {
