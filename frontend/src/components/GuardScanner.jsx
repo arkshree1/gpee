@@ -3,29 +3,24 @@ import { BrowserMultiFormatReader } from '@zxing/browser';
 
 const GuardScanner = ({ onToken, onClose }) => {
   const videoRef = useRef(null);
-  const canvasRef = useRef(null);
   const streamRef = useRef(null);
   const [error, setError] = useState('');
   const [starting, setStarting] = useState(true);
 
-  // 5️⃣ Pre-warm ZXing reader - instantiate once, reuse across renders
+  // Pre-warm ZXing reader - instantiate once, reuse across renders
   const reader = useMemo(() => new BrowserMultiFormatReader(), []);
 
   useEffect(() => {
     let stopped = false;
-    let decodeTimeoutId = null;
-    // Capture ref values at start of effect for cleanup
+    // Capture ref value at start of effect for cleanup
     const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d', { willReadFrequently: true });
 
     const startScanner = async () => {
       try {
         let stream = null;
 
-        // 1️⃣ Reduced camera resolution: 640x480 for faster decoding
+        // Camera configs with reduced resolution for faster processing
         const cameraConfigs = [
-          // 1. Try back camera (mobile) - reduced resolution
           {
             video: {
               facingMode: { exact: 'environment' },
@@ -34,7 +29,6 @@ const GuardScanner = ({ onToken, onClose }) => {
             },
             audio: false,
           },
-          // 2. Try ideal back camera (fallback) - reduced resolution
           {
             video: {
               facingMode: { ideal: 'environment' },
@@ -43,7 +37,6 @@ const GuardScanner = ({ onToken, onClose }) => {
             },
             audio: false,
           },
-          // 3. Try any available camera (laptops, front cameras) - reduced resolution
           {
             video: {
               width: { ideal: 640 },
@@ -51,7 +44,6 @@ const GuardScanner = ({ onToken, onClose }) => {
             },
             audio: false,
           },
-          // 4. Most basic - just get any video
           {
             video: true,
             audio: false,
@@ -61,9 +53,8 @@ const GuardScanner = ({ onToken, onClose }) => {
         for (const config of cameraConfigs) {
           try {
             stream = await navigator.mediaDevices.getUserMedia(config);
-            break; // Success, stop trying
+            break;
           } catch {
-            // This config failed, try next
             continue;
           }
         }
@@ -79,30 +70,39 @@ const GuardScanner = ({ onToken, onClose }) => {
 
         streamRef.current = stream;
 
-        // Force camera to operate at low resolution (post-acquisition enforcement)
+        // Force low resolution and apply zoom
         try {
           const videoTrack = stream.getVideoTracks()[0];
           if (videoTrack) {
-            await videoTrack.applyConstraints({
-              width: { exact: 640 },
-              height: { exact: 480 },
-            });
+            // Try to enforce low resolution
+            try {
+              await videoTrack.applyConstraints({
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+              });
+            } catch {
+              // Continue with default resolution
+            }
 
             // Apply hardware zoom if supported (Chrome on Android)
-            const capabilities = videoTrack.getCapabilities();
-            if (capabilities.zoom) {
-              const maxZoom = capabilities.zoom.max || 1;
-              const targetZoom = Math.min(2.0, maxZoom); // 2x zoom or max available
-              await videoTrack.applyConstraints({
-                advanced: [{ zoom: targetZoom }]
-              });
+            try {
+              const capabilities = videoTrack.getCapabilities();
+              if (capabilities.zoom) {
+                const maxZoom = capabilities.zoom.max || 1;
+                const targetZoom = Math.min(2.0, maxZoom);
+                await videoTrack.applyConstraints({
+                  advanced: [{ zoom: targetZoom }]
+                });
+              }
+            } catch {
+              // Zoom not supported, continue
             }
           }
         } catch {
-          // Device doesn't support exact constraints or zoom - continue with defaults
+          // Continue with defaults
         }
 
-        // Attach stream directly to video element
+        // Attach stream to video element
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           await videoRef.current.play();
@@ -110,55 +110,15 @@ const GuardScanner = ({ onToken, onClose }) => {
 
         setStarting(false);
 
-        // 3️⃣ & 4️⃣ Throttled manual decode loop with center crop (ROI)
-        const decodeLoop = () => {
+        // Use ZXing's native continuous scanning (fastest method)
+        reader.decodeFromVideoElement(videoRef.current, (result, err) => {
           if (stopped) return;
-
-          const videoEl = videoRef.current;
-          if (!videoEl || !ctx || videoEl.readyState !== 4) {
-            // Video not ready, retry after delay
-            decodeTimeoutId = setTimeout(decodeLoop, 100);
-            return;
+          if (result) {
+            stopped = true;
+            onToken(result.getText());
           }
-
-          try {
-            const vw = videoEl.videoWidth;
-            const vh = videoEl.videoHeight;
-
-            if (vw > 0 && vh > 0) {
-              // 4️⃣ Center crop: take center 60% of the frame
-              const cropRatio = 0.6;
-              const cropSize = Math.min(vw, vh) * cropRatio;
-              const sx = (vw - cropSize) / 2;
-              const sy = (vh - cropSize) / 2;
-
-              // Draw cropped region to 400x400 canvas for faster decode
-              const targetSize = 400;
-              canvas.width = targetSize;
-              canvas.height = targetSize;
-              ctx.drawImage(videoEl, sx, sy, cropSize, cropSize, 0, 0, targetSize, targetSize);
-
-              // Decode from the cropped canvas
-              const result = reader.decodeFromCanvas(canvas);
-              if (result && !stopped) {
-                stopped = true;
-                onToken(result.getText());
-                return; // Success - stop loop
-              }
-            }
-          } catch (e) {
-            // NotFoundException is expected when no QR in frame - ignore
-            // Other errors are also non-fatal, just continue scanning
-          }
-
-          // Continue scanning at ~10 fps (100ms interval)
-          if (!stopped) {
-            decodeTimeoutId = setTimeout(decodeLoop, 100);
-          }
-        };
-
-        // Start the manual decode loop
-        decodeLoop();
+          // NotFoundException is normal when no QR visible - ignore
+        });
 
       } catch (e) {
         if (stopped) return;
@@ -181,11 +141,6 @@ const GuardScanner = ({ onToken, onClose }) => {
 
     return () => {
       stopped = true;
-      // Clear decode timeout
-      if (decodeTimeoutId) {
-        clearTimeout(decodeTimeoutId);
-      }
-      // Safely try to reset reader
       try {
         if (reader && typeof reader.reset === 'function') {
           reader.reset();
@@ -193,7 +148,6 @@ const GuardScanner = ({ onToken, onClose }) => {
       } catch {
         // ignore
       }
-      // Stop all camera tracks
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
         streamRef.current = null;
@@ -226,12 +180,6 @@ const GuardScanner = ({ onToken, onClose }) => {
           style={{ backgroundColor: '#000' }}
         />
 
-        {/* Hidden canvas for center-crop decoding */}
-        <canvas
-          ref={canvasRef}
-          style={{ display: 'none' }}
-        />
-
         {starting && (
           <div className="guard-muted" style={{ textAlign: 'center', padding: '10px' }}>
             Starting camera...
@@ -247,4 +195,5 @@ const GuardScanner = ({ onToken, onClose }) => {
 };
 
 export default GuardScanner;
+
 
