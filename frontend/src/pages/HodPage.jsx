@@ -43,10 +43,7 @@ const HodPage = () => {
     setSidebarOpen(false);
   };
 
-  const navItems = [
-    { id: 'requests', icon: '☐', label: 'Current Requests' },
-    { id: 'history', icon: '↺', label: 'History' },
-  ];
+
 
   return (
     <div className="admin-layout">
@@ -212,11 +209,11 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
   const [popupMessage, setPopupMessage] = useState('');
   const [deciding, setDeciding] = useState(false);
   const [confirmModal, setConfirmModal] = useState({ open: false, decision: null });
-  
+
   // Rejection modal state
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
-  
+
   // Document popup state
   const [showDocPopup, setShowDocPopup] = useState(false);
 
@@ -490,7 +487,7 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
         reasonOfLeave={gatepass?.reasonOfLeave}
         isProcessing={deciding}
       />
-      
+
       {/* Rejection Reason Modal */}
       {showRejectModal && (
         <div className="confirm-modal-overlay" onClick={() => setShowRejectModal(false)}>
@@ -523,8 +520,8 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
               <button className="confirm-modal-cancel" onClick={() => setShowRejectModal(false)} disabled={deciding}>
                 Cancel
               </button>
-              <button 
-                className="confirm-modal-confirm" 
+              <button
+                className="confirm-modal-confirm"
                 style={{ backgroundColor: '#e74c3c' }}
                 onClick={handleRejectConfirm}
                 disabled={deciding || !rejectionReason.trim()}
@@ -535,7 +532,7 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
           </div>
         </div>
       )}
-      
+
       {/* Document Popup */}
       {showDocPopup && gatepass.proofFile && (
         <div className="confirm-modal-overlay doc-popup-overlay" onClick={() => setShowDocPopup(false)}>
@@ -557,7 +554,7 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
           </div>
         </div>
       )}
-      
+
       <PopupBox message={popupMessage} onClose={() => setPopupMessage('')} />
     </div>
   );

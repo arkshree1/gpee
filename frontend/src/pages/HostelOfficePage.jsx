@@ -265,7 +265,7 @@ const LocalRequestsView = ({ onViewDetails }) => {
 };
 
 const LocalGatepassDetailsView = ({ gatepassId, onBack }) => {
-  const [gatepasses, setGatepasses] = useState([]);
+
   const [gatepass, setGatepass] = useState(null);
   const [studentHistory, setStudentHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -281,10 +281,10 @@ const LocalGatepassDetailsView = ({ gatepassId, onBack }) => {
         setError('');
         const res = await getPendingGatepasses();
         const allGatepasses = res.data.gatepasses || [];
-        setGatepasses(allGatepasses);
+
         const found = allGatepasses.find(gp => gp._id === gatepassId);
         setGatepass(found || null);
-        
+
         // Fetch student history if gatepass found
         if (found?.student) {
           setHistoryLoading(true);
@@ -515,18 +515,7 @@ const LocalHistoryView = () => {
     fetchHistory(search);
   };
 
-  const formatDateTime = (dateStr) => {
-    if (!dateStr) return '';
-    const d = new Date(dateStr);
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const year = d.getFullYear();
-    let hours = d.getHours();
-    const mins = String(d.getMinutes()).padStart(2, '0');
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12 || 12;
-    return `${day}/${month}/${year} ${hours}:${mins} ${ampm}`;
-  };
+
 
   return (
     <div className="os-section">
