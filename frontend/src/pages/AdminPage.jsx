@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   getAdminOverview,
   getStudentsInside,
@@ -23,7 +23,13 @@ import '../styles/guard.css';
 
 const AdminPage = () => {
   const navigate = useNavigate();
-  const [activePage, setActivePage] = useState('dashboard');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activePage, setActivePage] = useState(() => searchParams.get('page') || 'dashboard');
+
+  // Persist activePage to URL
+  useEffect(() => {
+    setSearchParams({ page: activePage }, { replace: true });
+  }, [activePage, setSearchParams]);
   const [overview, setOverview] = useState(null);
   const [loading, setLoading] = useState(true);
 

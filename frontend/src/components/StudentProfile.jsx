@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getStudentStatus } from '../api/api';
 import '../styles/student.css';
+import '../styles/student-dashboard.css';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 
@@ -59,16 +60,21 @@ const StudentProfile = () => {
 
     if (loading) {
         return (
-            <div className="student-shell">
-                <header className="student-header">
-                    <button className="student-back" onClick={() => navigate('/student')}>← Back</button>
-                    <div>
-                        <div className="brand">GoThru</div>
-                        <div className="sub">by Watchr</div>
+            <div className="sd-shell">
+                <header className="sd-header">
+                    <div className="sd-header-brand">
+                        <span className="sd-logo">GoThru</span>
+                        <span className="sd-logo-sub">by Watchr</span>
                     </div>
+                    <button className="sp-back-btn" onClick={() => navigate('/student')}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M19 12H5M12 19l-7-7 7-7"/>
+                        </svg>
+                        Back
+                    </button>
                 </header>
-                <main className="student-main">
-                    <p style={{ textAlign: 'center', padding: '40px' }}>Loading...</p>
+                <main className="sd-main">
+                    <p style={{ textAlign: 'center', padding: '40px', color: 'var(--sd-muted)' }}>Loading...</p>
                 </main>
             </div>
         );
@@ -84,16 +90,21 @@ const StudentProfile = () => {
     const imageUrl = status?.imageUrl ? `${API_BASE_URL}${status.imageUrl}` : null;
 
     return (
-        <div className="student-shell">
-            <header className="student-header">
-                <button className="student-back" onClick={() => navigate('/student')}>← Back</button>
-                <div>
-                    <div className="brand">GoThru</div>
-                    <div className="sub">by Watchr</div>
+        <div className="sd-shell">
+            <header className="sd-header">
+                <div className="sd-header-brand">
+                    <span className="sd-logo">GoThru</span>
+                    <span className="sd-logo-sub">by Watchr</span>
                 </div>
+                <button className="sp-back-btn" onClick={() => navigate('/student')}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                    Back
+                </button>
             </header>
 
-            <main className="student-main" style={{ padding: '16px', display: 'flex', justifyContent: 'center' }}>
+            <main className="sd-main" style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', paddingTop: '24px' }}>
                 {/* ID Card Container */}
                 <div className="id-card">
                     {/* Header Section with College Name */}

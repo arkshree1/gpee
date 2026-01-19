@@ -167,7 +167,7 @@ body {
 }
 
 .admin-sidebar-overlay {
-    display: none;
+    display: block;
     position: fixed;
     top: var(--header-height);
     left: 0;
@@ -396,7 +396,7 @@ body {
 
 /* Mobile Sidebar Overlay */
 .admin-sidebar-overlay {
-    display: none;
+    display: block;
     position: fixed;
     top: 0;
     left: 0;
@@ -1512,7 +1512,7 @@ body {
 
     /* ISSUE 5 & 6 FIX: Sidebar overlay dims ONLY background, not sidebar */
     .admin-sidebar-overlay {
-        display: none;
+        display: block;
         position: fixed;
         top: var(--header-height);
         left: 60px;

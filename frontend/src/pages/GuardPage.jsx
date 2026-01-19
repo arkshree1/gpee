@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { decideRequest, getGuardDashboard, getGuardEntryExitLogs, scanQrToken } from '../api/api';
 import GuardScanner from '../components/GuardScanner';
 import GuardEntryExitTable from '../components/GuardEntryExitTable';
@@ -15,11 +15,17 @@ const normalizeImageUrl = (imageUrl) => {
 
 const GuardPage = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanError, setScanError] = useState('');
-  const [activeTab, setActiveTab] = useState('scan');
+  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'scan');
+
+  // Persist activeTab to URL
+  useEffect(() => {
+    setSearchParams({ tab: activeTab }, { replace: true });
+  }, [activeTab, setSearchParams]);
   const [entryExitLogs, setEntryExitLogs] = useState([]);
   const [logsLoading, setLogsLoading] = useState(false);
   const [logsSearch, setLogsSearch] = useState('');

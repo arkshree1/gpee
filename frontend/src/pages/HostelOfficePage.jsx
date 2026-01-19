@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   getPendingGatepasses,
   getGatepassHistory,
@@ -17,7 +17,13 @@ import '../styles/admin.css';
 
 const HostelOfficePage = () => {
   const navigate = useNavigate();
-  const [activePage, setActivePage] = useState('local-requests');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activePage, setActivePage] = useState(() => searchParams.get('page') || 'local-requests');
+
+  // Persist activePage to URL
+  useEffect(() => {
+    setSearchParams({ page: activePage }, { replace: true });
+  }, [activePage, setSearchParams]);
   const [viewingGatepass, setViewingGatepass] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pendingLocalCount, setPendingLocalCount] = useState(0);

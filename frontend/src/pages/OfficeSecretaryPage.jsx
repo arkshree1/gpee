@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   getSecretaryPendingGatepasses,
   getSecretaryGatepassDetails,
@@ -13,7 +13,13 @@ import '../styles/admin.css';
 
 const OfficeSecretaryPage = () => {
   const navigate = useNavigate();
-  const [activePage, setActivePage] = useState('requests');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activePage, setActivePage] = useState(() => searchParams.get('page') || 'requests');
+
+  // Persist activePage to URL
+  useEffect(() => {
+    setSearchParams({ page: activePage }, { replace: true });
+  }, [activePage, setSearchParams]);
   const [viewingGatepass, setViewingGatepass] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
