@@ -16,6 +16,9 @@ const HostelOffice = require('../models/HostelOffice');
 
 const mongoUri = process.env.MONGODB_URI;
 
+// Password hash for '12345678'
+const hashedPassword = '$2b$10$DKciiwfCO8.pNBw1KvYH0ebbHXUOpG9uaJIk8gljpAVXB0BIigR5.';
+
 async function seed() {
   try {
     await mongoose.connect(mongoUri);
@@ -23,57 +26,165 @@ async function seed() {
 
     const officeSecretaries = [
       {
-        name: 'CS Office Secretary',
-        email: 'office.cs@gpee.ac.in',
-        department: 'CSE',
-        password: '$2b$10$6E72P1.6tL3fEtuU7Bn5YO4tBVZO62sVqlKBHn.Zz0Q9sK/Aw045m',
+        name: 'CSE Office Secretary',
+        email: 'csedepartmentoffice@gmail.com',
+        department: 'Computer Science and Engineering',
+        password: hashedPassword,
       },
       {
-        name: 'CHE Office Secretary',
-        email: 'office.che@gpee.ac.in',
-        department: 'CHEMICAL',
-        password: '$2b$10$wPJ2nFui/lVPu4dakTpske1US/1HvBKM9H0bIBUf79aNGQYt.PLPO',
+        name: 'Chemical Office Secretary',
+        email: 'chemicaldepartmentoffice@gmail.com',
+        department: 'Chemical and Biochemical Engineering',
+        password: hashedPassword,
+      },
+      {
+        name: 'Electrical Office Secretary',
+        email: 'electricaldepartmentoffice@gmail.com',
+        department: 'Electrical and Electronics Engineering',
+        password: hashedPassword,
+      },
+      {
+        name: 'Management Office Secretary',
+        email: 'managementdepartmentoffice@gmail.com',
+        department: 'Management Studies',
+        password: hashedPassword,
+      },
+      {
+        name: 'Mathematics Office Secretary',
+        email: 'mathematicsdepartmentoffice@gmail.com',
+        department: 'Mathematical Sciences',
+        password: hashedPassword,
+      },
+      {
+        name: 'Mechanical Office Secretary',
+        email: 'mechanicaldepartmentoffice@gmail.com',
+        department: 'Mechanical Engineering',
+        password: hashedPassword,
+      },
+      {
+        name: 'Petroleum Office Secretary',
+        email: 'petroleumdepartmentoffice@gmail.com',
+        department: 'Petroleum Engineering and Geoengineering',
+        password: hashedPassword,
+      },
+      {
+        name: 'PHD Office Secretary',
+        email: 'phddepartmentoffice@gmail.com',
+        department: 'PHD',
+        password: hashedPassword,
       },
     ];
 
     const hods = [
       {
         name: 'CSE HOD',
-        email: 'hod.cs@gpee.ac.in',
-        department: 'CSE',
-        password: '$2b$10$d80lDM0FDDfZ/SZRWLHv5eTUwq/1b1HEzz7ETcyLFNkiTahDtEAI6',
+        email: 'csedepartmenthod@gmail.com',
+        department: 'Computer Science and Engineering',
+        password: hashedPassword,
       },
       {
-        name: 'CHE HOD',
-        email: 'hod.che@gpee.ac.in',
-        department: 'CHEMICAL',
-        password: '$2b$10$GDMc0LzoYI9LBkWfyrfDvu2pJVRg0vDhvsLJNAYniKuol5.f9lWIC',
+        name: 'Chemical HOD',
+        email: 'chemicaldepartmenthod@gmail.com',
+        department: 'Chemical and Biochemical Engineering',
+        password: hashedPassword,
+      },
+      {
+        name: 'Electrical HOD',
+        email: 'electricaldepartmenthod@gmail.com',
+        department: 'Electrical and Electronics Engineering',
+        password: hashedPassword,
+      },
+      {
+        name: 'Management HOD',
+        email: 'managementdepartmenthod@gmail.com',
+        department: 'Management Studies',
+        password: hashedPassword,
+      },
+      {
+        name: 'Mathematics HOD',
+        email: 'mathematicsdepartmenthod@gmail.com',
+        department: 'Mathematical Sciences',
+        password: hashedPassword,
+      },
+      {
+        name: 'Mechanical HOD',
+        email: 'mechanicaldepartmenthod@gmail.com',
+        department: 'Mechanical Engineering',
+        password: hashedPassword,
+      },
+      {
+        name: 'Petroleum HOD',
+        email: 'petroleumdepartmenthod@gmail.com',
+        department: 'Petroleum Engineering and Geoengineering',
+        password: hashedPassword,
+      },
+      {
+        name: 'PHD HOD',
+        email: 'phddepartmenthod@gmail.com',
+        department: 'PHD',
+        password: hashedPassword,
       },
     ];
 
     const dugcs = [
       {
         name: 'CSE DUGC',
-        email: 'dugc.cs@gpee.ac.in',
-        department: 'CSE',
-        password: '$2b$10$m.SS5kYtgOPzks10E0vmaOPsDdB9Nfgu7uDmSDD.yEdrNPQaq6mwu',
+        email: 'csedepartmentdugc@gmail.com',
+        department: 'Computer Science and Engineering',
+        password: hashedPassword,
       },
       {
-        name: 'CHE DUGC',
-        email: 'dugc.che@gpee.ac.in',
-        department: 'CHEMICAL',
-        password: '$2b$10$MBUmxzNY.XpZeFYSsW98Weq6Yn/SSulLnZvybHYhfn5yhXYP9JKum',
+        name: 'Chemical DUGC',
+        email: 'chemicaldepartmentdugc@gmail.com',
+        department: 'Chemical and Biochemical Engineering',
+        password: hashedPassword,
+      },
+      {
+        name: 'Electrical DUGC',
+        email: 'electricaldepartmentdugc@gmail.com',
+        department: 'Electrical and Electronics Engineering',
+        password: hashedPassword,
+      },
+      {
+        name: 'Management DUGC',
+        email: 'managementdepartmentdugc@gmail.com',
+        department: 'Management Studies',
+        password: hashedPassword,
+      },
+      {
+        name: 'Mathematics DUGC',
+        email: 'mathematicsdepartmentdugc@gmail.com',
+        department: 'Mathematical Sciences',
+        password: hashedPassword,
+      },
+      {
+        name: 'Mechanical DUGC',
+        email: 'mechanicaldepartmentdugc@gmail.com',
+        department: 'Mechanical Engineering',
+        password: hashedPassword,
+      },
+      {
+        name: 'Petroleum DUGC',
+        email: 'petroleumdepartmentdugc@gmail.com',
+        department: 'Petroleum Engineering and Geoengineering',
+        password: hashedPassword,
+      },
+      {
+        name: 'PHD DUGC',
+        email: 'phddepartmentdugc@gmail.com',
+        department: 'PHD',
+        password: hashedPassword,
       },
     ];
 
     const hostelOffices = [
       {
         email: 'hostel.main@gpee.ac.in',
-        password: '$2b$10$cuGbK.GBxly55QwE5cXvn.eMJkUbexspM3q5sbhtA34bxmGXYllKG',
+        password: hashedPassword,
       },
       {
         email: 'hostel.boys@gpee.ac.in',
-        password: '$2b$10$a8rXo9infOHpECAGCBTwEeHhqxEQmuwCbXxo8Pke6kjYv83u/QrOe',
+        password: hashedPassword,
       },
     ];
 

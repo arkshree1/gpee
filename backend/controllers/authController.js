@@ -48,28 +48,34 @@ const generateOtp = () => {
 const getDepartmentFromBranch = (branch) => {
   switch (branch) {
     case 'Mathematics and Computing':
-      return 'MNC';
+      return 'Mathematical Sciences';
 
     case 'Computer Science and Design Engineering':
     case 'Computer Science and Engineering':
     case 'Information Technology':
-      return 'CSE';
+      return 'Computer Science and Engineering';
 
     case 'Chemical Engineering':
     case 'Chemical Engineering (Major: Renewable Energy Engineering)':
     case 'Chemical Engineering (Major: Petrochemicals and Polymers Engineering)':
-      return 'CHEMICAL';
+      return 'Chemical and Biochemical Engineering';
 
     case 'Mechanical Engineering':
-      return 'MECHANICAL';
+      return 'Mechanical Engineering';
 
     case 'Petroleum Engineering':
     case 'Petroleum Engineering (Major: Applied Petroleum Geoscience)':
-      return 'PETROLEUM';
+      return 'Petroleum Engineering and Geoengineering';
 
     case 'Electrical Engineering (Major: E Vehicle Technology)':
     case 'Electronics Engineering':
       return 'Electrical and Electronics Engineering';
+
+    case 'MBA':
+      return 'Management Studies';
+
+    case 'PhD':
+      return 'PHD';
 
     default:
       return null;
@@ -78,9 +84,16 @@ const getDepartmentFromBranch = (branch) => {
 
 exports.signup = async (req, res) => {
   try {
-    const { name, rollnumber, course, branch, email, password, confirmPassword, hostelName, roomNumber, contactNumber } = req.body;
+    let { name, rollnumber, course, branch, email, password, confirmPassword, hostelName, roomNumber, contactNumber } = req.body;
 
-    if (!name || !rollnumber || !course || !branch || !email || !password || !confirmPassword || !hostelName || !roomNumber || !contactNumber) {
+    // For MBA and PhD, set branch to be same as course
+    if (course === 'MBA' || course === 'PhD') {
+      branch = course;
+    }
+
+    // Branch is required only for BTech
+    const branchRequired = course === 'BTech';
+    if (!name || !rollnumber || !course || (branchRequired && !branch) || !email || !password || !confirmPassword || !hostelName || !roomNumber || !contactNumber) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 

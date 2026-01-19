@@ -281,3 +281,115 @@ exports.getStudentLogs = async (req, res) => {
     return res.status(500).json({ message: 'Failed to fetch student logs' });
   }
 };
+
+// Search gatepass by type and number
+exports.searchGatepass = async (req, res) => {
+  try {
+    const { type, number } = req.query;
+
+    if (!type || !number) {
+      return res.status(400).json({ message: 'Type and number are required' });
+    }
+
+    let gatepass = null;
+    let gatepassType = type.toUpperCase();
+
+    if (gatepassType === 'LOCAL') {
+      // Search for local gatepass - format: L-00001
+      const gatePassNo = `L-${number.padStart(5, '0')}`;
+      gatepass = await LocalGatepass.findOne({ gatePassNo })
+        .populate('student', 'name rollnumber email contactNumber imageUrl branch department course hostelName roomNumber');
+
+      if (!gatepass) {
+        return res.status(404).json({ message: `Local gatepass ${gatePassNo} not found` });
+      }
+
+      return res.json({
+        type: 'LOCAL',
+        gatePassNo: gatepass.gatePassNo,
+        student: {
+          name: gatepass.student?.name || gatepass.studentName,
+          rollnumber: gatepass.student?.rollnumber || gatepass.rollnumber,
+          email: gatepass.student?.email || '--',
+          contactNumber: gatepass.student?.contactNumber || gatepass.contact,
+          imageUrl: gatepass.student?.imageUrl || null,
+          branch: gatepass.student?.branch || gatepass.department,
+          department: gatepass.student?.department || gatepass.department,
+          course: gatepass.student?.course || '--',
+          hostelName: gatepass.student?.hostelName || '--',
+          roomNumber: gatepass.student?.roomNumber || gatepass.roomNumber,
+        },
+        gatepassDetails: {
+          purpose: gatepass.purpose,
+          place: gatepass.place,
+          plannedDateOut: gatepass.dateOut,
+          plannedTimeOut: gatepass.timeOut,
+          plannedDateIn: gatepass.dateIn,
+          plannedTimeIn: gatepass.timeIn,
+          status: gatepass.status,
+          appliedAt: gatepass.createdAt,
+          approvedAt: gatepass.decidedAt,
+          actualExitAt: gatepass.actualExitAt,
+          actualEntryAt: gatepass.actualEntryAt,
+          utilizationStatus: gatepass.utilizationStatus,
+          utilized: gatepass.utilized,
+        }
+      });
+
+    } else if (gatepassType === 'OUTSTATION') {
+      // Search for outstation gatepass - format: OS-00001
+      const gatePassNo = `OS-${number.padStart(5, '0')}`;
+      gatepass = await OutstationGatepass.findOne({ gatePassNo })
+        .populate('student', 'name rollnumber email contactNumber imageUrl branch department course hostelName roomNumber');
+
+      if (!gatepass) {
+        return res.status(404).json({ message: `Outstation gatepass ${gatePassNo} not found` });
+      }
+
+      return res.json({
+        type: 'OUTSTATION',
+        gatePassNo: gatepass.gatePassNo,
+        student: {
+          name: gatepass.student?.name || gatepass.studentName,
+          rollnumber: gatepass.student?.rollnumber || gatepass.rollnumber,
+          email: gatepass.student?.email || '--',
+          contactNumber: gatepass.student?.contactNumber || gatepass.contact,
+          imageUrl: gatepass.student?.imageUrl || null,
+          branch: gatepass.student?.branch || gatepass.branch,
+          department: gatepass.student?.department || gatepass.department,
+          course: gatepass.student?.course || gatepass.course,
+          hostelName: gatepass.student?.hostelName || '--',
+          roomNumber: gatepass.student?.roomNumber || gatepass.roomNumber,
+        },
+        gatepassDetails: {
+          natureOfLeave: gatepass.natureOfLeave,
+          reasonOfLeave: gatepass.reasonOfLeave,
+          address: gatepass.address,
+          leaveDays: gatepass.leaveDays,
+          plannedDateOut: gatepass.dateOut,
+          plannedTimeOut: gatepass.timeOut,
+          plannedDateIn: gatepass.dateIn,
+          plannedTimeIn: gatepass.timeIn,
+          classesMissed: gatepass.classesMissed,
+          missedDays: gatepass.missedDays,
+          currentStage: gatepass.currentStage,
+          finalStatus: gatepass.finalStatus,
+          stageStatus: gatepass.stageStatus,
+          appliedAt: gatepass.createdAt,
+          actualExitAt: gatepass.actualExitAt,
+          actualEntryAt: gatepass.actualEntryAt,
+          utilizationStatus: gatepass.utilizationStatus,
+          utilized: gatepass.utilized,
+          proofFile: gatepass.proofFile,
+        }
+      });
+
+    } else {
+      return res.status(400).json({ message: 'Invalid type. Use LOCAL or OUTSTATION' });
+    }
+
+  } catch (error) {
+    console.error('Error searching gatepass:', error);
+    return res.status(500).json({ message: 'Failed to search gatepass' });
+  }
+};

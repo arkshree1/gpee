@@ -200,7 +200,7 @@
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding: 0 20px 24px;
+    padding: 32px 20px 24px;
     width: 100%;
     box-sizing: border-box;
     position: relative;
@@ -210,7 +210,7 @@
 /* Mobile adjustments */
 @media (max-width: 768px) {
     .gothru-auth-content {
-        padding: 0 16px 24px;
+        padding: 24px 16px 24px;
         align-items: flex-start;
     }
 }
@@ -636,9 +636,13 @@
    File Input Styling
    ======================================== */
 .gothru-input[type="file"] {
-    padding: 12px 16px;
+    padding: 0;
     height: auto;
+    min-height: 44px;
     font-size: 12px;
+    display: flex;
+    align-items: center;
+    background: var(--gothru-blueberry);
 }
 
 .gothru-input[type="file"]::file-selector-button {
@@ -648,11 +652,13 @@
     color: #FFFFFF;
     background: linear-gradient(90deg, var(--gothru-apricot), var(--gothru-citrus));
     border: none;
-    border-radius: 6px;
-    padding: 8px 14px;
+    border-radius: var(--gothru-input-radius) 0 0 var(--gothru-input-radius);
+    padding: 12px 18px;
+    margin: 0;
     margin-right: 12px;
     cursor: pointer;
     transition: filter 0.15s ease;
+    height: 100%;
 }
 
 .gothru-input[type="file"]::file-selector-button:hover {

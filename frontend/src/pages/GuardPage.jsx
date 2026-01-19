@@ -345,6 +345,7 @@ const GuardPage = () => {
                       type="date"
                       value={logsDate}
                       onChange={(e) => setLogsDate(e.target.value)}
+                      max={new Date().toISOString().split('T')[0]}
                       className="guard-date-input"
                     />
                   </div>

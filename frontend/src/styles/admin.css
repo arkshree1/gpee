@@ -1973,12 +1973,13 @@ body {
 
 .recent-search-item {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
     padding: 14px 16px;
     cursor: pointer;
     transition: background 0.15s;
     border-bottom: 1px solid var(--color-border);
+    gap: 12px;
 }
 
 .recent-search-item:last-child {
@@ -1987,6 +1988,10 @@ body {
 
 .recent-search-item:hover {
     background: rgba(77, 168, 151, 0.08);
+}
+
+.recent-search-item .suggestion-name {
+    flex: 1;
 }
 
 .admin-search-box {
@@ -2072,12 +2077,13 @@ body {
 
 .admin-suggestion-item {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
     padding: 12px 16px;
     cursor: pointer;
     transition: background 0.15s;
     border-bottom: 1px solid var(--color-border);
+    gap: 12px;
 }
 
 .admin-suggestion-item:last-child {
@@ -2088,10 +2094,20 @@ body {
     background: rgba(77, 168, 151, 0.08);
 }
 
+.suggestion-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 2px solid var(--color-border);
+}
+
 .suggestion-name {
     font-size: 14px;
     font-weight: 600;
     color: var(--text-primary);
+    flex: 1;
 }
 
 .suggestion-roll {
@@ -2181,13 +2197,43 @@ body {
     min-width: 0;
 }
 
+.student-logs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--color-border);
+}
+
 .student-logs-title {
     font-size: 16px;
     font-weight: 600;
     color: var(--text-primary);
-    margin: 0 0 12px;
-    padding-bottom: 8px;
-    border-bottom: 2px solid var(--color-border);
+    margin: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.student-logs-filter {
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.student-logs-filter:hover {
+    border-color: var(--accent-primary);
+}
+
+.student-logs-filter:focus {
+    outline: none;
+    border-color: var(--accent-primary);
 }
 
 .student-logs-container {
@@ -3244,4 +3290,311 @@ body {
 .confirm-modal-cancel:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+}
+
+/* ==================== GATEPASS SEARCH PAGE - COMPACT ==================== */
+.gatepasses-page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 16px 20px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    gap: 16px;
+}
+
+.gp-search-bar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.gp-select {
+    padding: 10px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    font-size: 14px;
+    background: var(--color-surface);
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.gp-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    font-size: 14px;
+    background: var(--color-surface);
+    color: var(--text-primary);
+    max-width: 200px;
+}
+
+.gp-search-btn {
+    padding: 10px 20px;
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.gp-search-btn:hover { opacity: 0.9; }
+.gp-search-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.gp-error {
+    color: #e74c3c;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+/* Result Card */
+.gp-result {
+    flex: 1;
+    min-height: 0;
+    background: var(--color-surface);
+    border-radius: 12px;
+    border: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.gp-result-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, var(--color-primary) 0%, #e88a4d 100%);
+    flex-shrink: 0;
+}
+
+.gp-type-badge {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.gp-number {
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    flex: 1;
+}
+
+.gp-status {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.gp-status.approved, .gp-status.Approved { background: rgba(39,174,96,0.9); color: white; }
+.gp-status.pending, .gp-status.Pending { background: rgba(241,196,15,0.9); color: #333; }
+.gp-status.denied, .gp-status.rejected { background: rgba(231,76,60,0.9); color: white; }
+
+/* Content - Two Column */
+.gp-content {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+
+/* Left Column - Student */
+.gp-student {
+    padding: 16px;
+    border-right: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    background: var(--color-bg);
+}
+
+.gp-photo {
+    width: 80px;
+    height: 80px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 2px solid var(--color-primary);
+}
+
+.gp-student-info {
+    text-align: center;
+    width: 100%;
+}
+
+.gp-student-info h4 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 4px;
+}
+
+.gp-roll {
+    font-size: 13px;
+    color: var(--color-primary);
+    font-weight: 600;
+    display: block;
+    margin-bottom: 12px;
+}
+
+.gp-mini-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    text-align: left;
+}
+
+.gp-mini-grid > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.gp-mini-grid label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.gp-mini-grid span {
+    font-size: 12px;
+    color: var(--text-primary);
+    word-break: break-word;
+}
+
+/* Right Column - Details */
+.gp-details {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow: auto;
+}
+
+.gp-info-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.gp-info-row > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 100px;
+}
+
+.gp-info-row label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.gp-info-row span {
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+.gp-util-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.gp-util-badge.completed { background: rgba(39,174,96,0.15); color: #27ae60; }
+.gp-util-badge.in_use, .gp-util-badge.pending { background: rgba(241,196,15,0.15); color: #f39c12; }
+.gp-util-badge.unused { background: rgba(155,155,155,0.15); color: #666; }
+
+/* Timeline - Horizontal Grid */
+.gp-timeline {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    background: var(--color-bg);
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+}
+
+.gp-time-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px;
+    background: var(--color-surface);
+    border-radius: 6px;
+    border-left: 3px solid var(--color-primary);
+}
+
+.gp-time-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.gp-time-value {
+    font-size: 11px;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 800px) {
+    .gp-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .gp-student {
+        flex-direction: row;
+        border-right: none;
+        border-bottom: 1px solid var(--color-border);
+        padding: 12px;
+    }
+    
+    .gp-photo {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .gp-student-info {
+        text-align: left;
+    }
+    
+    .gp-timeline {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 500px) {
+    .gp-search-bar {
+        flex-wrap: wrap;
+    }
+    
+    .gp-input {
+        max-width: none;
+    }
+    
+    .gp-timeline {
+        grid-template-columns: 1fr;
+    }
 }

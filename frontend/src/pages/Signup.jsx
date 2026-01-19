@@ -34,6 +34,20 @@ const Signup = () => {
       setFormValues((prev) => ({ ...prev, [name]: digitsOnly }));
       return;
     }
+    // When course changes, auto-set branch for MBA/PhD
+    if (name === 'course') {
+      if (value === 'MBA') {
+        setFormValues((prev) => ({ ...prev, course: value, branch: 'MBA' }));
+        return;
+      } else if (value === 'PhD') {
+        setFormValues((prev) => ({ ...prev, course: value, branch: 'PhD' }));
+        return;
+      } else {
+        // For BTech, reset branch so user can select
+        setFormValues((prev) => ({ ...prev, course: value, branch: '' }));
+        return;
+      }
+    }
     setFormValues((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -57,7 +71,9 @@ const Signup = () => {
   const validate = () => {
     const { name, rollnumber, course, branch, hostelName, roomNumber, contactNumber, email, password, confirmPassword } = formValues;
 
-    if (!name || !rollnumber || !course || !branch || !hostelName || !roomNumber || !contactNumber || !email || !password || !confirmPassword || !imageFile) {
+    // Branch is required only for BTech
+    const branchRequired = course === 'BTech';
+    if (!name || !rollnumber || !course || (branchRequired && !branch) || !hostelName || !roomNumber || !contactNumber || !email || !password || !confirmPassword || !imageFile) {
       setPopupMessage('All fields including image are required.');
       return false;
     }
@@ -207,44 +223,46 @@ const Signup = () => {
               </div>
             </div>
 
-            {/* Branch */}
-            <div className="gothru-input-group">
-              <label className="gothru-label" htmlFor="branch">Branch</label>
-              <div className="gothru-input-wrapper">
-                <select
-                  id="branch"
-                  name="branch"
-                  className="gothru-select"
-                  value={formValues.branch}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="" disabled>Select branch</option>
-                  <option value="Chemical Engineering">Chemical Engineering</option>
-                  <option value="Chemical Engineering (Major: Renewable Energy Engineering)">
-                    Chemical Engineering (Renewable Energy)
-                  </option>
-                  <option value="Chemical Engineering (Major: Petrochemicals and Polymers Engineering)">
-                    Chemical Engineering (Petrochemicals)
-                  </option>
-                  <option value="Computer Science and Design Engineering">
-                    Computer Science and Design
-                  </option>
-                  <option value="Computer Science and Engineering">Computer Science and Engineering</option>
-                  <option value="Electrical Engineering (Major: E Vehicle Technology)">
-                    Electrical Engineering (EV Tech)
-                  </option>
-                  <option value="Electronics Engineering">Electronics Engineering</option>
-                  <option value="Mechanical Engineering">Mechanical Engineering</option>
-                  <option value="Information Technology">Information Technology</option>
-                  <option value="Mathematics and Computing">Mathematics and Computing</option>
-                  <option value="Petroleum Engineering">Petroleum Engineering</option>
-                  <option value="Petroleum Engineering (Major: Applied Petroleum Geoscience)">
-                    Petroleum Engineering (Geoscience)
-                  </option>
-                </select>
+            {/* Branch - Only shown for BTech */}
+            {formValues.course === 'BTech' && (
+              <div className="gothru-input-group">
+                <label className="gothru-label" htmlFor="branch">Branch</label>
+                <div className="gothru-input-wrapper">
+                  <select
+                    id="branch"
+                    name="branch"
+                    className="gothru-select"
+                    value={formValues.branch}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="" disabled>Select branch</option>
+                    <option value="Chemical Engineering">Chemical Engineering</option>
+                    <option value="Chemical Engineering (Major: Renewable Energy Engineering)">
+                      Chemical Engineering (Renewable Energy)
+                    </option>
+                    <option value="Chemical Engineering (Major: Petrochemicals and Polymers Engineering)">
+                      Chemical Engineering (Petrochemicals)
+                    </option>
+                    <option value="Computer Science and Design Engineering">
+                      Computer Science and Design
+                    </option>
+                    <option value="Computer Science and Engineering">Computer Science and Engineering</option>
+                    <option value="Electrical Engineering (Major: E Vehicle Technology)">
+                      Electrical Engineering (EV Tech)
+                    </option>
+                    <option value="Electronics Engineering">Electronics Engineering</option>
+                    <option value="Mechanical Engineering">Mechanical Engineering</option>
+                    <option value="Information Technology">Information Technology</option>
+                    <option value="Mathematics and Computing">Mathematics and Computing</option>
+                    <option value="Petroleum Engineering">Petroleum Engineering</option>
+                    <option value="Petroleum Engineering (Major: Applied Petroleum Geoscience)">
+                      Petroleum Engineering (Geoscience)
+                    </option>
+                  </select>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Hostel */}
             <div className="gothru-input-group">

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   getAdminOverview,
@@ -9,13 +9,17 @@ import {
   getDetailedLogs,
   getAllStudents,
   searchAdminStudents,
-  getStudentLogsById
+  getStudentLogsById,
+  getAdminEntryExitLogs,
+  searchGatepass
 } from '../api/api';
 import LiveActivityLogs from '../components/LiveActivityLogs';
 import DonutChart from '../components/DonutChart';
 import DonutChartMobile from '../components/DonutChartMobile';
+import GuardEntryExitTable from '../components/GuardEntryExitTable';
 import '../styles/admin.css';
 import '../styles/student.css';
+import '../styles/guard.css';
 
 const AdminPage = () => {
   const navigate = useNavigate();
@@ -48,15 +52,29 @@ const AdminPage = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [studentLogs, setStudentLogs] = useState([]);
   const [studentLogsLoading, setStudentLogsLoading] = useState(false);
+  const [logsFilter, setLogsFilter] = useState('all'); // 'all', 'normal', 'local', 'outstation'
+
+  // Log Register page state (Guard-style logs)
+  const [logRegisterLogs, setLogRegisterLogs] = useState([]);
+  const [logRegisterLoading, setLogRegisterLoading] = useState(false);
+  const [logRegisterDate, setLogRegisterDate] = useState(''); // Empty = show all dates
+  const [logRegisterSearch, setLogRegisterSearch] = useState('');
+
+  // Gatepass search page state
+  const [gatepassType, setGatepassType] = useState('LOCAL');
+  const [gatepassNumber, setGatepassNumber] = useState('');
+  const [gatepassResult, setGatepassResult] = useState(null);
+  const [gatepassLoading, setGatepassLoading] = useState(false);
+  const [gatepassError, setGatepassError] = useState('');
 
   // Mobile detection for responsive component rendering
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-
-  // Load recent searches from localStorage
+  // Load recent searches from localStorage (limit to 5)
   useEffect(() => {
     const saved = localStorage.getItem('adminRecentSearches');
     if (saved) {
-      setRecentSearches(JSON.parse(saved));
+      const parsed = JSON.parse(saved).slice(0, 5);
+      setRecentSearches(parsed);
     }
   }, []);
 
@@ -97,11 +115,25 @@ const AdminPage = () => {
     }
   };
 
+  const loadLogRegister = async () => {
+    setLogRegisterLoading(true);
+    try {
+      const res = await getAdminEntryExitLogs();
+      setLogRegisterLogs(res.data.logs || []);
+    } catch (err) {
+      console.error('Failed to load log register:', err);
+    } finally {
+      setLogRegisterLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (activePage === 'dashboard') {
       loadDashboard();
     } else if (activePage === 'students') {
       loadDetailedLogs();
+    } else if (activePage === 'logregister') {
+      loadLogRegister();
     }
   }, [activePage]);
 
@@ -175,6 +207,53 @@ const AdminPage = () => {
     });
   };
 
+  // Format log time for guard-style table
+  const formatLogTime = (value) => {
+    if (!value) return '';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '';
+
+    let hours = d.getHours();
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    if (hours === 0) hours = 12;
+
+    return `${hours}:${minutes} ${ampm}`;
+  };
+
+  // Filtered logs for Log Register page
+  const filteredLogRegisterLogs = useMemo(() => {
+    let base = logRegisterLogs;
+
+    if (logRegisterDate) {
+      const target = new Date(logRegisterDate);
+      const targetY = target.getFullYear();
+      const targetM = target.getMonth();
+      const targetD = target.getDate();
+      base = base.filter((l) => {
+        if (!l.exitStatusTime) return false;
+        const d = new Date(l.exitStatusTime);
+        return (
+          d.getFullYear() === targetY &&
+          d.getMonth() === targetM &&
+          d.getDate() === targetD
+        );
+      });
+    }
+
+    const trimmed = logRegisterSearch.trim();
+    if (!trimmed) return base;
+    const q = trimmed.toLowerCase();
+    return base.filter((l) => {
+      const s = l.student || {};
+      return (
+        (s.name && s.name.toLowerCase().includes(q)) ||
+        (s.rollnumber && s.rollnumber.toLowerCase().includes(q))
+      );
+    });
+  }, [logRegisterLogs, logRegisterSearch, logRegisterDate]);
+
   // Debounced search handler
   const handleSearchChange = useCallback(async (e) => {
     const value = e.target.value;
@@ -241,10 +320,11 @@ const AdminPage = () => {
 
   // Sidebar navigation items
   const navItems = [
-    { id: 'dashboard', icon: '◫', label: 'Dashboard' },
-    { id: 'students', icon: '◑', label: 'Logs' },
-    { id: 'gatepasses', icon: '▤', label: 'Search' },
-    { id: 'settings', icon: '⚙', label: 'Settings' },
+    { id: 'dashboard', icon: '▣', label: 'Dashboard' },
+    { id: 'students', icon: '☰', label: 'Live Logs' },
+    { id: 'logregister', icon: '▤', label: 'Log Register' },
+    { id: 'searchstudent', icon: '⌕', label: 'Search' },
+    { id: 'gatepasses', icon: '⎙', label: 'Gatepasses' },
   ];
 
   // Render page content based on active page
@@ -476,8 +556,8 @@ const AdminPage = () => {
       );
     }
 
-    // Gatepasses page - Student Search
-    if (activePage === 'gatepasses') {
+    // Search Student page
+    if (activePage === 'searchstudent') {
       return (
         <div className="admin-search-page">
           {/* Search Input Section */}
@@ -493,7 +573,7 @@ const AdminPage = () => {
                 onFocus={() => setShowSuggestions(true)}
               />
               <button className="admin-search-btn" onClick={() => handleSearchSubmit()}>
-                <span>🔍</span> Search
+                <span>⌕</span> Search
               </button>
             </div>
 
@@ -507,6 +587,11 @@ const AdminPage = () => {
                     className="admin-suggestion-item"
                     onClick={() => handleStudentSelect(student)}
                   >
+                    <img
+                      src={student.imageUrl ? `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${student.imageUrl}` : '/default-avatar.png'}
+                      alt={student.name}
+                      className="suggestion-avatar"
+                    />
                     <span className="suggestion-name">{student.name}</span>
                     <span className="suggestion-roll">{student.rollnumber}</span>
                   </div>
@@ -526,6 +611,11 @@ const AdminPage = () => {
                     className="recent-search-item"
                     onClick={() => handleStudentSelect(student)}
                   >
+                    <img
+                      src={student.imageUrl ? `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${student.imageUrl}` : '/default-avatar.png'}
+                      alt={student.name}
+                      className="suggestion-avatar"
+                    />
                     <span className="suggestion-name">{student.name}</span>
                     <span className="suggestion-roll">{student.rollnumber}</span>
                   </div>
@@ -537,6 +627,213 @@ const AdminPage = () => {
           {/* Click outside to close suggestions */}
           {showSuggestions && searchResults.length > 0 && (
             <div className="admin-suggestions-backdrop" onClick={() => setShowSuggestions(false)} />
+          )}
+        </div>
+      );
+    }
+
+    // Log Register Page (Guard-style logs)
+    if (activePage === 'logregister') {
+      return (
+        <div className="guard-logs-page">
+          <div className="guard-logs-header">
+            <h2 className="guard-logs-title">Entry-Exit Log Register</h2>
+            <div className="guard-logs-filters">
+              <div className="guard-filter-group">
+                <label>Date</label>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <input
+                    type="date"
+                    value={logRegisterDate}
+                    onChange={(e) => setLogRegisterDate(e.target.value)}
+                    max={new Date().toISOString().split('T')[0]}
+                    className="guard-date-input"
+                  />
+                  {logRegisterDate && (
+                    <button
+                      onClick={() => setLogRegisterDate('')}
+                      className="admin-search-btn"
+                      style={{ padding: '6px 12px', fontSize: '12px' }}
+                      title="Show all dates"
+                    >
+                      All
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="guard-filter-group">
+                <label>Search</label>
+                <input
+                  type="text"
+                  placeholder="Name or Roll No..."
+                  value={logRegisterSearch}
+                  onChange={(e) => setLogRegisterSearch(e.target.value)}
+                  className="guard-search-input"
+                />
+              </div>
+            </div>
+          </div>
+          <GuardEntryExitTable
+            logs={filteredLogRegisterLogs}
+            loading={logRegisterLoading}
+            formatLogTime={formatLogTime}
+          />
+        </div>
+      );
+    }
+
+    // Gatepasses search page
+    if (activePage === 'gatepasses') {
+      const handleGatepassSearch = async (e) => {
+        e?.preventDefault();
+        if (!gatepassNumber.trim()) {
+          setGatepassError('Please enter a gatepass number');
+          return;
+        }
+        setGatepassLoading(true);
+        setGatepassError('');
+        setGatepassResult(null);
+        try {
+          const res = await searchGatepass(gatepassType, gatepassNumber.trim());
+          setGatepassResult(res.data);
+        } catch (err) {
+          setGatepassError(err.response?.data?.message || 'Failed to find gatepass');
+        } finally {
+          setGatepassLoading(false);
+        }
+      };
+
+      const formatDateTime = (date) => {
+        if (!date) return '--';
+        return new Date(date).toLocaleString('en-IN', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+      };
+
+      const formatTimeTo12hr = (timeStr) => {
+        if (!timeStr) return '--';
+        const [hours, minutes] = timeStr.split(':');
+        const h = parseInt(hours, 10);
+        const suffix = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        return `${h12}:${minutes} ${suffix}`;
+      };
+
+      return (
+        <div className="gatepasses-page">
+          {/* Search Bar */}
+          <div className="gp-search-bar">
+            <select
+              value={gatepassType}
+              onChange={(e) => setGatepassType(e.target.value)}
+              className="gp-select"
+            >
+              <option value="LOCAL">Local</option>
+              <option value="OUTSTATION">Outstation</option>
+            </select>
+            <input
+              type="text"
+              className="gp-input"
+              placeholder="Enter number (e.g. 00001)"
+              value={gatepassNumber}
+              onChange={(e) => setGatepassNumber(e.target.value.replace(/\D/g, ''))}
+              onKeyDown={(e) => e.key === 'Enter' && handleGatepassSearch(e)}
+            />
+            <button className="gp-search-btn" onClick={handleGatepassSearch} disabled={gatepassLoading}>
+              {gatepassLoading ? '...' : 'Search'}
+            </button>
+          </div>
+
+          {gatepassError && <div className="gp-error">{gatepassError}</div>}
+
+          {/* Gatepass Result - Compact Layout */}
+          {gatepassResult && (
+            <div className="gp-result">
+              {/* Header with badge */}
+              <div className="gp-result-header">
+                <span className="gp-type-badge">{gatepassResult.type === 'LOCAL' ? 'LOCAL' : 'OUTSTATION'}</span>
+                <span className="gp-number">{gatepassResult.gatePassNo}</span>
+                <span className={`gp-status ${gatepassResult.gatepassDetails.status || gatepassResult.gatepassDetails.finalStatus}`}>
+                  {gatepassResult.gatepassDetails.status || gatepassResult.gatepassDetails.finalStatus || '--'}
+                </span>
+              </div>
+
+              {/* Main Content - Two Columns */}
+              <div className="gp-content">
+                {/* Left: Student Info */}
+                <div className="gp-student">
+                  <img
+                    src={gatepassResult.student.imageUrl ? `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${gatepassResult.student.imageUrl}` : '/default-avatar.png'}
+                    alt=""
+                    className="gp-photo"
+                  />
+                  <div className="gp-student-info">
+                    <h4>{gatepassResult.student.name}</h4>
+                    <span className="gp-roll">{gatepassResult.student.rollnumber}</span>
+                    <div className="gp-mini-grid">
+                      <div><label>Branch</label><span>{gatepassResult.student.branch || '--'}</span></div>
+                      <div><label>Dept</label><span>{gatepassResult.student.department || '--'}</span></div>
+                      <div><label>Contact</label><span>{gatepassResult.student.contactNumber || '--'}</span></div>
+                      <div><label>Hostel</label><span>{gatepassResult.student.hostelName || '--'} {gatepassResult.student.roomNumber || ''}</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: Details & Timeline */}
+                <div className="gp-details">
+                  {/* Gatepass Info */}
+                  <div className="gp-info-row">
+                    {gatepassResult.type === 'LOCAL' ? (
+                      <>
+                        <div><label>Purpose</label><span>{gatepassResult.gatepassDetails.purpose || '--'}</span></div>
+                        <div><label>Place</label><span>{gatepassResult.gatepassDetails.place || '--'}</span></div>
+                      </>
+                    ) : (
+                      <>
+                        <div><label>Nature</label><span>{gatepassResult.gatepassDetails.natureOfLeave || '--'}</span></div>
+                        <div><label>Reason</label><span>{gatepassResult.gatepassDetails.reasonOfLeave || '--'}</span></div>
+                        <div><label>Address</label><span>{gatepassResult.gatepassDetails.address || '--'}</span></div>
+                        <div><label>Days</label><span>{gatepassResult.gatepassDetails.leaveDays || '--'}</span></div>
+                      </>
+                    )}
+                    <div><label>Utilization</label><span className={`gp-util-badge ${gatepassResult.gatepassDetails.utilizationStatus}`}>{gatepassResult.gatepassDetails.utilizationStatus || '--'}</span></div>
+                  </div>
+
+                  {/* Timeline - Horizontal */}
+                  <div className="gp-timeline">
+                    <div className="gp-time-item">
+                      <span className="gp-time-label">Applied</span>
+                      <span className="gp-time-value">{formatDateTime(gatepassResult.gatepassDetails.appliedAt)}</span>
+                    </div>
+                    <div className="gp-time-item">
+                      <span className="gp-time-label">Approved</span>
+                      <span className="gp-time-value">{formatDateTime(gatepassResult.gatepassDetails.approvedAt)}</span>
+                    </div>
+                    <div className="gp-time-item">
+                      <span className="gp-time-label">Planned Out</span>
+                      <span className="gp-time-value">{gatepassResult.gatepassDetails.plannedDateOut} {formatTimeTo12hr(gatepassResult.gatepassDetails.plannedTimeOut)}</span>
+                    </div>
+                    <div className="gp-time-item">
+                      <span className="gp-time-label">Actual Exit</span>
+                      <span className="gp-time-value">{formatDateTime(gatepassResult.gatepassDetails.actualExitAt)}</span>
+                    </div>
+                    <div className="gp-time-item">
+                      <span className="gp-time-label">Planned In</span>
+                      <span className="gp-time-value">{gatepassResult.gatepassDetails.plannedDateIn} {formatTimeTo12hr(gatepassResult.gatepassDetails.plannedTimeIn)}</span>
+                    </div>
+                    <div className="gp-time-item">
+                      <span className="gp-time-label">Actual Entry</span>
+                      <span className="gp-time-value">{formatDateTime(gatepassResult.gatepassDetails.actualEntryAt)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       );
@@ -749,21 +1046,45 @@ const AdminPage = () => {
 
               {/* Entry-Exit Logs */}
               <div className="student-logs-section">
-                <h4 className="student-logs-title">Entry-Exit History</h4>
+                <div className="student-logs-header">
+                  <h4 className="student-logs-title">Entry-Exit History</h4>
+                  <select
+                    className="student-logs-filter"
+                    value={logsFilter}
+                    onChange={(e) => setLogsFilter(e.target.value)}
+                  >
+                    <option value="all">all entries →</option>
+                    <option value="normal">normal only</option>
+                    <option value="local">local gatepass</option>
+                    <option value="outstation">outstation gatepass</option>
+                  </select>
+                </div>
                 <div className="student-logs-container">
                   {studentLogsLoading ? (
                     <div className="admin-modal-loading">Loading logs...</div>
-                  ) : studentLogs.length === 0 ? (
+                  ) : studentLogs.filter((log) => {
+                    if (logsFilter === 'all') return true;
+                    if (logsFilter === 'normal') return log.type === 'Normal';
+                    if (logsFilter === 'local') return log.type === 'Local GP';
+                    if (logsFilter === 'outstation') return log.type === 'Outstation GP';
+                    return true;
+                  }).length === 0 ? (
                     <div className="admin-modal-empty">No entry-exit logs found</div>
                   ) : (
-                    studentLogs.map((log) => (
+                    studentLogs.filter((log) => {
+                      if (logsFilter === 'all') return true;
+                      if (logsFilter === 'normal') return log.type === 'Normal';
+                      if (logsFilter === 'local') return log.type === 'Local GP';
+                      if (logsFilter === 'outstation') return log.type === 'Outstation GP';
+                      return true;
+                    }).map((log) => (
                       <div key={log.id} className={`student-log-card ${log.direction.toLowerCase()}`}>
                         <div className={`log-direction-badge ${log.direction.toLowerCase()}`}>
                           {log.direction}
                         </div>
                         <div className="log-card-details">
                           <div className="log-detail-block">
-                            <span className="log-type-badge">{log.type}</span>
+                            <span className="log-type-badge">{log.gatePassNo || log.type}</span>
                             <span className="log-time">{formatTime(log.timestamp)}</span>
                           </div>
                           <div className="log-detail-block">

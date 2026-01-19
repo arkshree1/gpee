@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 const requireRole = require('../middleware/requireRole');
 const asyncHandler = require('../utils/asyncHandler');
 const adminController = require('../controllers/adminController');
+const guardController = require('../controllers/guardController');
 
 router.get('/overview', auth, requireRole(['admin']), asyncHandler(adminController.getOverview));
 router.get('/logs', auth, requireRole(['admin']), asyncHandler(adminController.getLogs));
@@ -18,5 +19,7 @@ router.get('/outstation-gatepass-exits', auth, requireRole(['admin']), asyncHand
 router.get('/all-students', auth, requireRole(['admin']), asyncHandler(adminController.getAllStudents));
 router.get('/search-students', auth, requireRole(['admin']), asyncHandler(adminController.searchStudents));
 router.get('/student-logs/:studentId', auth, requireRole(['admin']), asyncHandler(adminController.getStudentLogs));
+router.get('/entry-exit-logs', auth, requireRole(['admin']), asyncHandler(guardController.getEntryExitLogs));
+router.get('/search-gatepass', auth, requireRole(['admin']), asyncHandler(adminController.searchGatepass));
 
 module.exports = router;
