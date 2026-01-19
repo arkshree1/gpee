@@ -85,9 +85,8 @@ const OutstationGatepass = () => {
     if (loading) return;
 
     const {
-      studentName, rollnumber, roomNumber, course, department, contact,
-      leaveDays, dateOut, timeOut, dateIn, timeIn, address,
-      natureOfLeave, reasonOfLeave, consent,
+      contact,
+      dateOut, timeOut, dateIn, timeIn, consent,
     } = form;
 
     const requiredFields = [

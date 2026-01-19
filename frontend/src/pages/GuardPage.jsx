@@ -81,7 +81,7 @@ const GuardPage = () => {
     refreshInProgressRef.current = true;
 
     try {
-      const res = await getGuardDashboard({ signal: abortControllerRef.current.signal });
+      await getGuardDashboard({ signal: abortControllerRef.current.signal });
       // Only update state if component is still mounted
       if (isMountedRef.current) {
         // Dashboard data loaded

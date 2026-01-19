@@ -118,16 +118,7 @@ const StudentHome = () => {
   const lastExitDate = lastExitLog ? parseDate(lastExitLog.exitStatusTime) : null;
   const lastExitText = lastExitDate ? formatDate(lastExitDate) : 'No exits yet';
 
-  // Calculate duration between exit and entry
-  const calculateDuration = (exitTime, entryTime) => {
-    if (!exitTime || !entryTime) return '--';
-    const diffMs = entryTime - exitTime;
-    const diffMins = Math.floor(diffMs / 60000);
-    const hours = Math.floor(diffMins / 60);
-    const mins = diffMins % 60;
-    if (hours > 0) return `${hours}h ${mins}m`;
-    return `${mins}m`;
-  };
+
 
   const sortedLogs = [...logs].sort((a, b) => {
     const da = parseDate(a.decidedAt) || parseDate(a.entryStatusTime) || parseDate(a.exitStatusTime);
@@ -235,7 +226,7 @@ const StudentHome = () => {
         {status?.hasPendingRequest && status?.pendingRequest && (
           <div className="sd-hint sd-hint-with-action">
             <span>A request is already pending. Ask the guard to scan your QR from the Apply page.</span>
-            <button 
+            <button
               className="sd-hint-btn"
               onClick={() => navigate('/student/apply')}
             >
