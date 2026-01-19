@@ -87,9 +87,19 @@ const GuardScanner = ({ onToken, onClose }) => {
               width: { exact: 640 },
               height: { exact: 480 },
             });
+
+            // Apply hardware zoom if supported (Chrome on Android)
+            const capabilities = videoTrack.getCapabilities();
+            if (capabilities.zoom) {
+              const maxZoom = capabilities.zoom.max || 1;
+              const targetZoom = Math.min(2.0, maxZoom); // 2x zoom or max available
+              await videoTrack.applyConstraints({
+                advanced: [{ zoom: targetZoom }]
+              });
+            }
           }
         } catch {
-          // Device doesn't support exact constraints - continue with whatever resolution was acquired
+          // Device doesn't support exact constraints or zoom - continue with defaults
         }
 
         // Attach stream directly to video element
