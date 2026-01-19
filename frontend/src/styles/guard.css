@@ -955,3 +955,36 @@ body {
         stroke-width: 2.5;
     }
 }
+
+/* ==================== VERIFYING LOADER ==================== */
+.guard-verifying-modal {
+    background: var(--guard-surface);
+    border-radius: 20px;
+    padding: 48px 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
+}
+
+.guard-verifying-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid var(--guard-border);
+    border-top-color: var(--guard-primary);
+    border-radius: 50%;
+    animation: guard-spin 0.8s linear infinite;
+}
+
+@keyframes guard-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.guard-verifying-text {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--guard-text-primary);
+}

@@ -38,6 +38,7 @@ const GuardPage = () => {
 
   const [pending, setPending] = useState(null);
   const [decisionLoading, setDecisionLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
   const isMountedRef = useRef(true);
   const refreshInProgressRef = useRef(false);
@@ -133,12 +134,15 @@ const GuardPage = () => {
 
   const onToken = async (token) => {
     setScanError('');
+    setScannerOpen(false);
+    setVerifying(true);
     try {
       const res = await scanQrToken({ token });
       setPending(res.data);
-      setScannerOpen(false);
     } catch (e) {
       setScanError(e?.response?.data?.message || 'Invalid/expired/used token');
+    } finally {
+      setVerifying(false);
     }
   };
 
@@ -507,6 +511,16 @@ const GuardPage = () => {
       )}
 
       {scannerOpen && <GuardScanner onToken={onToken} onClose={() => setScannerOpen(false)} />}
+
+      {/* Verifying loader overlay */}
+      {verifying && (
+        <div className="guard-scanner-overlay">
+          <div className="guard-verifying-modal">
+            <div className="guard-verifying-spinner"></div>
+            <div className="guard-verifying-text">Verifying...</div>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Bottom Navigation */}
       <nav className="guard-mobile-nav">
