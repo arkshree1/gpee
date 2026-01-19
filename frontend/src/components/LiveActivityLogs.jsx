@@ -10,8 +10,9 @@ import { getAdminLiveLogs } from '../api/api';
  * - Entry (green) / Exit (red) color coding
  * - Timestamp in blue
  * - Responsive design
+ * - Clickable student name/avatar to view details
  */
-const LiveActivityLogs = () => {
+const LiveActivityLogs = ({ onStudentClick }) => {
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -57,6 +58,18 @@ const LiveActivityLogs = () => {
         };
     }, [fetchLogs]);
 
+    // Handle student click
+    const handleStudentClick = (log) => {
+        if (onStudentClick && log.studentId) {
+            onStudentClick({
+                _id: log.studentId,
+                name: log.studentName,
+                rollnumber: log.rollNumber,
+                imageUrl: log.imageUrl
+            });
+        }
+    };
+
     return (
         <div className="live-logs-panel">
             {/* Header */}
@@ -91,9 +104,21 @@ const LiveActivityLogs = () => {
                             <span className={`live-log-action ${log.actionType === 'ENTRY' ? 'entry' : 'exit'}`}>
                                 {log.actionType}
                             </span>
-                            <div className="live-log-student">
-                                <span className="live-log-name">{log.studentName}</span>
-                                <span className="live-log-roll">{log.rollNumber}</span>
+                            <div
+                                className={`live-log-student ${onStudentClick ? 'clickable' : ''}`}
+                                onClick={() => handleStudentClick(log)}
+                                role={onStudentClick ? 'button' : undefined}
+                                tabIndex={onStudentClick ? 0 : undefined}
+                            >
+                                <img
+                                    src={log.imageUrl ? `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${log.imageUrl}` : '/default-avatar.png'}
+                                    alt=""
+                                    className="live-log-avatar"
+                                />
+                                <div className="live-log-info">
+                                    <span className="live-log-name">{log.studentName}</span>
+                                    <span className="live-log-roll">{log.rollNumber}</span>
+                                </div>
                             </div>
                         </div>
                     </div>

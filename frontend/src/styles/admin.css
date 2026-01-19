@@ -345,10 +345,13 @@ body {
 }
 
 @keyframes badgePulse {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: scale(1);
         box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.5);
     }
+
     50% {
         transform: scale(1.1);
         box-shadow: 0 0 0 6px rgba(220, 53, 69, 0);
@@ -919,8 +922,27 @@ body {
     background: var(--status-exit);
 }
 
-/* Student info below action */
+/* Student info with avatar (WhatsApp-style) */
 .live-log-student {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Circular profile picture */
+.live-log-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 2px solid var(--color-border);
+    background: var(--color-bg);
+}
+
+/* Student name and roll container */
+.live-log-info {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -1210,6 +1232,91 @@ body {
 .type-badge.outstation {
     color: var(--color-blue);
     background: rgba(59, 143, 243, 0.12);
+}
+
+/* ==================== ACTIVITY LOGS TABLE AVATAR (Desktop) ==================== */
+.log-table-identity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.log-table-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 2px solid var(--color-border);
+    background: var(--color-bg);
+}
+
+/* ==================== ACTIVITY LOGS CARD AVATAR (Mobile) ==================== */
+.log-card-identity {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.log-card-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 2px solid var(--color-border);
+    background: var(--color-bg);
+}
+
+.log-card-identity-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+}
+
+/* ==================== CLICKABLE ELEMENTS ==================== */
+/* Clickable student identities in logs */
+.log-table-identity.clickable,
+.log-card-identity.clickable,
+.live-log-student.clickable {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 4px 8px;
+    margin: -4px -8px;
+    border-radius: 8px;
+}
+
+.log-table-identity.clickable:hover,
+.log-card-identity.clickable:hover,
+.live-log-student.clickable:hover {
+    background: var(--color-surface-hover);
+    transform: translateX(2px);
+}
+
+/* Clickable gatepass badges */
+.type-badge.clickable {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.type-badge.clickable:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.type-badge.local.clickable:hover {
+    background: rgba(242, 159, 103, 0.25);
+}
+
+.type-badge.outstation.clickable:hover {
+    background: rgba(59, 143, 243, 0.25);
+}
+
+/* Gatepass modal specific styles */
+.gatepass-modal {
+    max-width: 900px;
 }
 
 /* ==================== RESPONSIVE VISIBILITY ==================== */
@@ -3375,8 +3482,14 @@ body {
     transition: opacity 0.2s;
 }
 
-.gp-search-btn:hover { opacity: 0.9; }
-.gp-search-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.gp-search-btn:hover {
+    opacity: 0.9;
+}
+
+.gp-search-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
 
 .gp-error {
     color: #e74c3c;
@@ -3406,7 +3519,7 @@ body {
 }
 
 .gp-type-badge {
-    background: rgba(255,255,255,0.2);
+    background: rgba(255, 255, 255, 0.2);
     color: white;
     padding: 4px 10px;
     border-radius: 4px;
@@ -3430,9 +3543,23 @@ body {
     text-transform: capitalize;
 }
 
-.gp-status.approved, .gp-status.Approved { background: rgba(39,174,96,0.9); color: white; }
-.gp-status.pending, .gp-status.Pending { background: rgba(241,196,15,0.9); color: #333; }
-.gp-status.denied, .gp-status.rejected { background: rgba(231,76,60,0.9); color: white; }
+.gp-status.approved,
+.gp-status.Approved {
+    background: rgba(39, 174, 96, 0.9);
+    color: white;
+}
+
+.gp-status.pending,
+.gp-status.Pending {
+    background: rgba(241, 196, 15, 0.9);
+    color: #333;
+}
+
+.gp-status.denied,
+.gp-status.rejected {
+    background: rgba(231, 76, 60, 0.9);
+    color: white;
+}
 
 /* Content - Two Column */
 .gp-content {
@@ -3489,7 +3616,7 @@ body {
     text-align: left;
 }
 
-.gp-mini-grid > div {
+.gp-mini-grid>div {
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -3523,7 +3650,7 @@ body {
     gap: 16px;
 }
 
-.gp-info-row > div {
+.gp-info-row>div {
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -3551,9 +3678,21 @@ body {
     text-transform: capitalize;
 }
 
-.gp-util-badge.completed { background: rgba(39,174,96,0.15); color: #27ae60; }
-.gp-util-badge.in_use, .gp-util-badge.pending { background: rgba(241,196,15,0.15); color: #f39c12; }
-.gp-util-badge.unused { background: rgba(155,155,155,0.15); color: #666; }
+.gp-util-badge.completed {
+    background: rgba(39, 174, 96, 0.15);
+    color: #27ae60;
+}
+
+.gp-util-badge.in_use,
+.gp-util-badge.pending {
+    background: rgba(241, 196, 15, 0.15);
+    color: #f39c12;
+}
+
+.gp-util-badge.unused {
+    background: rgba(155, 155, 155, 0.15);
+    color: #666;
+}
 
 /* Timeline - Horizontal Grid */
 .gp-timeline {
@@ -3595,23 +3734,23 @@ body {
     .gp-content {
         grid-template-columns: 1fr;
     }
-    
+
     .gp-student {
         flex-direction: row;
         border-right: none;
         border-bottom: 1px solid var(--color-border);
         padding: 12px;
     }
-    
+
     .gp-photo {
         width: 60px;
         height: 60px;
     }
-    
+
     .gp-student-info {
         text-align: left;
     }
-    
+
     .gp-timeline {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -3621,11 +3760,11 @@ body {
     .gp-search-bar {
         flex-wrap: wrap;
     }
-    
+
     .gp-input {
         max-width: none;
     }
-    
+
     .gp-timeline {
         grid-template-columns: 1fr;
     }
@@ -3913,21 +4052,21 @@ body {
         flex-direction: column;
         text-align: center;
     }
-    
+
     .os-student-photo-large {
         width: 80px;
         height: 80px;
     }
-    
+
     .os-student-basic-info h3 {
         font-size: 1.2rem;
     }
-    
+
     .doc-popup-iframe {
         width: 95vw;
         height: 80vh;
     }
-    
+
     .doc-popup-image {
         max-width: 95vw;
     }

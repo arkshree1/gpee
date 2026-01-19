@@ -69,15 +69,17 @@ exports.getLiveLogs = async (req, res) => {
     const logs = await GateRequest.find({ status: 'approved' })
       .sort({ decidedAt: -1 })
       .limit(50)
-      .populate('student', 'name rollnumber')
+      .populate('student', 'name rollnumber imageUrl')
       .select('direction decidedAt student status purpose place');
 
     // Transform to clean format for frontend
     const liveLogs = logs.map(log => ({
       id: log._id,
+      studentId: log.student?._id || null,
       actionType: log.direction === 'exit' ? 'EXIT' : 'ENTRY',
       studentName: log.student?.name || 'Unknown',
       rollNumber: log.student?.rollnumber || '--',
+      imageUrl: log.student?.imageUrl || null,
       timestamp: log.decidedAt,
       status: log.status,
       purpose: log.purpose,
@@ -97,7 +99,7 @@ exports.getDetailedLogs = async (req, res) => {
     const logs = await GateRequest.find({ status: 'approved' })
       .sort({ decidedAt: -1 })
       .limit(200)
-      .populate('student', 'name rollnumber contactNumber')
+      .populate('student', 'name rollnumber contactNumber imageUrl')
       .select('direction decidedAt student purpose place gatePassNo isOutstation');
 
     const detailedLogs = logs.map(log => {
@@ -109,9 +111,11 @@ exports.getDetailedLogs = async (req, res) => {
 
       return {
         id: log._id,
+        studentId: log.student?._id || null,
         name: log.student?.name || 'Unknown',
         rollNumber: log.student?.rollnumber || '--',
         contactNumber: log.student?.contactNumber || '--',
+        imageUrl: log.student?.imageUrl || null,
         activity: log.direction === 'exit' ? 'EXIT' : 'ENTRY',
         type: type,
         place: log.place || '--',

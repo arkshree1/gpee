@@ -73,6 +73,12 @@ const AdminPage = () => {
   const [gatepassLoading, setGatepassLoading] = useState(false);
   const [gatepassError, setGatepassError] = useState('');
 
+  // Gatepass detail modal state (for clicking gatepass badges in logs)
+  const [showGatepassModal, setShowGatepassModal] = useState(false);
+  const [gatepassModalData, setGatepassModalData] = useState(null);
+  const [gatepassModalLoading, setGatepassModalLoading] = useState(false);
+
+
   // Mobile detection for responsive component rendering
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   // Load recent searches from localStorage (limit to 5)
@@ -321,6 +327,37 @@ const AdminPage = () => {
     }
   };
 
+  // Handle gatepass badge click (from Activity Logs)
+  const handleGatepassClick = async (gatepassNo) => {
+    if (!gatepassNo || gatepassNo === 'Normal') return;
+
+    // Parse gatepass number - format is "L-00001" or "OS-00002"
+    let type, number;
+    if (gatepassNo.startsWith('OS-')) {
+      type = 'OUTSTATION';
+      number = gatepassNo.replace('OS-', '');
+    } else if (gatepassNo.startsWith('L-')) {
+      type = 'LOCAL';
+      number = gatepassNo.replace('L-', '');
+    } else {
+      return; // Not a valid gatepass format
+    }
+
+    setGatepassModalLoading(true);
+    setShowGatepassModal(true);
+    setGatepassModalData(null);
+
+    try {
+      const res = await searchGatepass(type, number);
+      setGatepassModalData(res.data);
+    } catch (err) {
+      console.error('Failed to fetch gatepass details:', err);
+      setGatepassModalData({ error: err.response?.data?.message || 'Failed to load gatepass' });
+    } finally {
+      setGatepassModalLoading(false);
+    }
+  };
+
   // Calculate total students
   const totalStudents = (overview?.studentsInside || 0) + (overview?.studentsOutside || 0);
 
@@ -453,13 +490,13 @@ const AdminPage = () => {
 
             {/* Mobile-only: Scrollable Live Activity Log */}
             <div className="mobile-live-activity-container mobile-only">
-              <LiveActivityLogs />
+              <LiveActivityLogs onStudentClick={handleStudentSelect} />
             </div>
           </div>
 
           {/* Live Activity Logs Panel (Desktop Only) */}
           <div className="desktop-only">
-            <LiveActivityLogs />
+            <LiveActivityLogs onStudentClick={handleStudentSelect} />
           </div>
         </div>
       );
@@ -497,7 +534,21 @@ const AdminPage = () => {
                   <tbody>
                     {detailedLogs.map((log, idx) => (
                       <tr key={log.id || idx}>
-                        <td>{log.name}</td>
+                        <td>
+                          <div
+                            className="log-table-identity clickable"
+                            onClick={() => log.studentId && handleStudentSelect({ _id: log.studentId, name: log.name, rollnumber: log.rollNumber, imageUrl: log.imageUrl })}
+                            role="button"
+                            tabIndex={0}
+                          >
+                            <img
+                              src={log.imageUrl ? `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${log.imageUrl}` : '/default-avatar.png'}
+                              alt=""
+                              className="log-table-avatar"
+                            />
+                            <span>{log.name}</span>
+                          </div>
+                        </td>
                         <td>{log.rollNumber}</td>
                         <td>
                           <span className={`activity-badge ${log.activity.toLowerCase()}`}>
@@ -505,7 +556,12 @@ const AdminPage = () => {
                           </span>
                         </td>
                         <td>
-                          <span className={`type-badge ${log.type === 'Normal' ? 'normal' : log.type.startsWith('OS') ? 'outstation' : 'local'}`}>
+                          <span
+                            className={`type-badge ${log.type === 'Normal' ? 'normal' : log.type.startsWith('OS') ? 'outstation' : 'local'} ${log.type !== 'Normal' ? 'clickable' : ''}`}
+                            onClick={() => handleGatepassClick(log.type)}
+                            role={log.type !== 'Normal' ? 'button' : undefined}
+                            tabIndex={log.type !== 'Normal' ? 0 : undefined}
+                          >
                             {log.type}
                           </span>
                         </td>
@@ -530,13 +586,30 @@ const AdminPage = () => {
                       {/* Card Content */}
                       <div className="log-card-content">
                         {/* Left: Identity Block */}
-                        <div className="log-card-identity">
-                          <div className="log-card-name">{log.name}</div>
-                          <div className="log-card-roll">{log.rollNumber}</div>
-                          <span className={`type-badge ${log.type === 'Normal' ? 'normal' : log.type.startsWith('OS') ? 'outstation' : 'local'}`}>
-                            {log.type}
-                          </span>
-                          <div className="log-card-contact">{log.contactNumber}</div>
+                        <div
+                          className="log-card-identity clickable"
+                          onClick={() => log.studentId && handleStudentSelect({ _id: log.studentId, name: log.name, rollnumber: log.rollNumber, imageUrl: log.imageUrl })}
+                          role="button"
+                          tabIndex={0}
+                        >
+                          <img
+                            src={log.imageUrl ? `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${log.imageUrl}` : '/default-avatar.png'}
+                            alt=""
+                            className="log-card-avatar"
+                          />
+                          <div className="log-card-identity-info">
+                            <div className="log-card-name">{log.name}</div>
+                            <div className="log-card-roll">{log.rollNumber}</div>
+                            <span
+                              className={`type-badge ${log.type === 'Normal' ? 'normal' : log.type.startsWith('OS') ? 'outstation' : 'local'} ${log.type !== 'Normal' ? 'clickable' : ''}`}
+                              onClick={(e) => { e.stopPropagation(); handleGatepassClick(log.type); }}
+                              role={log.type !== 'Normal' ? 'button' : undefined}
+                              tabIndex={log.type !== 'Normal' ? 0 : undefined}
+                            >
+                              {log.type}
+                            </span>
+                            <div className="log-card-contact">{log.contactNumber}</div>
+                          </div>
                         </div>
 
                         {/* Middle: Place & Time */}
@@ -1111,6 +1184,109 @@ const AdminPage = () => {
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Gatepass Detail Modal */}
+      {showGatepassModal && (
+        <div className="admin-modal-overlay" onClick={() => setShowGatepassModal(false)}>
+          <div className="admin-modal gatepass-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-modal-header">
+              <span className="admin-modal-title">Gatepass Details</span>
+              <button className="admin-modal-close" onClick={() => setShowGatepassModal(false)}>×</button>
+            </div>
+            <div className="admin-modal-body" style={{ padding: '20px' }}>
+              {gatepassModalLoading && (
+                <div className="admin-modal-loading">Loading gatepass details...</div>
+              )}
+              {!gatepassModalLoading && gatepassModalData?.error && (
+                <div className="gp-error">{gatepassModalData.error}</div>
+              )}
+              {!gatepassModalLoading && gatepassModalData && !gatepassModalData.error && (
+                <div className="gp-result" style={{ background: 'transparent', boxShadow: 'none', padding: 0 }}>
+                  {/* Header with badge */}
+                  <div className="gp-result-header">
+                    <span className="gp-type-badge">{gatepassModalData.type === 'LOCAL' ? 'LOCAL' : 'OUTSTATION'}</span>
+                    <span className="gp-number">{gatepassModalData.gatePassNo}</span>
+                    <span className={`gp-status ${gatepassModalData.gatepassDetails.status || gatepassModalData.gatepassDetails.finalStatus}`}>
+                      {gatepassModalData.gatepassDetails.status || gatepassModalData.gatepassDetails.finalStatus || '--'}
+                    </span>
+                  </div>
+
+                  {/* Main Content - Two Columns */}
+                  <div className="gp-content">
+                    {/* Left: Student Info */}
+                    <div className="gp-student">
+                      <img
+                        src={gatepassModalData.student.imageUrl ? `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${gatepassModalData.student.imageUrl}` : '/default-avatar.png'}
+                        alt=""
+                        className="gp-photo"
+                      />
+                      <div className="gp-student-info">
+                        <h4>{gatepassModalData.student.name}</h4>
+                        <span className="gp-roll">{gatepassModalData.student.rollnumber}</span>
+                        <div className="gp-mini-grid">
+                          <div><label>Branch</label><span>{gatepassModalData.student.branch || '--'}</span></div>
+                          <div><label>Dept</label><span>{gatepassModalData.student.department || '--'}</span></div>
+                          <div><label>Contact</label><span>{gatepassModalData.student.contactNumber || '--'}</span></div>
+                          <div><label>Hostel</label><span>{gatepassModalData.student.hostelName || '--'} {gatepassModalData.student.roomNumber || ''}</span></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right: Details & Timeline */}
+                    <div className="gp-details">
+                      {/* Gatepass Info */}
+                      <div className="gp-info-row">
+                        {gatepassModalData.type === 'LOCAL' ? (
+                          <>
+                            <div><label>Purpose</label><span>{gatepassModalData.gatepassDetails.purpose || '--'}</span></div>
+                            <div><label>Place</label><span>{gatepassModalData.gatepassDetails.place || '--'}</span></div>
+                          </>
+                        ) : (
+                          <>
+                            <div><label>Nature</label><span>{gatepassModalData.gatepassDetails.natureOfLeave || '--'}</span></div>
+                            <div><label>Reason</label><span>{gatepassModalData.gatepassDetails.reasonOfLeave || '--'}</span></div>
+                            <div><label>Address</label><span>{gatepassModalData.gatepassDetails.address || '--'}</span></div>
+                            <div><label>Days</label><span>{gatepassModalData.gatepassDetails.leaveDays || '--'}</span></div>
+                          </>
+                        )}
+                        <div><label>Utilization</label><span className={`gp-util-badge ${gatepassModalData.gatepassDetails.utilizationStatus}`}>{gatepassModalData.gatepassDetails.utilizationStatus || '--'}</span></div>
+                      </div>
+
+                      {/* Timeline - Horizontal */}
+                      <div className="gp-timeline">
+                        <div className="gp-time-item">
+                          <span className="gp-time-label">Applied</span>
+                          <span className="gp-time-value">{formatTime(gatepassModalData.gatepassDetails.appliedAt)}</span>
+                        </div>
+                        <div className="gp-time-item">
+                          <span className="gp-time-label">Approved</span>
+                          <span className="gp-time-value">{formatTime(gatepassModalData.gatepassDetails.approvedAt)}</span>
+                        </div>
+                        <div className="gp-time-item">
+                          <span className="gp-time-label">Planned Out</span>
+                          <span className="gp-time-value">{gatepassModalData.gatepassDetails.plannedDateOut || '--'}</span>
+                        </div>
+                        <div className="gp-time-item">
+                          <span className="gp-time-label">Actual Exit</span>
+                          <span className="gp-time-value">{formatTime(gatepassModalData.gatepassDetails.actualExitAt)}</span>
+                        </div>
+                        <div className="gp-time-item">
+                          <span className="gp-time-label">Planned In</span>
+                          <span className="gp-time-value">{gatepassModalData.gatepassDetails.plannedDateIn || '--'}</span>
+                        </div>
+                        <div className="gp-time-item">
+                          <span className="gp-time-label">Actual Entry</span>
+                          <span className="gp-time-value">{formatTime(gatepassModalData.gatepassDetails.actualEntryAt)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
