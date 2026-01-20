@@ -493,6 +493,13 @@ const LocalHistoryView = () => {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
 
+  // Popup state
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupData, setPopupData] = useState(null);
+  const [popupLoading, setPopupLoading] = useState(false);
+
+  const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+
   const fetchHistory = async (searchQuery = '') => {
     try {
       setError('');
@@ -515,7 +522,52 @@ const LocalHistoryView = () => {
     fetchHistory(search);
   };
 
+  const formatDateTime = (dateStr) => {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    return d.toLocaleString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
 
+  const handleRowClick = async (gp) => {
+    if (!gp._id) return;
+
+    setShowPopup(true);
+    setPopupLoading(false);
+    // Use the row data directly since it includes all needed info
+    setPopupData({
+      student: {
+        ...gp.student,
+        name: gp.studentName,
+        rollnumber: gp.rollnumber,
+      },
+      gatePassNo: gp.gatePassNo,
+      gatepassDetails: {
+        purpose: gp.purpose,
+        place: gp.place,
+        status: gp.status,
+        dateOut: gp.dateOut,
+        dateIn: gp.dateIn,
+        timeOut: gp.timeOut,
+        timeIn: gp.timeIn,
+        actualExitAt: gp.actualExitAt,
+        actualEntryAt: gp.actualEntryAt,
+        appliedAt: gp.createdAt,
+        approvedAt: gp.decidedAt,
+      }
+    });
+  };
+
+  const closePopup = () => {
+    setShowPopup(false);
+    setPopupData(null);
+  };
 
   return (
     <div className="os-section">
@@ -541,22 +593,169 @@ const LocalHistoryView = () => {
       )}
 
       <div className="os-history-table">
-        {gatepasses.map((gp) => (
-          <div key={gp._id} className={`os-history-row ${gp.status}`}>
-            <div className="os-history-student">
-              <div className="os-history-name">{gp.studentName}</div>
-              <div className="os-history-meta">{gp.rollnumber}</div>
+        {gatepasses.map((gp) => {
+          const hasGatepassNo = !!gp.gatePassNo;
+          const isClickable = hasGatepassNo;
+          const status = gp.status || 'pending';
+
+          return (
+            <div
+              key={gp._id}
+              className={`os-history-row-enhanced ${status} ${isClickable ? 'os-history-row-clickable' : ''}`}
+              onClick={() => isClickable && handleRowClick(gp)}
+              role={isClickable ? 'button' : undefined}
+              tabIndex={isClickable ? 0 : undefined}
+            >
+              {/* Student Avatar */}
+              <div className="os-history-avatar">
+                {gp.student?.imageUrl ? (
+                  <img src={`${API_BASE}${gp.student.imageUrl}`} alt="" />
+                ) : (
+                  <div className="os-history-avatar-placeholder">
+                    {gp.studentName?.charAt(0) || '?'}
+                  </div>
+                )}
+              </div>
+
+              {/* Student Info */}
+              <div className="os-history-student-info">
+                <div className="os-history-name">{gp.studentName}</div>
+                <div className="os-history-meta">{gp.rollnumber}</div>
+              </div>
+
+              {/* Gatepass Number */}
+              {hasGatepassNo ? (
+                <span className="os-history-gp-number">{gp.gatePassNo}</span>
+              ) : (
+                <span className="os-history-gp-pending">Yet to be Approved</span>
+              )}
+
+              {/* Leave Info */}
+              <div className="os-history-leave-enhanced">
+                <span>{gp.place}</span>
+                <span className="os-history-reason-text">{gp.purpose}</span>
+              </div>
+
+              {/* Status Badge */}
+              <div className={`os-status-badge ${status}`}>
+                {status?.toUpperCase()}
+              </div>
             </div>
-            <div className="os-history-leave">
-              <span>{gp.place}</span>
-              <span className="os-history-reason-text">{gp.purpose}</span>
+          );
+        })}
+      </div>
+
+      {/* Gatepass Detail Popup */}
+      {showPopup && (
+        <div className="gatepass-popup-overlay" onClick={closePopup}>
+          <div className="gatepass-popup-content" onClick={(e) => e.stopPropagation()}>
+            <div className="gatepass-popup-header">
+              <h3>Local Gatepass Details</h3>
+              <button className="gatepass-popup-close" onClick={closePopup}>×</button>
             </div>
-            <div className={`os-status-badge ${gp.status}`}>
-              {gp.status?.toUpperCase()}
+            <div className="gatepass-popup-body">
+              {popupLoading && <div className="os-loading">Loading gatepass details...</div>}
+              {!popupLoading && popupData?.error && (
+                <div className="os-error">{popupData.error}</div>
+              )}
+              {!popupLoading && popupData && !popupData.error && (
+                <>
+                  <div className="gatepass-popup-student">
+                    <div className="gatepass-popup-avatar">
+                      {popupData.student?.imageUrl ? (
+                        <img src={`${API_BASE}${popupData.student.imageUrl}`} alt="" />
+                      ) : (
+                        <div className="gatepass-popup-avatar-placeholder">
+                          {popupData.student?.name?.charAt(0) || '?'}
+                        </div>
+                      )}
+                    </div>
+                    <div className="gatepass-popup-student-info">
+                      <h4>{popupData.student?.name}</h4>
+                      <p>{popupData.student?.rollnumber} • {popupData.student?.department}</p>
+                    </div>
+                  </div>
+
+                  <div className="gatepass-popup-badges">
+                    <span className="gatepass-popup-type-badge local">LOCAL</span>
+                    <span className="gatepass-popup-number-badge">{popupData.gatePassNo}</span>
+                    <span className={`gatepass-popup-status-badge ${popupData.gatepassDetails?.status}`}>
+                      {popupData.gatepassDetails?.status || 'Pending'}
+                    </span>
+                  </div>
+
+                  <div className="gatepass-popup-details">
+                    <div className="gatepass-popup-detail-item">
+                      <span className="gatepass-popup-detail-label">Purpose</span>
+                      <span className="gatepass-popup-detail-value">{popupData.gatepassDetails?.purpose || '--'}</span>
+                    </div>
+                    <div className="gatepass-popup-detail-item">
+                      <span className="gatepass-popup-detail-label">Place</span>
+                      <span className="gatepass-popup-detail-value">{popupData.gatepassDetails?.place || '--'}</span>
+                    </div>
+                  </div>
+
+                  <div className="gatepass-popup-utilization">
+                    <h5>Scheduled Times</h5>
+                    <div className="gatepass-popup-util-grid">
+                      <div className="gatepass-popup-util-item exit">
+                        <span className="gatepass-popup-util-label">Scheduled Exit</span>
+                        <span className="gatepass-popup-util-value scheduled">
+                          {popupData.gatepassDetails?.dateOut} {popupData.gatepassDetails?.timeOut || ''}
+                        </span>
+                      </div>
+                      <div className="gatepass-popup-util-item entry">
+                        <span className="gatepass-popup-util-label">Scheduled Entry</span>
+                        <span className="gatepass-popup-util-value scheduled">
+                          {popupData.gatepassDetails?.dateIn} {popupData.gatepassDetails?.timeIn || ''}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="gatepass-popup-utilization">
+                    <h5>Actual Times</h5>
+                    <div className="gatepass-popup-util-grid">
+                      <div className="gatepass-popup-util-item exit">
+                        <span className="gatepass-popup-util-label">Actual Exit</span>
+                        <span className={`gatepass-popup-util-value ${!popupData.gatepassDetails?.actualExitAt ? 'not-done' : ''}`}>
+                          {popupData.gatepassDetails?.actualExitAt ? formatDateTime(popupData.gatepassDetails.actualExitAt) : 'Not Done Yet'}
+                        </span>
+                      </div>
+                      <div className="gatepass-popup-util-item entry">
+                        <span className="gatepass-popup-util-label">Actual Entry</span>
+                        <span className={`gatepass-popup-util-value ${!popupData.gatepassDetails?.actualEntryAt ? 'not-done' : ''}`}>
+                          {popupData.gatepassDetails?.actualEntryAt ? formatDateTime(popupData.gatepassDetails.actualEntryAt) : 'Not Done Yet'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="gatepass-popup-timeline">
+                    <h5>Timeline</h5>
+                    <div className="gatepass-popup-timeline-list">
+                      <div className="gatepass-popup-timeline-item">
+                        <span className="gatepass-popup-timeline-stage">Applied</span>
+                        <span className="gatepass-popup-timeline-time">
+                          {formatDateTime(popupData.gatepassDetails?.appliedAt) || '--'}
+                        </span>
+                      </div>
+                      {popupData.gatepassDetails?.approvedAt && (
+                        <div className="gatepass-popup-timeline-item approved">
+                          <span className="gatepass-popup-timeline-stage">Approved</span>
+                          <span className="gatepass-popup-timeline-time">
+                            {formatDateTime(popupData.gatepassDetails.approvedAt)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -938,7 +1137,7 @@ const OSGatepassDetailsView = ({ gatepassId, onBack }) => {
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
               rows={4}
-              style={{ width: '100%', marginBottom: '16px', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', resize: 'vertical' }}
+              style={{ width: '100%', marginBottom: '16px', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', resize: 'none' }}
             />
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
               <button
@@ -992,6 +1191,13 @@ const OSHistoryView = () => {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
 
+  // Popup state
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupData, setPopupData] = useState(null);
+  const [popupLoading, setPopupLoading] = useState(false);
+
+  const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+
   const fetchHistory = async (searchQuery = '') => {
     try {
       setError('');
@@ -1021,6 +1227,57 @@ const OSHistoryView = () => {
     return dateStr;
   };
 
+  const formatDateTime = (dateStr) => {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    return d.toLocaleString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  const handleRowClick = async (gp) => {
+    if (!gp._id) return;
+
+    setShowPopup(true);
+    setPopupLoading(true);
+    setPopupData(null);
+
+    try {
+      const res = await getHostelOfficeOSGatepassDetails(gp._id);
+      const gatepass = res.data.gatepass;
+      setPopupData({
+        student: gatepass.student,
+        gatePassNo: gatepass.gatePassNo,
+        gatepassDetails: {
+          natureOfLeave: gatepass.natureOfLeave,
+          leaveDays: gatepass.leaveDays,
+          reasonOfLeave: gatepass.reasonOfLeave,
+          address: gatepass.address,
+          status: gatepass.currentStage,
+          finalStatus: gatepass.finalStatus,
+          actualExitAt: gatepass.actualExitAt,
+          actualEntryAt: gatepass.actualEntryAt,
+          appliedAt: gatepass.createdAt,
+          approvedAt: gatepass.stageStatus?.hostelOffice?.decidedAt,
+        }
+      });
+    } catch (err) {
+      setPopupData({ error: err.response?.data?.message || 'Failed to load gatepass details' });
+    } finally {
+      setPopupLoading(false);
+    }
+  };
+
+  const closePopup = () => {
+    setShowPopup(false);
+    setPopupData(null);
+  };
+
   return (
     <div className="os-section">
       <div className="os-history-header-row">
@@ -1045,24 +1302,162 @@ const OSHistoryView = () => {
       )}
 
       <div className="os-history-table">
-        {gatepasses.map((gp) => (
-          <div key={gp._id} className={`os-history-row ${gp.stageStatus?.hostelOffice?.status}`}>
-            <div className="os-history-student">
-              <div className="os-history-name">{gp.studentName}</div>
-              <div className="os-history-meta">{gp.rollnumber} • {gp.course} • {gp.department}</div>
+        {gatepasses.map((gp) => {
+          const hasGatepassNo = !!gp.gatePassNo;
+          const isClickable = hasGatepassNo;
+          const status = gp.stageStatus?.hostelOffice?.status || 'pending';
+
+          return (
+            <div
+              key={gp._id}
+              className={`os-history-row-enhanced ${status} ${isClickable ? 'os-history-row-clickable' : ''}`}
+              onClick={() => isClickable && handleRowClick(gp)}
+              role={isClickable ? 'button' : undefined}
+              tabIndex={isClickable ? 0 : undefined}
+            >
+              {/* Student Avatar */}
+              <div className="os-history-avatar">
+                {gp.student?.imageUrl ? (
+                  <img src={`${API_BASE}${gp.student.imageUrl}`} alt="" />
+                ) : (
+                  <div className="os-history-avatar-placeholder">
+                    {gp.studentName?.charAt(0) || '?'}
+                  </div>
+                )}
+              </div>
+
+              {/* Student Info */}
+              <div className="os-history-student-info">
+                <div className="os-history-name">{gp.studentName}</div>
+                <div className="os-history-meta">{gp.rollnumber} • {gp.course} • {gp.department}</div>
+              </div>
+
+              {/* Gatepass Number */}
+              {hasGatepassNo ? (
+                <span className="os-history-gp-number">{gp.gatePassNo}</span>
+              ) : (
+                <span className="os-history-gp-pending">Yet to be Approved</span>
+              )}
+
+              {/* Leave Info */}
+              <div className="os-history-leave-enhanced">
+                <span>{formatDate(gp.dateOut)} - {formatDate(gp.dateIn)}</span>
+                <span className="os-history-reason-text">{gp.reasonOfLeave}</span>
+              </div>
+
+              {/* Status Badge */}
+              <div className={`os-status-badge ${status}`}>
+                {status === 'approved' ? 'APPROVED' : 'REJECTED'}
+              </div>
             </div>
-            <div className="os-history-leave">
-              <span>{formatDate(gp.dateOut)} - {formatDate(gp.dateIn)}</span>
-              <span className="os-history-reason-text">{gp.reasonOfLeave}</span>
+          );
+        })}
+      </div>
+
+      {/* Gatepass Detail Popup */}
+      {showPopup && (
+        <div className="gatepass-popup-overlay" onClick={closePopup}>
+          <div className="gatepass-popup-content" onClick={(e) => e.stopPropagation()}>
+            <div className="gatepass-popup-header">
+              <h3>Outstation Gatepass Details</h3>
+              <button className="gatepass-popup-close" onClick={closePopup}>×</button>
             </div>
-            <div className={`os-status-badge ${gp.stageStatus?.hostelOffice?.status}`}>
-              {gp.stageStatus?.hostelOffice?.status === 'approved' ? 'APPROVED' : 'REJECTED'}
+            <div className="gatepass-popup-body">
+              {popupLoading && <div className="os-loading">Loading gatepass details...</div>}
+              {!popupLoading && popupData?.error && (
+                <div className="os-error">{popupData.error}</div>
+              )}
+              {!popupLoading && popupData && !popupData.error && (
+                <>
+                  <div className="gatepass-popup-student">
+                    <div className="gatepass-popup-avatar">
+                      {popupData.student?.imageUrl ? (
+                        <img src={`${API_BASE}${popupData.student.imageUrl}`} alt="" />
+                      ) : (
+                        <div className="gatepass-popup-avatar-placeholder">
+                          {popupData.student?.name?.charAt(0) || '?'}
+                        </div>
+                      )}
+                    </div>
+                    <div className="gatepass-popup-student-info">
+                      <h4>{popupData.student?.name}</h4>
+                      <p>{popupData.student?.rollnumber} • {popupData.student?.department}</p>
+                    </div>
+                  </div>
+
+                  <div className="gatepass-popup-badges">
+                    <span className="gatepass-popup-type-badge outstation">OUTSTATION</span>
+                    <span className="gatepass-popup-number-badge">{popupData.gatePassNo}</span>
+                    <span className={`gatepass-popup-status-badge ${popupData.gatepassDetails?.finalStatus || popupData.gatepassDetails?.status}`}>
+                      {popupData.gatepassDetails?.finalStatus || popupData.gatepassDetails?.status || 'Pending'}
+                    </span>
+                  </div>
+
+                  <div className="gatepass-popup-details">
+                    <div className="gatepass-popup-detail-item">
+                      <span className="gatepass-popup-detail-label">Nature of Leave</span>
+                      <span className="gatepass-popup-detail-value">{popupData.gatepassDetails?.natureOfLeave || '--'}</span>
+                    </div>
+                    <div className="gatepass-popup-detail-item">
+                      <span className="gatepass-popup-detail-label">Leave Days</span>
+                      <span className="gatepass-popup-detail-value">{popupData.gatepassDetails?.leaveDays || '--'}</span>
+                    </div>
+                    <div className="gatepass-popup-detail-item full-width">
+                      <span className="gatepass-popup-detail-label">Reason</span>
+                      <span className="gatepass-popup-detail-value">{popupData.gatepassDetails?.reasonOfLeave || '--'}</span>
+                    </div>
+                    <div className="gatepass-popup-detail-item full-width">
+                      <span className="gatepass-popup-detail-label">Address During Leave</span>
+                      <span className="gatepass-popup-detail-value">{popupData.gatepassDetails?.address || '--'}</span>
+                    </div>
+                  </div>
+
+                  <div className="gatepass-popup-utilization">
+                    <h5>Utilization Status</h5>
+                    <div className="gatepass-popup-util-grid">
+                      <div className="gatepass-popup-util-item exit">
+                        <span className="gatepass-popup-util-label">Actual Exit</span>
+                        <span className={`gatepass-popup-util-value ${!popupData.gatepassDetails?.actualExitAt ? 'not-done' : ''}`}>
+                          {popupData.gatepassDetails?.actualExitAt ? formatDateTime(popupData.gatepassDetails.actualExitAt) : 'Not Done Yet'}
+                        </span>
+                      </div>
+                      <div className="gatepass-popup-util-item entry">
+                        <span className="gatepass-popup-util-label">Actual Entry</span>
+                        <span className={`gatepass-popup-util-value ${!popupData.gatepassDetails?.actualEntryAt ? 'not-done' : ''}`}>
+                          {popupData.gatepassDetails?.actualEntryAt ? formatDateTime(popupData.gatepassDetails.actualEntryAt) : 'Not Done Yet'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="gatepass-popup-timeline">
+                    <h5>Approval Timeline</h5>
+                    <div className="gatepass-popup-timeline-list">
+                      <div className="gatepass-popup-timeline-item">
+                        <span className="gatepass-popup-timeline-stage">Applied</span>
+                        <span className="gatepass-popup-timeline-time">
+                          {formatDateTime(popupData.gatepassDetails?.appliedAt) || '--'}
+                        </span>
+                      </div>
+                      {popupData.gatepassDetails?.approvedAt && (
+                        <div className="gatepass-popup-timeline-item approved">
+                          <span className="gatepass-popup-timeline-stage">Final Approval</span>
+                          <span className="gatepass-popup-timeline-time">
+                            {formatDateTime(popupData.gatepassDetails.approvedAt)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default HostelOfficePage;
+

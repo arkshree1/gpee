@@ -105,6 +105,7 @@ exports.getGatepassHistory = async (req, res) => {
 
     const gatepasses = await OutstationGatepass.find(query)
         .sort({ 'stageStatus.officeSecretary.decidedAt': -1, createdAt: -1 })
+        .populate('student', 'imageUrl')
         .select('-__v');
 
     return res.json({ gatepasses });

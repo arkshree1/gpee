@@ -30,6 +30,7 @@ exports.getGatepassHistory = async (req, res) => {
 
     const gatepasses = await LocalGatepass.find(query)
         .sort({ decidedAt: -1, createdAt: -1 })
+        .populate('student', 'imageUrl')
         .select('-__v');
 
     return res.json({ gatepasses });
@@ -216,6 +217,7 @@ exports.getOSGatepassHistory = async (req, res) => {
 
     const gatepasses = await OutstationGatepass.find(query)
         .sort({ 'stageStatus.hostelOffice.decidedAt': -1, createdAt: -1 })
+        .populate('student', 'imageUrl')
         .select('-__v');
 
     return res.json({ gatepasses });
