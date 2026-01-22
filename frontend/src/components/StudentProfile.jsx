@@ -39,23 +39,9 @@ const StudentProfile = () => {
         return `${fullStartYear}-${endYear}`;
     };
 
-    // Extract branch from department or default
-    const getBranch = (department) => {
-        if (!department) return '--';
-        // Common mappings
-        const branchMap = {
-            'computer science': 'CSE',
-            'cse': 'CSE',
-            'petroleum': 'PE',
-            'chemical': 'CHE',
-            'mechanical': 'ME',
-            'electrical': 'EE',
-        };
-        const lowerDept = department.toLowerCase();
-        for (const [key, value] of Object.entries(branchMap)) {
-            if (lowerDept.includes(key)) return value;
-        }
-        return department.toUpperCase().substring(0, 4);
+    const normalizeBranch = (branch) => {
+        if (!branch) return '--';
+        return branch;
     };
 
     if (loading) {
@@ -82,7 +68,8 @@ const StudentProfile = () => {
 
     const studentName = status?.studentName || '--';
     const rollNumber = (status?.rollnumber || '--').toUpperCase();
-    const branch = getBranch(status?.department || status?.branch);
+    const branch = normalizeBranch(status?.branch);
+    const department = status?.department || '--';
     const batch = calculateBatch(status?.rollnumber);
     const roomNumber = status?.roomNumber || '--';
     const hostelName = status?.hostelName || '--';
@@ -117,7 +104,7 @@ const StudentProfile = () => {
                                 className="id-card-logo"
                                 onError={(e) => { e.target.style.display = 'none'; }}
                             />
-                            <div className="id-card-logo-text">RGIPT X GoThru</div>
+                            <div className="id-card-logo-text">GoThru x RGIPT</div>
                         </div>
 
                         {/* Right Side - College Name */}
@@ -146,7 +133,16 @@ const StudentProfile = () => {
                         <div className="id-card-photo-section">
                             <div className="id-card-photo-frame">
                                 {imageUrl ? (
-                                    <img src={imageUrl} alt="Student" className="id-card-photo" />
+                                    <img 
+                                        src={imageUrl} 
+                                        alt="Student" 
+                                        className="id-card-photo"
+                                        onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.style.display = 'none';
+                                            e.target.parentElement.innerHTML = '<div class="id-card-photo-placeholder"><span>📷</span></div>';
+                                        }}
+                                    />
                                 ) : (
                                     <div className="id-card-photo-placeholder">
                                         <span>📷</span>
@@ -186,6 +182,11 @@ const StudentProfile = () => {
                                 <span className="id-card-label">Branch</span>
                                 <span className="id-card-colon">:</span>
                                 <span className="id-card-value">{branch}</span>
+                            </div>
+                            <div className="id-card-row">
+                                <span className="id-card-label">Department</span>
+                                <span className="id-card-colon">:</span>
+                                <span className="id-card-value">{department}</span>
                             </div>
                             <div className="id-card-row">
                                 <span className="id-card-label">Batch</span>

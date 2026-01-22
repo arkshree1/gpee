@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getMyGatepasses, getMyOutstationGatepasses, applyGatepassExit, applyGatepassEntry, applyOSGatepassExit, applyOSGatepassEntry, cancelGate } from '../api/api';
+import {
+    getMyGatepasses,
+    getMyOutstationGatepasses,
+    applyGatepassExit,
+    applyGatepassEntry,
+    applyOSGatepassExit,
+    applyOSGatepassEntry,
+    cancelGate,
+    deleteLocalGatepass,
+    deleteOutstationGatepass,
+} from '../api/api';
 import PopupBox from './PopupBox';
 import '../styles/student-dashboard.css';
 
@@ -21,6 +31,7 @@ const TrackGatepass = () => {
     const [qrLoading, setQrLoading] = useState(false);
     const [countdown, setCountdown] = useState(0);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [deleteState, setDeleteState] = useState({ id: null, type: null });
 
     const fetchGatepasses = async () => {
         try {
@@ -142,6 +153,36 @@ const TrackGatepass = () => {
         }
     };
 
+    const handleWithdrawLocal = async (gatepassId) => {
+        const confirmed = window.confirm('Withdraw this local gatepass request?');
+        if (!confirmed) return;
+        setDeleteState({ id: gatepassId, type: 'local' });
+        try {
+            await deleteLocalGatepass(gatepassId);
+            setPopupMessage('Local gatepass request withdrawn.');
+            fetchGatepasses();
+        } catch (err) {
+            setPopupMessage(err?.response?.data?.message || 'Failed to withdraw local gatepass.');
+        } finally {
+            setDeleteState({ id: null, type: null });
+        }
+    };
+
+    const handleWithdrawOutstation = async (gatepassId) => {
+        const confirmed = window.confirm('Withdraw this outstation gatepass request?');
+        if (!confirmed) return;
+        setDeleteState({ id: gatepassId, type: 'outstation' });
+        try {
+            await deleteOutstationGatepass(gatepassId);
+            setPopupMessage('Outstation gatepass request withdrawn.');
+            fetchGatepasses();
+        } catch (err) {
+            setPopupMessage(err?.response?.data?.message || 'Failed to withdraw outstation gatepass.');
+        } finally {
+            setDeleteState({ id: null, type: null });
+        }
+    };
+
     const handleBackClick = () => {
         if (qrData) {
             setShowConfirmModal(true);
@@ -215,8 +256,10 @@ const TrackGatepass = () => {
                                 localActiveGPNo={localActiveGPNo}
                                 qrData={qrData}
                                 qrLoading={qrLoading}
+                                deleteState={deleteState}
                                 onExitQR={handleGenerateExitQR}
                                 onEntryQR={handleGenerateEntryQR}
+                                onWithdraw={handleWithdrawLocal}
                                 formatDate={formatDate}
                                 formatTime12hr={formatTime12hr}
                             />
@@ -230,8 +273,10 @@ const TrackGatepass = () => {
                                 OSActiveGPNo={OSActiveGPNo}
                                 qrData={qrData}
                                 qrLoading={qrLoading}
+                                deleteState={deleteState}
                                 onExitQR={handleOSExitQR}
                                 onEntryQR={handleOSEntryQR}
+                                onWithdraw={handleWithdrawOutstation}
                                 formatDate={formatDate}
                                 formatTime12hr={formatTime12hr}
                                 onShowPopup={setPopupMessage}
@@ -264,7 +309,7 @@ const TrackGatepass = () => {
     );
 };
 
-const LocalGatepassList = ({ gatepasses, presence, localActiveGPNo, qrData, qrLoading, onExitQR, onEntryQR, formatDate, formatTime12hr }) => {
+const LocalGatepassList = ({ gatepasses, presence, localActiveGPNo, qrData, qrLoading, deleteState, onExitQR, onEntryQR, onWithdraw, formatDate, formatTime12hr }) => {
     const hasGatepassExpired = (gp) => {
         if (!gp.dateIn || !gp.timeIn) return false;
         try {
@@ -292,6 +337,8 @@ const LocalGatepassList = ({ gatepasses, presence, localActiveGPNo, qrData, qrLo
             {gatepasses.map((gp) => {
                 const action = getGatepassAction(gp);
                 const statusClass = gp.status === 'approved' ? 'approved' : gp.status === 'denied' ? 'denied' : 'pending';
+                const canWithdraw = gp.status === 'pending' && !qrData;
+                const isDeleting = deleteState?.type === 'local' && deleteState?.id === gp._id;
                 return (
                     <div key={gp._id} className={`tg-card ${statusClass}`}>
                         <div className="tg-card-header">
@@ -315,6 +362,11 @@ const LocalGatepassList = ({ gatepasses, presence, localActiveGPNo, qrData, qrLo
                                 {qrLoading ? 'Generating...' : '🏠 Generate Entry QR'}
                             </button>
                         )}
+                        {canWithdraw && (
+                            <button className="tg-action-btn withdraw" onClick={() => onWithdraw(gp._id)} disabled={isDeleting}>
+                                {isDeleting ? 'Withdrawing...' : '🗑️ Withdraw Request'}
+                            </button>
+                        )}
                         {action === 'utilized' && <div className="tg-utilized"><svg className="tg-utilized-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Gatepass Utilized</div>}
                         {action === 'expired' && <div className="tg-expired-badge">⏰ Gatepass Expired</div>}
                     </div>
@@ -324,7 +376,7 @@ const LocalGatepassList = ({ gatepasses, presence, localActiveGPNo, qrData, qrLo
     );
 };
 
-const OutstationGatepassList = ({ gatepasses, presence, OSActiveGPNo, qrData, qrLoading, onExitQR, onEntryQR, formatDate, formatTime12hr, onShowPopup }) => {
+const OutstationGatepassList = ({ gatepasses, presence, OSActiveGPNo, qrData, qrLoading, deleteState, onExitQR, onEntryQR, onWithdraw, formatDate, formatTime12hr, onShowPopup }) => {
     if (gatepasses.length === 0) return <p className="tg-empty">No outstation gatepasses found</p>;
 
     return (
@@ -337,8 +389,10 @@ const OutstationGatepassList = ({ gatepasses, presence, OSActiveGPNo, qrData, qr
                     OSActiveGPNo={OSActiveGPNo}
                     qrData={qrData}
                     qrLoading={qrLoading}
+                    deleteState={deleteState}
                     onExitQR={onExitQR}
                     onEntryQR={onEntryQR}
+                    onWithdraw={onWithdraw}
                     formatDate={formatDate}
                     formatTime12hr={formatTime12hr}
                     onShowPopup={onShowPopup}
@@ -348,7 +402,7 @@ const OutstationGatepassList = ({ gatepasses, presence, OSActiveGPNo, qrData, qr
     );
 };
 
-const OutstationGatepassCard = ({ gp, presence, OSActiveGPNo, qrData, qrLoading, onExitQR, onEntryQR, formatDate, formatTime12hr, onShowPopup }) => {
+const OutstationGatepassCard = ({ gp, presence, OSActiveGPNo, qrData, qrLoading, deleteState, onExitQR, onEntryQR, onWithdraw, formatDate, formatTime12hr, onShowPopup }) => {
     // Check if any previous stage was rejected
     function isRejectedBefore(gp, stage) {
         const stageOrder = ['officeSecretary', 'dugc', 'hod', 'hostelOffice'];
@@ -409,6 +463,8 @@ const OutstationGatepassCard = ({ gp, presence, OSActiveGPNo, qrData, qrLoading,
 
     const action = getOSAction();
     const cardClass = isRejected ? 'denied' : isApproved ? 'approved' : 'pending';
+    const canWithdraw = gp.finalStatus === 'pending' && !qrData;
+    const isDeleting = deleteState?.type === 'outstation' && deleteState?.id === gp._id;
 
     // Find rejection reason if rejected
     const getRejectionInfo = () => {
@@ -458,6 +514,11 @@ const OutstationGatepassCard = ({ gp, presence, OSActiveGPNo, qrData, qrLoading,
             {action === 'entry' && !qrData && (
                 <button className="tg-action-btn entry" onClick={() => onEntryQR(gp._id)} disabled={qrLoading}>
                     {qrLoading ? 'Generating...' : '🏠 Generate Entry QR'}
+                </button>
+            )}
+            {canWithdraw && (
+                <button className="tg-action-btn withdraw" onClick={() => onWithdraw(gp._id)} disabled={isDeleting}>
+                    {isDeleting ? 'Withdrawing...' : '🗑️ Withdraw Request'}
                 </button>
             )}
             {action === 'utilized' && <div className="tg-utilized"><svg className="tg-utilized-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Gatepass Utilized</div>}

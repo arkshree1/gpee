@@ -52,6 +52,8 @@ export const createOutstationGatepass = async (formData) =>
   });
 export const getStudentLogs = async () => apiClient.get('/api/student/logs');
 export const getMyGatepasses = async () => apiClient.get('/api/student/my-gatepasses');
+export const deleteLocalGatepass = async (gatepassId) =>
+  apiClient.delete(`/api/student/local-gatepass/${gatepassId}`);
 export const applyGatepassExit = async (payload) => apiClient.post('/api/student/gatepass-exit', payload);
 export const applyGatepassEntry = async (payload) => apiClient.post('/api/student/gatepass-entry', payload);
 export const applyOSGatepassExit = async (payload) => apiClient.post('/api/student/os-gatepass-exit', payload);
@@ -119,6 +121,8 @@ export const getSecretaryGatepassHistory = async (search) =>
   apiClient.get('/api/office-secretary/gatepass-history', { params: { search } });
 export const decideOutstationGatepass = async (payload) =>
   apiClient.post('/api/office-secretary/decide-gatepass', payload);
+export const sendSecretaryMeetingEmail = async (payload) =>
+  apiClient.post('/api/office-secretary/send-meeting-email', payload);
 
 // DUGC APIs
 export const getDugcPendingGatepasses = async () =>
@@ -131,6 +135,8 @@ export const getDugcGatepassHistory = async (search) =>
   apiClient.get('/api/dugc/gatepass-history', { params: { search } });
 export const decideDugcGatepass = async (payload) =>
   apiClient.post('/api/dugc/decide-gatepass', payload);
+export const sendDugcMeetingEmail = async (payload) =>
+  apiClient.post('/api/dugc/send-meeting-email', payload);
 
 // HOD APIs
 export const getHodPendingGatepasses = async () =>
@@ -143,9 +149,13 @@ export const getHodGatepassHistory = async (search) =>
   apiClient.get('/api/hod/gatepass-history', { params: { search } });
 export const decideHodGatepass = async (payload) =>
   apiClient.post('/api/hod/decide-gatepass', payload);
+export const sendHodMeetingEmail = async (payload) =>
+  apiClient.post('/api/hod/send-meeting-email', payload);
 
 // Student Outstation Gatepass APIs
 export const getMyOutstationGatepasses = async () =>
   apiClient.get('/api/student/my-outstation-gatepasses');
+export const deleteOutstationGatepass = async (gatepassId) =>
+  apiClient.delete(`/api/student/outstation-gatepass/${gatepassId}`);
 
 export default apiClient;

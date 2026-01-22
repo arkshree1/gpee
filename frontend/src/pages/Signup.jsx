@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signup } from '../api/api';
 import '../styles/gothru-auth.css';
@@ -72,8 +72,85 @@ const Signup = () => {
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
 
+  // Camera states
+  const [showCamera, setShowCamera] = useState(false);
+  const [cameraError, setCameraError] = useState('');
+  const [cameraReady, setCameraReady] = useState(false);
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+
   const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
     setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  // Camera functions
+  const openCamera = async () => {
+    setCameraError('');
+    setCameraReady(false);
+    setShowCamera(true);
+    
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 720 } },
+        audio: false
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play();
+          setCameraReady(true);
+        };
+      }
+    } catch (err) {
+      console.error('Camera error:', err);
+      setCameraError('Unable to access camera. Please allow camera permissions.');
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setCameraReady(false);
+    setShowCamera(false);
+    setCameraError('');
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current || !cameraReady) return;
+
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    
+    // Mirror the image horizontally (since front camera is mirrored)
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0);
+    
+    const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+    
+    // Stop camera
+    stopCamera();
+    
+    // Open cropper with captured image
+    setOriginalImage(imageDataUrl);
+    setShowCropper(true);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+  };
+
+  // Cleanup camera on unmount
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
   }, []);
 
   const handleChange = (e) => {
@@ -98,17 +175,6 @@ const Signup = () => {
       }
     }
     setFormValues((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleImageChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const previewUrl = URL.createObjectURL(file);
-      setOriginalImage(previewUrl);
-      setShowCropper(true);
-      setCrop({ x: 0, y: 0 });
-      setZoom(1);
-    }
   };
 
   const handleCropConfirm = async () => {
@@ -461,23 +527,31 @@ const Signup = () => {
               </div>
             </div>
 
-            {/* Photo Upload */}
+            {/* Photo Capture */}
             <div className="gothru-input-group">
-              <label className="gothru-label" htmlFor="image">Profile Photo</label>
-              <div className="gothru-input-wrapper">
-                <input
-                  id="image"
-                  type="file"
-                  accept="image/*"
-                  className="gothru-input"
-                  onChange={handleImageChange}
-                />
+              <label className="gothru-label">Profile Photo (Live Selfie)</label>
+              <div className="gothru-camera-section">
+                {imagePreview ? (
+                  <div className="gothru-photo-captured">
+                    <img src={imagePreview} alt="Captured selfie" className="gothru-captured-image" />
+                    <button 
+                      type="button" 
+                      className="gothru-retake-btn"
+                      onClick={openCamera}
+                    >
+                      📷 Retake Photo
+                    </button>
+                  </div>
+                ) : (
+                  <button 
+                    type="button" 
+                    className="gothru-camera-btn"
+                    onClick={openCamera}
+                  >
+                    📷 Take Selfie
+                  </button>
+                )}
               </div>
-              {imagePreview && (
-                <div className="gothru-image-preview">
-                  <img src={imagePreview} alt="Selected" />
-                </div>
-              )}
             </div>
 
             {/* Submit Button */}
@@ -546,6 +620,55 @@ const Signup = () => {
                 Confirm Crop
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Camera Modal */}
+      {showCamera && (
+        <div className="crop-modal-overlay">
+          <div className="crop-modal camera-modal">
+            <h3 className="crop-modal-title">Take a Selfie</h3>
+            <p className="crop-modal-subtitle">Position your face in the frame</p>
+            
+            <div className="camera-container">
+              {cameraError ? (
+                <div className="camera-error">
+                  <p>{cameraError}</p>
+                  <button className="crop-btn crop-btn-cancel" onClick={stopCamera}>
+                    Close
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <video 
+                    ref={videoRef} 
+                    autoPlay 
+                    playsInline 
+                    muted 
+                    className="camera-video"
+                  />
+                  <div className="camera-overlay">
+                    <div className="camera-frame"></div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {!cameraError && (
+              <div className="crop-modal-actions">
+                <button className="crop-btn crop-btn-cancel" onClick={stopCamera}>
+                  Cancel
+                </button>
+                <button 
+                  className="crop-btn crop-btn-confirm camera-capture-btn" 
+                  onClick={capturePhoto}
+                  disabled={!cameraReady}
+                >
+                  {cameraReady ? '📸 Capture' : 'Loading...'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -1509,6 +1509,11 @@
     color: var(--sd-white);
 }
 
+.tg-action-btn.withdraw {
+    background: #dc3545;
+    color: var(--sd-white);
+}
+
 .tg-action-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;

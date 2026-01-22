@@ -7,6 +7,24 @@ import { createOutstationGatepass, getStudentStatus } from '../api/api';
 const OutstationGatepass = () => {
   const navigate = useNavigate();
 
+  const getIndiaNow = () => new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+
+  const formatDateInput = (date) => {
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const formatTimeInput = (date) => {
+    const hours = `${date.getHours()}`.padStart(2, '0');
+    const minutes = `${date.getMinutes()}`.padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  const todayIndia = formatDateInput(getIndiaNow());
+  const nowIndiaTime = formatTimeInput(getIndiaNow());
+
   const [form, setForm] = useState({
     studentName: '',
     rollnumber: '',
@@ -74,10 +92,28 @@ const OutstationGatepass = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
+    setForm((prev) => {
+      const next = {
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value,
+      };
+
+      if (name === 'dateOut') {
+        if (value === todayIndia && next.timeOut && next.timeOut < nowIndiaTime) {
+          next.timeOut = '';
+        }
+        if (next.dateIn && value && next.dateIn < value) {
+          next.dateIn = '';
+          next.timeIn = '';
+        }
+      }
+
+      if (name === 'dateIn' && next.dateOut && value && value < next.dateOut) {
+        next.dateIn = next.dateOut;
+      }
+
+      return next;
+    });
   };
 
   const handleSubmit = (e) => {
@@ -123,9 +159,9 @@ const OutstationGatepass = () => {
       return;
     }
 
-    const outDateTime = new Date(`${dateOut}T${timeOut}`);
-    const inDateTime = new Date(`${dateIn}T${timeIn}`);
-    const now = new Date();
+  const outDateTime = new Date(`${dateOut}T${timeOut}`);
+  const inDateTime = new Date(`${dateIn}T${timeIn}`);
+  const now = getIndiaNow();
 
     if (outDateTime <= now) {
       setPopup({ open: true, message: 'Out time must be in the future.' });
@@ -226,18 +262,39 @@ const OutstationGatepass = () => {
             <div className="lg-row">
               <div className="lg-field">
                 <label className="lg-label">Exit Date</label>
-                <input className="lg-input" type="date" name="dateOut" value={form.dateOut} onChange={handleChange} />
+                <input
+                  className="lg-input"
+                  type="date"
+                  name="dateOut"
+                  min={todayIndia}
+                  value={form.dateOut}
+                  onChange={handleChange}
+                />
               </div>
               <div className="lg-field">
                 <label className="lg-label">Exit Time</label>
-                <input className="lg-input" type="time" name="timeOut" value={form.timeOut} onChange={handleChange} />
+                <input
+                  className="lg-input"
+                  type="time"
+                  name="timeOut"
+                  min={form.dateOut === todayIndia ? nowIndiaTime : undefined}
+                  value={form.timeOut}
+                  onChange={handleChange}
+                />
               </div>
             </div>
 
             <div className="lg-row">
               <div className="lg-field">
                 <label className="lg-label">Return Date</label>
-                <input className="lg-input" type="date" name="dateIn" value={form.dateIn} onChange={handleChange} />
+                <input
+                  className="lg-input"
+                  type="date"
+                  name="dateIn"
+                  min={form.dateOut || todayIndia}
+                  value={form.dateIn}
+                  onChange={handleChange}
+                />
               </div>
               <div className="lg-field">
                 <label className="lg-label">Return Time</label>

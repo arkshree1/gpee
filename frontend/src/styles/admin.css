@@ -4540,3 +4540,134 @@ body {
         text-align: center;
     }
 }
+
+/* ==================== EMAIL STUDENT SECTION ==================== */
+.os-email-student-section {
+    background: linear-gradient(135deg, #ebf8ff 0%, #e6fffa 100%);
+    border: 1px solid #bee3f8;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 24px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.os-email-student-label {
+    color: #2b6cb0;
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0;
+    text-align: center;
+}
+
+.os-email-student-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #3182ce 0%, #2c5282 100%);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(49, 130, 206, 0.3);
+}
+
+.os-email-student-btn:hover {
+    background: linear-gradient(135deg, #2c5282 0%, #1a365d 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(49, 130, 206, 0.4);
+}
+
+.os-email-student-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Email Modal Styles */
+.email-modal {
+    max-width: 450px;
+}
+
+.os-email-modal-info {
+    color: #4a5568;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.os-email-modal-info strong {
+    color: #1a365d;
+}
+
+.os-email-form {
+    background: #f7fafc;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.os-email-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.os-email-form-row label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.os-email-form-row label span {
+    font-size: 13px;
+    font-weight: 500;
+    color: #4a5568;
+}
+
+.os-email-form-row input[type="date"],
+.os-email-form-row input[type="time"] {
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #2d3748;
+    background: #fff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.os-email-form-row input[type="date"]:focus,
+.os-email-form-row input[type="time"]:focus {
+    outline: none;
+    border-color: #3182ce;
+    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.15);
+}
+
+.os-email-send-btn {
+    background: linear-gradient(135deg, #3182ce 0%, #2c5282 100%) !important;
+}
+
+.os-email-send-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #2c5282 0%, #1a365d 100%) !important;
+}
+
+.os-email-send-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+    .os-email-form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .os-email-student-section {
+        padding: 16px;
+    }
+}

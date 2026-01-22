@@ -6,6 +6,7 @@ import {
   getStudentOSHistory,
   getSecretaryGatepassHistory,
   decideOutstationGatepass,
+  sendSecretaryMeetingEmail,
 } from '../api/api';
 import PopupBox from '../components/PopupBox';
 import ConfirmModal from '../components/ConfirmModal';
@@ -233,6 +234,12 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
   // Document popup state
   const [showDocPopup, setShowDocPopup] = useState(false);
 
+  // Meeting email modal state
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailDate, setEmailDate] = useState('');
+  const [emailTime, setEmailTime] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
+
   useEffect(() => {
     const fetchDetails = async () => {
       try {
@@ -327,6 +334,49 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
       closeConfirmModal();
     } finally {
       setDeciding(false);
+    }
+  };
+
+  // Format date for display (DD/MM/YYYY)
+  const formatDateForEmail = (dateStr) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    return dateStr;
+  };
+
+  // Format time for display (12hr)
+  const formatTimeForEmail = (timeStr) => {
+    if (!timeStr) return '';
+    const parts = timeStr.split(':');
+    if (parts.length < 2) return timeStr;
+    let hours = parseInt(parts[0], 10);
+    const minutes = parts[1];
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    return `${hours}:${minutes} ${ampm}`;
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailDate || !emailTime) {
+      setPopupMessage('Please select both date and time for the meeting');
+      return;
+    }
+    setSendingEmail(true);
+    try {
+      const res = await sendSecretaryMeetingEmail({
+        gatepassId,
+        meetingDate: formatDateForEmail(emailDate),
+        meetingTime: formatTimeForEmail(emailTime),
+      });
+      setShowEmailModal(false);
+      setEmailDate('');
+      setEmailTime('');
+      setPopupMessage(res.data.message);
+    } catch (err) {
+      setPopupMessage(err?.response?.data?.message || 'Failed to send email');
+    } finally {
+      setSendingEmail(false);
     }
   };
 
@@ -464,6 +514,21 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
           </div>
         </div>
 
+        {/* Email Student Section */}
+        <div className="os-email-student-section">
+          <p className="os-email-student-label">📧 Mail the student to meet you at your convenient time</p>
+          <button
+            className="os-email-student-btn"
+            onClick={() => setShowEmailModal(true)}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+              <polyline points="22,6 12,13 2,6" />
+            </svg>
+            Send Meeting Email
+          </button>
+        </div>
+
         {/* Action Buttons */}
         <div className="os-action-btns">
           <button
@@ -578,6 +643,56 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
                 className="doc-popup-image"
               />
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Meeting Email Modal */}
+      {showEmailModal && (
+        <div className="confirm-modal-overlay" onClick={() => setShowEmailModal(false)}>
+          <div className="confirm-modal email-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="confirm-modal-close" onClick={() => setShowEmailModal(false)}>×</button>
+            <div className="confirm-modal-header" style={{ borderLeftColor: '#3182ce' }}>
+              <h3>📧 Send Meeting Invitation</h3>
+            </div>
+            <div className="confirm-modal-body">
+              <p className="os-email-modal-info">
+                Send an email to <strong>{gatepass?.studentName}</strong> inviting them to meet you at your convenient time.
+              </p>
+              <div className="os-email-form">
+                <div className="os-email-form-row">
+                  <label>
+                    <span>Meeting Date <span style={{ color: '#e74c3c' }}>*</span></span>
+                    <input
+                      type="date"
+                      value={emailDate}
+                      onChange={(e) => setEmailDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                    />
+                  </label>
+                  <label>
+                    <span>Meeting Time <span style={{ color: '#e74c3c' }}>*</span></span>
+                    <input
+                      type="time"
+                      value={emailTime}
+                      onChange={(e) => setEmailTime(e.target.value)}
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div className="confirm-modal-actions">
+              <button className="confirm-modal-cancel" onClick={() => setShowEmailModal(false)} disabled={sendingEmail}>
+                Cancel
+              </button>
+              <button
+                className="confirm-modal-confirm os-email-send-btn"
+                onClick={handleSendEmail}
+                disabled={sendingEmail || !emailDate || !emailTime}
+              >
+                {sendingEmail ? 'Sending...' : 'Send Email'}
+              </button>
+            </div>
           </div>
         </div>
       )}

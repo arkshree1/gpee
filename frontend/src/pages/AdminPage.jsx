@@ -1058,7 +1058,7 @@ const AdminPage = () => {
                 <div className="id-card-header">
                   <div className="id-card-logo-section">
                     <img src="/rgipt-logo.png" alt="RGIPT Logo" className="id-card-logo" onError={(e) => { e.target.style.display = 'none'; }} />
-                    <div className="id-card-logo-text">RGIPT X GoThru</div>
+                    <div className="id-card-logo-text">GoThru x RGIPT</div>
                   </div>
                   <div className="id-card-college-info">
                     <div className="id-card-college-name-en">RAJIV GANDHI INSTITUTE OF PETROLEUM TECHNOLOGY</div>
@@ -1112,7 +1112,7 @@ const AdminPage = () => {
                     <div className="id-card-row">
                       <span className="id-card-label">Branch</span>
                       <span className="id-card-colon">:</span>
-                      <span className="id-card-value">{selectedStudent.department || selectedStudent.branch || '--'}</span>
+                      <span className="id-card-value">{selectedStudent.branch || '--'}</span>
                     </div>
                   </div>
                 </div>

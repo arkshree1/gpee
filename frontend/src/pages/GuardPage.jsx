@@ -402,7 +402,15 @@ const GuardPage = () => {
 
             <div className="guard-approval-body">
               <div className="guard-approval-photo-section">
-                <img className="guard-approval-photo" src={photoSrc} alt="Student" />
+                <img 
+                  className="guard-approval-photo" 
+                  src={photoSrc} 
+                  alt="Student"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = fallbackAvatar;
+                  }}
+                />
               </div>
 
               <div className="guard-approval-details">
