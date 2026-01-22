@@ -46,4 +46,12 @@ router.post(
     asyncHandler(hodController.decideGatepass)
 );
 
+// Send meeting email to student
+router.post(
+    '/send-meeting-email',
+    auth,
+    requireRole(['hod']),
+    asyncHandler(hodController.sendMeetingEmail)
+);
+
 module.exports = router;

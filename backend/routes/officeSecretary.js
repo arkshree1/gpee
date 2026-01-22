@@ -46,4 +46,12 @@ router.post(
     asyncHandler(officeSecretaryController.decideGatepass)
 );
 
+// Send meeting email to student
+router.post(
+    '/send-meeting-email',
+    auth,
+    requireRole(['officeSecretary']),
+    asyncHandler(officeSecretaryController.sendMeetingEmail)
+);
+
 module.exports = router;

@@ -92,3 +92,25 @@ exports.createLocalGatepass = async (req, res) => {
     gatePassNo: doc.gatePassNo,
   });
 };
+
+exports.deleteLocalGatepass = async (req, res) => {
+  const studentId = req.user.userId;
+  const { gatepassId } = req.params;
+
+  if (!gatepassId) {
+    return res.status(400).json({ message: 'Gatepass ID is required' });
+  }
+
+  const gatepass = await LocalGatepass.findOne({ _id: gatepassId, student: studentId });
+  if (!gatepass) {
+    return res.status(404).json({ message: 'Gatepass not found' });
+  }
+
+  if (gatepass.status !== 'pending' || gatepass.utilizationStatus !== 'pending') {
+    return res.status(400).json({ message: 'Only pending gatepasses can be withdrawn.' });
+  }
+
+  await gatepass.deleteOne();
+
+  return res.json({ message: 'Local gatepass withdrawn successfully.' });
+};

@@ -15,6 +15,7 @@ router.post('/apply', auth, requireRole(['student']), asyncHandler(studentContro
 router.post('/cancel', auth, requireRole(['student']), asyncHandler(studentController.cancel));
 router.get('/logs', auth, requireRole(['student']), asyncHandler(studentLogsController.getMyLogs));
 router.post('/local-gatepass', auth, requireRole(['student']), asyncHandler(localGatepassController.createLocalGatepass));
+router.delete('/local-gatepass/:gatepassId', auth, requireRole(['student']), asyncHandler(localGatepassController.deleteLocalGatepass));
 router.post(
 	'/outstation-gatepass',
 	auth,
@@ -22,6 +23,7 @@ router.post(
 	proofUpload.single('proofFile'),
 	asyncHandler(outstationGatepassController.createOutstationGatepass)
 );
+router.delete('/outstation-gatepass/:gatepassId', auth, requireRole(['student']), asyncHandler(outstationGatepassController.deleteOutstationGatepass));
 
 // Track gatepasses
 router.get('/my-gatepasses', auth, requireRole(['student']), asyncHandler(studentController.getMyGatepasses));

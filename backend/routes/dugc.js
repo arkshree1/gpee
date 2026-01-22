@@ -46,4 +46,12 @@ router.post(
     asyncHandler(dugcController.decideGatepass)
 );
 
+// Send meeting email to student
+router.post(
+    '/send-meeting-email',
+    auth,
+    requireRole(['dugc']),
+    asyncHandler(dugcController.sendMeetingEmail)
+);
+
 module.exports = router;

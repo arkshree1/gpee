@@ -1,5 +1,6 @@
 const OutstationGatepass = require('../models/OutstationGatepass');
 const Dugc = require('../models/Dugc');
+const { sendMeetingInviteEmail } = require('../utils/emailService');
 
 // Get pending outstation gatepasses for DUGC's department
 exports.getPendingGatepasses = async (req, res) => {
@@ -184,4 +185,52 @@ exports.decideGatepass = async (req, res) => {
             finalStatus: gatepass.finalStatus,
         },
     });
+};
+
+// Send meeting email to student
+exports.sendMeetingEmail = async (req, res) => {
+    const dugcId = req.user.userId;
+    const { gatepassId, meetingDate, meetingTime } = req.body;
+
+    if (!gatepassId || !meetingDate || !meetingTime) {
+        return res.status(400).json({ message: 'Gatepass ID, meeting date and time are required' });
+    }
+
+    // Get DUGC's department
+    const dugc = await Dugc.findById(dugcId).select('department');
+    if (!dugc) {
+        return res.status(404).json({ message: 'DUGC not found' });
+    }
+
+    const gatepass = await OutstationGatepass.findById(gatepassId)
+        .populate('student', 'email name');
+
+    if (!gatepass) {
+        return res.status(404).json({ message: 'Gatepass not found' });
+    }
+
+    // Verify DUGC can only send email for gatepasses from their department
+    if (gatepass.department !== dugc.department) {
+        return res.status(403).json({ message: 'You can only manage gatepasses from your department' });
+    }
+
+    if (!gatepass.student?.email) {
+        return res.status(400).json({ message: 'Student email not found' });
+    }
+
+    try {
+        await sendMeetingInviteEmail({
+            to: gatepass.student.email,
+            studentName: gatepass.studentName || gatepass.student.name,
+            meetingDate,
+            meetingTime,
+            senderRole: 'DUGC (Dean Undergraduate Committee)',
+            departmentName: `${dugc.department} Department`,
+        });
+
+        return res.json({ message: 'Meeting invitation email sent successfully' });
+    } catch (err) {
+        console.error('Error sending meeting email:', err);
+        return res.status(500).json({ message: 'Failed to send email. Please try again.' });
+    }
 };

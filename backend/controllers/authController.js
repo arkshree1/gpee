@@ -164,11 +164,14 @@ exports.signup = async (req, res) => {
       });
     }
 
-    await sendEmail(
+    // Send OTP email asynchronously so signup response is faster
+    sendEmail(
       user.email,
       'Your OTP for account verification',
       `Your OTP is ${otp}. It is valid for 10 minutes.`
-    );
+    ).catch((emailError) => {
+      console.error('Error sending OTP email:', emailError);
+    });
 
     return res.status(201).json({
       message: 'Signup successful. OTP sent to email.',

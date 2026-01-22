@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const OutstationGatepass = require('../models/OutstationGatepass');
 
 exports.createOutstationGatepass = async (req, res) => {
@@ -101,4 +103,31 @@ exports.getMyOutstationGatepasses = async (req, res) => {
     presence: student?.presence || 'inside',
     OSActiveGPNo: student?.OSActiveGPNo || null,
   });
+};
+
+exports.deleteOutstationGatepass = async (req, res) => {
+  const studentId = req.user.userId;
+  const { gatepassId } = req.params;
+
+  if (!gatepassId) {
+    return res.status(400).json({ message: 'Gatepass ID is required' });
+  }
+
+  const gatepass = await OutstationGatepass.findOne({ _id: gatepassId, student: studentId });
+  if (!gatepass) {
+    return res.status(404).json({ message: 'Gatepass not found' });
+  }
+
+  if (gatepass.finalStatus !== 'pending' || gatepass.utilizationStatus !== 'pending') {
+    return res.status(400).json({ message: 'Only pending gatepasses can be withdrawn.' });
+  }
+
+  if (gatepass.proofFile) {
+    const proofPath = path.join(__dirname, '..', gatepass.proofFile);
+    fs.unlink(proofPath, () => {});
+  }
+
+  await gatepass.deleteOne();
+
+  return res.json({ message: 'Outstation gatepass withdrawn successfully.' });
 };
