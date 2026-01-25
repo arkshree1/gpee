@@ -320,6 +320,33 @@ const LocalGatepassList = ({ gatepasses, presence, localActiveGPNo, qrData, qrLo
         } catch { return false; }
     };
 
+    // Check if exit is allowed (within 15 minutes of scheduled exit time)
+    const getExitTimeInfo = (gp) => {
+        if (!gp.dateOut || !gp.timeOut) return { canExit: true, availableAt: null };
+        try {
+            const outDate = new Date(gp.dateOut);
+            const timeParts = gp.timeOut.split(':');
+            outDate.setHours(parseInt(timeParts[0], 10), parseInt(timeParts[1], 10), 0, 0);
+            
+            // Calculate 15 minutes before exit time
+            const allowedTime = new Date(outDate.getTime() - 15 * 60 * 1000);
+            const now = Date.now();
+            
+            if (now >= allowedTime.getTime()) {
+                return { canExit: true, availableAt: null };
+            }
+            
+            // Format available time for display
+            let hours = allowedTime.getHours();
+            const mins = String(allowedTime.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;
+            const availableAt = `${hours}:${mins} ${ampm}`;
+            
+            return { canExit: false, availableAt };
+        } catch { return { canExit: true, availableAt: null }; }
+    };
+
     const getGatepassAction = (gp) => {
         if (gp.status !== 'approved') return null;
         if (gp.utilized) return 'utilized';
@@ -339,6 +366,7 @@ const LocalGatepassList = ({ gatepasses, presence, localActiveGPNo, qrData, qrLo
                 const statusClass = gp.status === 'approved' ? 'approved' : gp.status === 'denied' ? 'denied' : 'pending';
                 const canWithdraw = gp.status === 'pending' && !qrData;
                 const isDeleting = deleteState?.type === 'local' && deleteState?.id === gp._id;
+                const exitTimeInfo = action === 'exit' ? getExitTimeInfo(gp) : { canExit: true, availableAt: null };
                 return (
                     <div key={gp._id} className={`tg-card ${statusClass}`}>
                         <div className="tg-card-header">
@@ -352,10 +380,17 @@ const LocalGatepassList = ({ gatepasses, presence, localActiveGPNo, qrData, qrLo
                             <div><b>Out:</b> {formatDate(gp.dateOut)} {formatTime12hr(gp.timeOut)}</div>
                             <div><b>In:</b> {formatDate(gp.dateIn)} {formatTime12hr(gp.timeIn)}</div>
                         </div>
-                        {action === 'exit' && !qrData && (
+                        {action === 'exit' && !qrData && exitTimeInfo.canExit && (
                             <button className="tg-action-btn exit" onClick={() => onExitQR(gp._id)} disabled={qrLoading}>
                                 {qrLoading ? 'Generating...' : '🚪 Generate Exit QR'}
                             </button>
+                        )}
+                        {action === 'exit' && !qrData && !exitTimeInfo.canExit && (
+                            <div className="tg-exit-wait-notice">
+                                <span className="tg-wait-icon">⏰</span>
+                                <span>Exit QR available at <b>{exitTimeInfo.availableAt}</b></span>
+                                <span className="tg-wait-subtext">(15 min before scheduled exit)</span>
+                            </div>
                         )}
                         {action === 'entry' && !qrData && (
                             <button className="tg-action-btn entry" onClick={() => onEntryQR(gp._id)} disabled={qrLoading}>

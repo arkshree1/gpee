@@ -1015,7 +1015,9 @@ const AdminPage = () => {
             </div>
             <div className="admin-modal-body">
               {modalLoading ? (
-                <div className="admin-modal-loading">Loading...</div>
+                <div className="admin-modal-loading">
+                  <div className="loader" role="status" aria-label="Loading"></div>
+                </div>
               ) : modalStudents.length === 0 ? (
                 <div className="admin-modal-empty">No students found</div>
               ) : (

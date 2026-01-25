@@ -2684,6 +2684,61 @@ body {
     text-decoration: underline;
 }
 
+/* Student Info Header with Image */
+.os-student-info-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.os-student-avatar-large {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.os-student-avatar-large img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.os-student-avatar-large .os-avatar-placeholder {
+    font-size: 32px;
+    font-weight: 700;
+    color: white;
+}
+
+.os-student-header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.os-student-name-large {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.os-student-roll-large {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+}
+
 .os-details-card {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
@@ -2810,6 +2865,151 @@ body {
     border: 1px solid var(--color-border);
     border-radius: 6px;
     font-size: 13px;
+}
+
+/* PhD Leave Balance Section */
+.os-phd-leave-section {
+    background: rgba(59, 143, 243, 0.1);
+    border: 1px solid rgba(59, 143, 243, 0.2);
+}
+
+.os-phd-leave-section h4 {
+    color: var(--color-blue);
+}
+
+.os-phd-leave-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.os-phd-leave-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.os-phd-leave-item label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.os-phd-leave-input {
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    font-size: 13px;
+    transition: border-color 0.2s ease;
+}
+
+.os-phd-leave-input:focus {
+    outline: none;
+    border-color: var(--color-blue);
+    box-shadow: 0 0 0 3px rgba(59, 143, 243, 0.1);
+}
+
+@media (max-width: 600px) {
+    .os-phd-leave-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* PhD Leave Balance Display (shown to DUGC/HOD) */
+.os-phd-leave-display {
+    margin-top: 20px;
+    padding: 16px;
+    background: rgba(59, 143, 243, 0.08);
+    border: 1px solid rgba(59, 143, 243, 0.2);
+    border-radius: 8px;
+}
+
+.os-phd-leave-display h4 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-blue);
+    margin-bottom: 12px;
+}
+
+.os-phd-leave-display-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.os-phd-leave-display-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 120px;
+}
+
+.os-phd-leave-display-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.os-phd-leave-display-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-blue);
+}
+
+/* DUGC Note Section */
+.os-dugc-note-section {
+    background: rgba(52, 177, 170, 0.1);
+    border: 1px solid rgba(52, 177, 170, 0.2);
+}
+
+.os-dugc-note-section h4 {
+    color: var(--color-teal);
+}
+
+.os-dugc-note-info {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+}
+
+.os-dugc-note-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    font-size: 13px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.os-dugc-note-input:focus {
+    outline: none;
+    border-color: var(--color-teal);
+    box-shadow: 0 0 0 3px rgba(52, 177, 170, 0.1);
+}
+
+/* DUGC Note Display (shown to HOD) */
+.os-dugc-note-display {
+    margin-top: 20px;
+    padding: 16px;
+    background: rgba(52, 177, 170, 0.08);
+    border: 1px solid rgba(52, 177, 170, 0.2);
+    border-radius: 8px;
+}
+
+.os-dugc-note-display h4 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-teal);
+    margin-bottom: 8px;
+}
+
+.os-dugc-note-display p {
+    font-size: 14px;
+    color: var(--text-primary);
+    line-height: 1.5;
+    white-space: pre-wrap;
 }
 
 /* Action Buttons */

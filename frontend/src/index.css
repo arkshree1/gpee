@@ -11,3 +11,90 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.loader {
+  --w: 6ch;
+  font-weight: bold;
+  font-family: 'Courier New', monospace;
+  font-size: 30px;
+  line-height: 1.4em;
+  letter-spacing: var(--w);
+  width: var(--w);
+  overflow: hidden;
+  white-space: nowrap;
+  color: transparent;
+  text-shadow:
+    calc(0 * var(--w)) 0 currentColor,
+    calc(-1 * var(--w)) 0 currentColor,
+    calc(-2 * var(--w)) 0 currentColor,
+    calc(-3 * var(--w)) 0 currentColor,
+    calc(-4 * var(--w)) 0 currentColor,
+    calc(-5 * var(--w)) 0 currentColor;
+  animation: gothru-loader 2s infinite linear;
+  display: inline-block;
+}
+
+.loader::before {
+  content: 'GoThru';
+}
+
+.loader--inline {
+  font-size: 18px;
+}
+
+@keyframes gothru-loader {
+  16.67% {
+    text-shadow:
+      calc(0 * var(--w)) -10px currentColor,
+      calc(-1 * var(--w)) 0 currentColor,
+      calc(-2 * var(--w)) 0 currentColor,
+      calc(-3 * var(--w)) 0 currentColor,
+      calc(-4 * var(--w)) 0 currentColor,
+      calc(-5 * var(--w)) 0 currentColor;
+  }
+  33.33% {
+    text-shadow:
+      calc(0 * var(--w)) 0 currentColor,
+      calc(-1 * var(--w)) -10px currentColor,
+      calc(-2 * var(--w)) 0 currentColor,
+      calc(-3 * var(--w)) 0 currentColor,
+      calc(-4 * var(--w)) 0 currentColor,
+      calc(-5 * var(--w)) 0 currentColor;
+  }
+  50% {
+    text-shadow:
+      calc(0 * var(--w)) 0 currentColor,
+      calc(-1 * var(--w)) 0 currentColor,
+      calc(-2 * var(--w)) -10px currentColor,
+      calc(-3 * var(--w)) 0 currentColor,
+      calc(-4 * var(--w)) 0 currentColor,
+      calc(-5 * var(--w)) 0 currentColor;
+  }
+  66.67% {
+    text-shadow:
+      calc(0 * var(--w)) 0 currentColor,
+      calc(-1 * var(--w)) 0 currentColor,
+      calc(-2 * var(--w)) 0 currentColor,
+      calc(-3 * var(--w)) -10px currentColor,
+      calc(-4 * var(--w)) 0 currentColor,
+      calc(-5 * var(--w)) 0 currentColor;
+  }
+  83.33% {
+    text-shadow:
+      calc(0 * var(--w)) 0 currentColor,
+      calc(-1 * var(--w)) 0 currentColor,
+      calc(-2 * var(--w)) 0 currentColor,
+      calc(-3 * var(--w)) 0 currentColor,
+      calc(-4 * var(--w)) -10px currentColor,
+      calc(-5 * var(--w)) 0 currentColor;
+  }
+  100% {
+    text-shadow:
+      calc(0 * var(--w)) 0 currentColor,
+      calc(-1 * var(--w)) 0 currentColor,
+      calc(-2 * var(--w)) 0 currentColor,
+      calc(-3 * var(--w)) 0 currentColor,
+      calc(-4 * var(--w)) 0 currentColor,
+      calc(-5 * var(--w)) -10px currentColor;
+  }
+}

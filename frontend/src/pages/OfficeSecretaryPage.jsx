@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
+  getSecretaryProfile,
   getSecretaryPendingGatepasses,
   getSecretaryGatepassDetails,
   getStudentOSHistory,
@@ -16,6 +17,20 @@ const OfficeSecretaryPage = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activePage, setActivePage] = useState(() => searchParams.get('page') || 'requests');
+  const [department, setDepartment] = useState('');
+
+  // Fetch profile to get department
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await getSecretaryProfile();
+        setDepartment(res.data.department || '');
+      } catch (err) {
+        console.error('Failed to fetch profile:', err);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   // Persist activePage to URL
   useEffect(() => {
@@ -61,7 +76,7 @@ const OfficeSecretaryPage = () => {
           </div>
         </div>
         <div className="admin-header-right">
-          <span className="admin-header-role">CSE Office Secretary</span>
+          <span className="admin-header-role">{department} Office Secretary</span>
           <button className="admin-logout-btn" onClick={handleLogout}>
             Logout
           </button>
@@ -231,6 +246,14 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
 
+  // PhD Leave Balance (for PhD students only)
+  const [phdLeaveBalance, setPhdLeaveBalance] = useState({
+    cl: '',
+    medical: '',
+    other: '',
+    otherType: '',
+  });
+
   // Document popup state
   const [showDocPopup, setShowDocPopup] = useState(false);
 
@@ -298,14 +321,19 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
     }
     setDeciding(true);
     try {
-      const res = await decideOutstationGatepass({
+      const payload = {
         gatepassId,
         decision: 'rejected',
         classesMissed,
         missedDays: Number(missedDays),
         previousLeavesTaken,
         rejectionReason
-      });
+      };
+      // Include PhD leave balance for PhD students
+      if (gatepass?.course === 'PhD') {
+        payload.phdLeaveBalance = phdLeaveBalance;
+      }
+      const res = await decideOutstationGatepass(payload);
       setShowRejectModal(false);
       setPopupMessage(res.data.message);
       setTimeout(() => onBack(), 1500);
@@ -319,13 +347,18 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
   const handleDecision = async (decision) => {
     setDeciding(true);
     try {
-      const res = await decideOutstationGatepass({
+      const payload = {
         gatepassId,
         decision,
         classesMissed,
         missedDays: Number(missedDays),
         previousLeavesTaken
-      });
+      };
+      // Include PhD leave balance for PhD students
+      if (gatepass?.course === 'PhD') {
+        payload.phdLeaveBalance = phdLeaveBalance;
+      }
+      const res = await decideOutstationGatepass(payload);
       closeConfirmModal();
       setPopupMessage(res.data.message);
       setTimeout(() => onBack(), 1500);
@@ -513,6 +546,55 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
             )}
           </div>
         </div>
+
+        {/* PhD Leave Balance Section (Only for PhD students) */}
+        {gatepass?.course === 'PhD' && (
+          <div className="os-classes-section os-phd-leave-section">
+            <h4>📋 Balance After Taking This Leave (PhD Students)</h4>
+            <div className="os-phd-leave-grid">
+              <div className="os-phd-leave-item">
+                <label>1) CL (Casual Leave)</label>
+                <input
+                  type="text"
+                  value={phdLeaveBalance.cl}
+                  onChange={(e) => setPhdLeaveBalance(prev => ({ ...prev, cl: e.target.value }))}
+                  placeholder="e.g., 5 days"
+                  className="os-phd-leave-input"
+                />
+              </div>
+              <div className="os-phd-leave-item">
+                <label>2) Medical</label>
+                <input
+                  type="text"
+                  value={phdLeaveBalance.medical}
+                  onChange={(e) => setPhdLeaveBalance(prev => ({ ...prev, medical: e.target.value }))}
+                  placeholder="e.g., 10 days"
+                  className="os-phd-leave-input"
+                />
+              </div>
+              <div className="os-phd-leave-item">
+                <label>3) Other (Specify Type)</label>
+                <input
+                  type="text"
+                  value={phdLeaveBalance.otherType}
+                  onChange={(e) => setPhdLeaveBalance(prev => ({ ...prev, otherType: e.target.value }))}
+                  placeholder="e.g., Earned Leave"
+                  className="os-phd-leave-input"
+                />
+              </div>
+              <div className="os-phd-leave-item">
+                <label>Other Balance</label>
+                <input
+                  type="text"
+                  value={phdLeaveBalance.other}
+                  onChange={(e) => setPhdLeaveBalance(prev => ({ ...prev, other: e.target.value }))}
+                  placeholder="e.g., 3 days"
+                  className="os-phd-leave-input"
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Email Student Section */}
         <div className="os-email-student-section">

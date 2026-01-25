@@ -60,7 +60,9 @@ const StudentProfile = () => {
                     </button>
                 </header>
                 <main className="sd-main">
-                    <p style={{ textAlign: 'center', padding: '40px', color: 'var(--sd-muted)' }}>Loading...</p>
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: '40px', color: 'var(--sd-muted)' }}>
+                        <div className="loader" role="status" aria-label="Loading"></div>
+                    </div>
                 </main>
             </div>
         );

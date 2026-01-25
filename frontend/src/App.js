@@ -16,6 +16,28 @@ import OfficeSecretaryPage from './pages/OfficeSecretaryPage';
 import HostelOfficePage from './pages/HostelOfficePage';
 import { getUserFromToken } from './utils/auth';
 
+// Helper function to get home route based on user role
+const getHomeRoute = (role) => {
+  switch (role) {
+    case 'student':
+      return '/student';
+    case 'guard':
+      return '/guard';
+    case 'admin':
+      return '/admin';
+    case 'hod':
+      return '/hod';
+    case 'dugc':
+      return '/dugc';
+    case 'officeSecretary':
+      return '/office-secretary';
+    case 'hostelOffice':
+      return '/hostel-office';
+    default:
+      return '/login';
+  }
+};
+
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const user = getUserFromToken();
 
@@ -31,16 +53,37 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   return children;
 };
 
+// Redirect authenticated users to their home screen
+const AuthRoute = ({ children }) => {
+  const user = getUserFromToken();
+
+  if (user) {
+    // User is already logged in, redirect to their home
+    return <Navigate to={getHomeRoute(user.role)} replace />;
+  }
+
+  return children;
+};
+
+// Root redirect component that checks auth status
+const RootRedirect = () => {
+  const user = getUserFromToken();
+  if (user) {
+    return <Navigate to={getHomeRoute(user.role)} replace />;
+  }
+  return <Navigate to="/login" replace />;
+};
+
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<RootRedirect />} />
+        <Route path="/signup" element={<AuthRoute><Signup /></AuthRoute>} />
+        <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
         <Route path="/otp" element={<Otp />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/forgot-password" element={<AuthRoute><ForgotPassword /></AuthRoute>} />
+        <Route path="/reset-password" element={<AuthRoute><ResetPassword /></AuthRoute>} />
         <Route
           path="/student/*"
           element={

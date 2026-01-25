@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
+  getDugcProfile,
   getDugcPendingGatepasses,
   getDugcGatepassDetails,
   getDugcStudentOSHistory,
@@ -18,6 +19,20 @@ const DugcPage = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activePage, setActivePage] = useState(() => searchParams.get('page') || 'requests');
+  const [department, setDepartment] = useState('');
+
+  // Fetch profile to get department
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await getDugcProfile();
+        setDepartment(res.data.department || '');
+      } catch (err) {
+        console.error('Failed to fetch profile:', err);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   // Persist activePage to URL
   useEffect(() => {
@@ -61,7 +76,7 @@ const DugcPage = () => {
           </div>
         </div>
         <div className="admin-header-right">
-          <span className="admin-header-role">CSE DUGC</span>
+          <span className="admin-header-role">{department} DUGC</span>
           <button className="admin-logout-btn" onClick={handleLogout}>
             Logout
           </button>
@@ -217,6 +232,9 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
 
+  // DUGC Note for PhD students
+  const [dugcNote, setDugcNote] = useState('');
+
   // Document popup state
   const [showDocPopup, setShowDocPopup] = useState(false);
 
@@ -296,7 +314,12 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
     }
     setDeciding(true);
     try {
-      const res = await decideDugcGatepass({ gatepassId, decision: 'rejected', rejectionReason });
+      const payload = { gatepassId, decision: 'rejected', rejectionReason };
+      // Include DUGC note for PhD students
+      if (gatepass?.course === 'PhD' && dugcNote.trim()) {
+        payload.dugcNote = dugcNote;
+      }
+      const res = await decideDugcGatepass(payload);
       setShowRejectModal(false);
       setPopupMessage(res.data.message);
       setTimeout(() => onBack(), 1500);
@@ -310,7 +333,12 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
   const handleDecision = async (decision) => {
     setDeciding(true);
     try {
-      const res = await decideDugcGatepass({ gatepassId, decision });
+      const payload = { gatepassId, decision };
+      // Include DUGC note for PhD students
+      if (gatepass?.course === 'PhD' && dugcNote.trim()) {
+        payload.dugcNote = dugcNote;
+      }
+      const res = await decideDugcGatepass(payload);
       closeConfirmModal();
       setPopupMessage(res.data.message);
       setTimeout(() => onBack(), 1500);
@@ -452,6 +480,48 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
                 : 'Not specified'}
           </span>
         </div>
+
+        {/* PhD Leave Balance Display (from Office Secretary) */}
+        {gatepass?.course === 'PhD' && gatepass.phdLeaveBalance && (
+          <div className="os-phd-leave-display">
+            <h4>📋 Leave Balance After Taking This Leave (from Office Secretary)</h4>
+            <div className="os-phd-leave-display-grid">
+              {gatepass.phdLeaveBalance.cl && (
+                <div className="os-phd-leave-display-item">
+                  <span className="os-phd-leave-display-label">CL (Casual Leave)</span>
+                  <span className="os-phd-leave-display-value">{gatepass.phdLeaveBalance.cl}</span>
+                </div>
+              )}
+              {gatepass.phdLeaveBalance.medical && (
+                <div className="os-phd-leave-display-item">
+                  <span className="os-phd-leave-display-label">Medical</span>
+                  <span className="os-phd-leave-display-value">{gatepass.phdLeaveBalance.medical}</span>
+                </div>
+              )}
+              {gatepass.phdLeaveBalance.otherType && (
+                <div className="os-phd-leave-display-item">
+                  <span className="os-phd-leave-display-label">{gatepass.phdLeaveBalance.otherType}</span>
+                  <span className="os-phd-leave-display-value">{gatepass.phdLeaveBalance.other || '--'}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* DUGC Note Input (for PhD students only) */}
+        {gatepass?.course === 'PhD' && (
+          <div className="os-classes-section os-dugc-note-section">
+            <h4>📝 Note for HOD (Optional)</h4>
+            <p className="os-dugc-note-info">Add any notes or observations for the HOD regarding this PhD student's leave request.</p>
+            <textarea
+              className="os-dugc-note-input"
+              placeholder="Enter your note for HOD (optional)..."
+              value={dugcNote}
+              onChange={(e) => setDugcNote(e.target.value)}
+              rows={3}
+            />
+          </div>
+        )}
 
         {/* Proof File Display - Opens in Popup */}
         {gatepass.proofFile && (

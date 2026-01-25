@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
+  getHodProfile,
   getHodPendingGatepasses,
   getHodGatepassDetails,
   getHodStudentOSHistory,
@@ -16,6 +17,20 @@ const HodPage = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activePage, setActivePage] = useState(() => searchParams.get('page') || 'requests');
+  const [department, setDepartment] = useState('');
+
+  // Fetch profile to get department
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await getHodProfile();
+        setDepartment(res.data.department || '');
+      } catch (err) {
+        console.error('Failed to fetch profile:', err);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   // Persist activePage to URL
   useEffect(() => {
@@ -59,7 +74,7 @@ const HodPage = () => {
           </div>
         </div>
         <div className="admin-header-right">
-          <span className="admin-header-role">CSE HOD</span>
+          <span className="admin-header-role">{department} HOD</span>
           <button className="admin-logout-btn" onClick={handleLogout}>
             Logout
           </button>
@@ -450,6 +465,41 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
                 : 'Not specified'}
           </span>
         </div>
+
+        {/* PhD Leave Balance Display (from Office Secretary) */}
+        {gatepass?.course === 'PhD' && gatepass.phdLeaveBalance && (
+          <div className="os-phd-leave-display">
+            <h4>📋 Leave Balance After Taking This Leave (from Office Secretary)</h4>
+            <div className="os-phd-leave-display-grid">
+              {gatepass.phdLeaveBalance.cl && (
+                <div className="os-phd-leave-display-item">
+                  <span className="os-phd-leave-display-label">CL (Casual Leave)</span>
+                  <span className="os-phd-leave-display-value">{gatepass.phdLeaveBalance.cl}</span>
+                </div>
+              )}
+              {gatepass.phdLeaveBalance.medical && (
+                <div className="os-phd-leave-display-item">
+                  <span className="os-phd-leave-display-label">Medical</span>
+                  <span className="os-phd-leave-display-value">{gatepass.phdLeaveBalance.medical}</span>
+                </div>
+              )}
+              {gatepass.phdLeaveBalance.otherType && (
+                <div className="os-phd-leave-display-item">
+                  <span className="os-phd-leave-display-label">{gatepass.phdLeaveBalance.otherType}</span>
+                  <span className="os-phd-leave-display-value">{gatepass.phdLeaveBalance.other || '--'}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* DUGC Note Display (for PhD students) */}
+        {gatepass?.course === 'PhD' && gatepass.dugcNote && (
+          <div className="os-dugc-note-display">
+            <h4>📝 Note by DUGC</h4>
+            <p>{gatepass.dugcNote}</p>
+          </div>
+        )}
 
         {/* Proof File Display - Opens in Popup */}
         {gatepass.proofFile && (

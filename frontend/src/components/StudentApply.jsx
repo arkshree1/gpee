@@ -28,6 +28,7 @@ const StudentApply = () => {
   const [qr, setQr] = useState(null);
   const [nowTick, setNowTick] = useState(0);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [rejectionInfo, setRejectionInfo] = useState(null);
 
   useEffect(() => {
     const id = setInterval(() => setNowTick((x) => x + 1), 500);
@@ -51,7 +52,16 @@ const StudentApply = () => {
       try {
         const res = await getStudentStatus();
         if (!res.data.hasPendingRequest) {
-          navigate('/student');
+          // Check if there was a recent rejection
+          if (res.data.recentRejection) {
+            setRejectionInfo(res.data.recentRejection);
+            // Auto-redirect after 3 seconds
+            setTimeout(() => {
+              navigate('/student');
+            }, 3000);
+          } else {
+            navigate('/student');
+          }
         }
       } catch (e) { }
     }, 2000);
@@ -121,11 +131,50 @@ const StudentApply = () => {
   };
 
   const isExit = direction === 'exit';
-  const title = isExit
-    ? (qr ? 'Exit QR Generated' : 'Apply for Exit')
-    : direction === 'entry'
-      ? (qr ? 'Entry QR Generated' : 'Apply for Entry')
-      : 'Apply';
+  const title = rejectionInfo
+    ? (rejectionInfo.direction === 'exit' ? 'Exit Denied' : 'Entry Denied')
+    : isExit
+      ? (qr ? 'Exit QR Generated' : 'Apply for Exit')
+      : direction === 'entry'
+        ? (qr ? 'Entry QR Generated' : 'Apply for Entry')
+        : 'Apply';
+
+  // If there's a rejection, show rejection screen
+  if (rejectionInfo) {
+    return (
+      <div className="sd-shell">
+        {/* Header */}
+        <header className="sd-header">
+          <div className="sd-header-brand">
+            <span className="sd-logo">GoThru</span>
+            <span className="sd-logo-sub">by Watchr</span>
+          </div>
+        </header>
+
+        <main className="sd-main sa-main">
+          <div className="sa-rejection-screen">
+            <div className="sa-rejection-icon">❌</div>
+            <h1 className="sa-rejection-title">
+              {rejectionInfo.direction === 'exit' ? 'Exit Denied' : 'Entry Denied'}
+            </h1>
+            <p className="sa-rejection-message">
+              Your {rejectionInfo.direction} request was rejected by the guard.
+            </p>
+            <p className="sa-rejection-redirect">
+              Redirecting to home in 3 seconds...
+            </p>
+            <button
+              className="sa-submit-btn"
+              type="button"
+              onClick={() => navigate('/student')}
+            >
+              Go to Home Now
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="sd-shell">

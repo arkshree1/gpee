@@ -111,6 +111,91 @@
     color: var(--sd-dark);
 }
 
+/* Logout Button */
+.sd-logout-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sd-logout-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.4);
+}
+
+.sd-logout-btn svg {
+    width: 18px;
+    height: 18px;
+    color: var(--sd-white);
+}
+
+.sd-logout-btn:hover svg {
+    color: #fca5a5;
+}
+
+/* Logout Confirmation Modal */
+.sd-logout-modal {
+    text-align: center;
+    max-width: 320px;
+}
+
+.sd-logout-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+
+.sd-logout-text {
+    color: var(--sd-muted);
+    font-size: 14px;
+    margin-bottom: 24px;
+}
+
+.sd-logout-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.sd-logout-cancel-btn {
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--sd-blueberry);
+    background: var(--sd-white);
+    color: var(--sd-blueberry);
+    transition: all 0.2s ease;
+}
+
+.sd-logout-cancel-btn:hover {
+    background: var(--sd-light-bg);
+}
+
+.sd-logout-confirm-btn {
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: var(--sd-white);
+    transition: all 0.2s ease;
+}
+
+.sd-logout-confirm-btn:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    transform: translateY(-1px);
+}
+
 /* Main Content */
 .sd-main {
     flex: 1;
@@ -487,6 +572,11 @@
 .sd-status-badge.pending {
     background: rgba(108, 117, 125, 0.15);
     color: var(--sd-muted);
+}
+
+.sd-status-badge.rejected {
+    background: rgba(231, 76, 60, 0.15);
+    color: #e74c3c;
 }
 
 /* Footer */
@@ -877,6 +967,48 @@
     font-size: 16px;
     font-weight: 700;
     color: #dc3545;
+}
+
+/* Rejection Screen */
+.sa-rejection-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 20px;
+    min-height: 50vh;
+}
+
+.sa-rejection-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+    animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-10px); }
+    40%, 80% { transform: translateX(10px); }
+}
+
+.sa-rejection-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #e74c3c;
+    margin-bottom: 12px;
+}
+
+.sa-rejection-message {
+    font-size: 16px;
+    color: var(--sd-text);
+    margin-bottom: 8px;
+}
+
+.sa-rejection-redirect {
+    font-size: 14px;
+    color: var(--sd-muted);
+    margin-bottom: 24px;
 }
 
 .sa-dismiss-btn {
@@ -1517,6 +1649,37 @@
 .tg-action-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+}
+
+/* Exit Wait Notice (15 min restriction) */
+.tg-exit-wait-notice {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.15), rgba(255, 152, 0, 0.15));
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    color: #856404;
+    font-weight: 600;
+    text-align: center;
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.tg-wait-icon {
+    font-size: 18px;
+}
+
+.tg-exit-wait-notice b {
+    color: #e65100;
+}
+
+.tg-wait-subtext {
+    font-size: 11px;
+    font-weight: 500;
+    color: #a67c00;
 }
 
 .tg-utilized {

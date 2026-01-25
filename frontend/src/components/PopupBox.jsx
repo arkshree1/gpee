@@ -10,6 +10,9 @@ const PopupBox = ({ message, onClose }) => {
     lowerMsg.includes('error') ||
     lowerMsg.includes('failed') ||
     lowerMsg.includes('invalid') ||
+    lowerMsg.includes('not registered') ||
+    lowerMsg.includes('not exist') ||
+    lowerMsg.includes('does not exist') ||
     lowerMsg.includes('required') ||
     lowerMsg.includes('denied') ||
     lowerMsg.includes('rejected') ||

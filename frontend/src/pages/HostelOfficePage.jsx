@@ -380,15 +380,25 @@ const LocalGatepassDetailsView = ({ gatepassId, onBack }) => {
       <h2 className="os-section-title">Local Gatepass Details</h2>
 
       <div className="os-details-card">
+        {/* Student Image and Name */}
+        <div className="os-student-info-header">
+          <div className="os-student-avatar-large">
+            {gatepass.student?.imageUrl ? (
+              <img
+                src={`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${gatepass.student.imageUrl}`}
+                alt={gatepass.studentName}
+              />
+            ) : (
+              <span className="os-avatar-placeholder">{gatepass.studentName?.charAt(0)?.toUpperCase() || '?'}</span>
+            )}
+          </div>
+          <div className="os-student-header-info">
+            <h3 className="os-student-name-large">{gatepass.studentName}</h3>
+            <span className="os-student-roll-large">{gatepass.rollnumber}</span>
+          </div>
+        </div>
+
         <div className="os-details-grid">
-          <div className="os-detail-item">
-            <span className="os-detail-label">Student Name</span>
-            <span className="os-detail-value">{gatepass.studentName}</span>
-          </div>
-          <div className="os-detail-item">
-            <span className="os-detail-label">Roll Number</span>
-            <span className="os-detail-value">{gatepass.rollnumber}</span>
-          </div>
           <div className="os-detail-item">
             <span className="os-detail-label">Place</span>
             <span className="os-detail-value">{gatepass.place}</span>
@@ -399,11 +409,11 @@ const LocalGatepassDetailsView = ({ gatepassId, onBack }) => {
           </div>
           <div className="os-detail-item">
             <span className="os-detail-label">Requested Exit</span>
-            <span className="os-detail-value">{formatTime12hr(gatepass.timeOut)}</span>
+            <span className="os-detail-value">{formatDateTimeFromParts(gatepass.dateOut, gatepass.timeOut)}</span>
           </div>
           <div className="os-detail-item">
             <span className="os-detail-label">Requested Return</span>
-            <span className="os-detail-value">{formatTime12hr(gatepass.timeIn)}</span>
+            <span className="os-detail-value">{formatDateTimeFromParts(gatepass.dateIn, gatepass.timeIn)}</span>
           </div>
         </div>
 

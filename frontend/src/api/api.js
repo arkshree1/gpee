@@ -111,6 +111,8 @@ export const decideHostelOfficeOSGatepass = async (payload) =>
   apiClient.post('/api/hostel-office/os-decide-gatepass', payload);
 
 // Office Secretary APIs
+export const getSecretaryProfile = async () =>
+  apiClient.get('/api/office-secretary/profile');
 export const getSecretaryPendingGatepasses = async () =>
   apiClient.get('/api/office-secretary/pending-gatepasses');
 export const getSecretaryGatepassDetails = async (gatepassId) =>
@@ -125,6 +127,8 @@ export const sendSecretaryMeetingEmail = async (payload) =>
   apiClient.post('/api/office-secretary/send-meeting-email', payload);
 
 // DUGC APIs
+export const getDugcProfile = async () =>
+  apiClient.get('/api/dugc/profile');
 export const getDugcPendingGatepasses = async () =>
   apiClient.get('/api/dugc/pending-gatepasses');
 export const getDugcGatepassDetails = async (gatepassId) =>
@@ -139,6 +143,8 @@ export const sendDugcMeetingEmail = async (payload) =>
   apiClient.post('/api/dugc/send-meeting-email', payload);
 
 // HOD APIs
+export const getHodProfile = async () =>
+  apiClient.get('/api/hod/profile');
 export const getHodPendingGatepasses = async () =>
   apiClient.get('/api/hod/pending-gatepasses');
 export const getHodGatepassDetails = async (gatepassId) =>

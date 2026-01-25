@@ -13,7 +13,29 @@ const StudentHome = () => {
   const [logs, setLogs] = useState([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showGpHelp, setShowGpHelp] = useState(false);
-  const [showAllLogs, setShowAllLogs] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  // Prevent browser back button from going to login page
+  useEffect(() => {
+    // Push current state to history to create a "barrier"
+    window.history.pushState(null, '', window.location.href);
+    
+    const handlePopState = (e) => {
+      // Push state again to stay on current page
+      window.history.pushState(null, '', window.location.href);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login', { replace: true });
+  };
 
   const actionLabel = useMemo(() => {
     if (!status) return '...';
@@ -49,7 +71,6 @@ const StudentHome = () => {
 
   const handleApply = () => {
     if (!status) return;
-    if (status.hasPendingRequest) return;
     navigate('/student/apply');
   };
 
@@ -153,6 +174,17 @@ const StudentHome = () => {
               </span>
             )}
           </div>
+          <button
+            className="sd-logout-btn"
+            onClick={() => setShowLogoutConfirm(true)}
+            title="Logout"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+          </button>
         </div>
       </header>
 
@@ -198,11 +230,15 @@ const StudentHome = () => {
           <div className="sd-actions-row">
             <button
               className="sd-action-btn primary"
-              disabled={loading || status?.hasPendingRequest}
+              disabled={loading}
               onClick={handleApply}
             >
               <span className="sd-btn-icon">🚪</span>
-              {loading ? 'Loading...' : status?.hasPendingRequest ? 'Request Pending' : actionLabel}
+              {loading ? (
+                <span className="loader loader--inline" role="status" aria-label="Loading"></span>
+              ) : (
+                actionLabel
+              )}
             </button>
             <button
               className="sd-action-btn primary"
@@ -223,25 +259,12 @@ const StudentHome = () => {
           </div>
         </div>
 
-        {status?.hasPendingRequest && status?.pendingRequest && (
-          <div className="sd-hint sd-hint-with-action">
-            <span>A request is already pending. Ask the guard to scan your QR from the Apply page.</span>
-            <button
-              className="sd-hint-btn"
-              onClick={() => navigate('/student/apply')}
-            >
-              Go to QR →
-            </button>
-          </div>
-        )}
-
         {error && <div className="sd-error">{error}</div>}
 
         {/* Recent Activity */}
         <div className="sd-activity-section">
           <div className="sd-activity-header">
             <div className="sd-section-label">RECENT ACTIVITY</div>
-            <span className="sd-view-all" onClick={() => setShowAllLogs(true)}>View All →</span>
           </div>
           <div className="sd-activity-table-container">
             {sortedLogs.length === 0 ? (
@@ -262,6 +285,7 @@ const StudentHome = () => {
                     const exitDate = parseDate(log.exitStatusTime);
                     const entryDate = parseDate(log.entryStatusTime);
 
+                    // Simple status: Completed if both exit and entry, In Progress if only exit
                     const isCompleted = exitDate && entryDate;
                     const isInProgress = exitDate && !entryDate;
 
@@ -330,67 +354,21 @@ const StudentHome = () => {
         </div>
       )}
 
-      {/* Full Screen Activity Logs Modal */}
-      {showAllLogs && (
-        <div className="sd-fullscreen-modal" onClick={() => setShowAllLogs(false)}>
-          <div className="sd-fullscreen-inner" onClick={(e) => e.stopPropagation()}>
-            <div className="sd-fullscreen-header">
-              <h2 className="sd-fullscreen-title">Activity History</h2>
-              <button className="sd-fullscreen-close" onClick={() => setShowAllLogs(false)}>×</button>
-            </div>
-            <div className="sd-fullscreen-content">
-              {sortedLogs.length === 0 ? (
-                <div className="sd-empty-state">No activity yet</div>
-              ) : (
-                <table className="sd-activity-table sd-fullscreen-table">
-                  <thead>
-                    <tr>
-                      <th>Purpose</th>
-                      <th>Location</th>
-                      <th>Exit</th>
-                      <th>Entry</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedLogs.map((log) => {
-                      const exitDate = parseDate(log.exitStatusTime);
-                      const entryDate = parseDate(log.entryStatusTime);
-                      const isCompleted = exitDate && entryDate;
-                      const isInProgress = exitDate && !entryDate;
-
-                      return (
-                        <tr key={log._id}>
-                          <td className="sd-td-purpose">
-                            {log.purpose}
-                            {log.gatePassNo && (
-                              <span className={`sd-gp-badge ${log.gatePassNo.startsWith('OS-') ? 'os' : 'local'}`}>
-                                {log.gatePassNo.startsWith('OS-') ? 'OS' : 'L'}
-                              </span>
-                            )}
-                          </td>
-                          <td className="sd-td-location">{log.place}</td>
-                          <td className="sd-td-time">
-                            {exitDate ? `${formatTime(exitDate)} ${formatShortDate(exitDate)}` : '--'}
-                          </td>
-                          <td className="sd-td-time">
-                            {entryDate ? `${formatTime(entryDate)} ${formatShortDate(entryDate)}` : '--'}
-                          </td>
-                          <td>
-                            {isCompleted ? (
-                              <span className="sd-status-badge completed">Completed</span>
-                            ) : isInProgress ? (
-                              <span className="sd-status-badge in-progress">In Progress</span>
-                            ) : (
-                              <span className="sd-status-badge pending">Pending</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="sd-modal-overlay" onClick={() => setShowLogoutConfirm(false)}>
+          <div className="sd-modal sd-logout-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="sd-modal-close" onClick={() => setShowLogoutConfirm(false)}>×</button>
+            <div className="sd-logout-icon">👋</div>
+            <h3 className="sd-modal-title">Logout</h3>
+            <p className="sd-logout-text">Are you sure you want to logout?</p>
+            <div className="sd-logout-actions">
+              <button className="sd-logout-cancel-btn" onClick={() => setShowLogoutConfirm(false)}>
+                Cancel
+              </button>
+              <button className="sd-logout-confirm-btn" onClick={handleLogout}>
+                Yes, Logout
+              </button>
             </div>
           </div>
         </div>

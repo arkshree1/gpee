@@ -42,6 +42,24 @@ const getCroppedImg = async (imageSrc, pixelCrop) => {
   });
 };
 
+const HOSTEL_OPTIONS = [
+  { value: 'Sarojini', label: 'Sarojini (A)', prefix: 'A' },
+  { value: 'Asima Chatterjee', label: 'Asima Chatterjee (Urja)', prefix: 'U' },
+  { value: 'Visvesvaraya', label: 'Visvesvaraya (B)', prefix: 'B' },
+  { value: 'CV Raman', label: 'CV Raman (C)', prefix: 'C' },
+  { value: 'Ramanujan', label: 'Ramanujan (D)', prefix: 'D' },
+  { value: 'Aryabhatta', label: 'Aryabhatta (E)', prefix: 'E' },
+  { value: 'Vidyasagar', label: 'Vidyasagar (G)', prefix: 'G' },
+  { value: 'Homi Bhabha', label: 'Homi Bhabha (H)', prefix: 'H' },
+];
+
+const HOSTEL_PREFIX_MAP = HOSTEL_OPTIONS.reduce((acc, option) => {
+  if (option.prefix) {
+    acc[option.value] = option.prefix;
+  }
+  return acc;
+}, {});
+
 const Signup = () => {
   const navigate = useNavigate();
 
@@ -158,6 +176,21 @@ const Signup = () => {
     if (name === 'contactNumber') {
       const digitsOnly = value.replace(/\D/g, '').slice(0, 10);
       setFormValues((prev) => ({ ...prev, [name]: digitsOnly }));
+      return;
+    }
+    if (name === 'hostelName') {
+      const nextPrefix = HOSTEL_PREFIX_MAP[value] || '';
+      setFormValues((prev) => {
+        const prevPrefix = HOSTEL_PREFIX_MAP[prev.hostelName] || '';
+        let roomNumber = prev.roomNumber || '';
+        if (prevPrefix && roomNumber.startsWith(`${prevPrefix}-`)) {
+          roomNumber = roomNumber.slice(prevPrefix.length + 1);
+        }
+        if (nextPrefix) {
+          roomNumber = roomNumber ? `${nextPrefix}-${roomNumber}` : `${nextPrefix}-`;
+        }
+        return { ...prev, hostelName: value, roomNumber };
+      });
       return;
     }
     // When course changes, auto-set branch for MBA/PhD
@@ -418,9 +451,11 @@ const Signup = () => {
                   required
                 >
                   <option value="" disabled>Select hostel</option>
-                  <option value="sarojini">Sarojini</option>
-                  <option value="aryabhatta">Aryabhatta</option>
-                  <option value="thala">Thala</option>
+                  {HOSTEL_OPTIONS.map((hostel) => (
+                    <option key={hostel.value} value={hostel.value}>
+                      {hostel.label}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -665,7 +700,11 @@ const Signup = () => {
                   onClick={capturePhoto}
                   disabled={!cameraReady}
                 >
-                  {cameraReady ? '📸 Capture' : 'Loading...'}
+                  {cameraReady ? (
+                    '📸 Capture'
+                  ) : (
+                    <span className="loader loader--inline" role="status" aria-label="Loading"></span>
+                  )}
                 </button>
               </div>
             )}
