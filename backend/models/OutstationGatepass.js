@@ -176,6 +176,19 @@ const outstationGatepassSchema = new mongoose.Schema(
       default: null,
       trim: true,
     },
+    // PhD-specific fields - Leave balance after taking this leave (filled by Office Secretary)
+    phdLeaveBalance: {
+      cl: { type: String, default: null, trim: true }, // Casual Leave balance
+      medical: { type: String, default: null, trim: true }, // Medical leave balance
+      other: { type: String, default: null, trim: true }, // Other leave type (specify)
+      otherType: { type: String, default: null, trim: true }, // What type of other leave
+    },
+    // DUGC note - filled by DUGC for PhD students (shown to HOD)
+    dugcNote: {
+      type: String,
+      default: null,
+      trim: true,
+    },
     // Who rejected and at which stage
     rejectedBy: {
       stage: {

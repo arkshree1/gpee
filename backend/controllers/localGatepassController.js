@@ -1,4 +1,9 @@
 const LocalGatepass = require('../models/LocalGatepass');
+const HostelOffice = require('../models/HostelOffice');
+const { sendLocalGatepassNotification } = require('../utils/emailService');
+
+// Frontend URL for hostel office
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://192.168.3.11:3123';
 
 // Generate unique gatePassNo in L-XXXXX format
 const generateGatePassNo = async () => {
@@ -85,6 +90,61 @@ exports.createLocalGatepass = async (req, res) => {
     contact,
     consent: !!consent,
   });
+
+  // Send email notification to Hostel Office (async, don't block response)
+  (async () => {
+    try {
+      // Get all hostel office emails
+      const hostelOffices = await HostelOffice.find({}).select('email');
+      
+      if (hostelOffices.length > 0) {
+        const reviewLink = `${FRONTEND_URL}/hostel-office`;
+        
+        // Format date for display (DD/MM/YYYY format)
+        const formatDate = (dateStr) => {
+          if (!dateStr) return dateStr;
+          const parts = dateStr.split('-'); // YYYY-MM-DD
+          if (parts.length === 3) {
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+          }
+          return dateStr;
+        };
+        
+        // Format time for display (12-hour format)
+        const formatTime = (timeStr) => {
+          if (!timeStr) return timeStr;
+          const [hours, minutes] = timeStr.split(':');
+          const h = parseInt(hours, 10);
+          const ampm = h >= 12 ? 'PM' : 'AM';
+          const h12 = h % 12 || 12;
+          return `${h12}:${minutes} ${ampm}`;
+        };
+        
+        // Send email to all hostel office accounts
+        for (const ho of hostelOffices) {
+          await sendLocalGatepassNotification({
+            to: ho.email,
+            studentName,
+            rollnumber,
+            department,
+            roomNumber,
+            gatePassNo,
+            purpose,
+            place,
+            dateOut: formatDate(dateOut),
+            timeOut: formatTime(timeOut),
+            dateIn: formatDate(dateIn),
+            timeIn: formatTime(timeIn),
+            reviewLink,
+          });
+        }
+        console.log(`Local gatepass notification sent to ${hostelOffices.length} hostel office(s) for ${gatePassNo}`);
+      }
+    } catch (emailErr) {
+      console.error('Error sending local gatepass notification email:', emailErr);
+      // Don't fail the request if email fails
+    }
+  })();
 
   return res.status(201).json({
     message: 'Local gatepass applied successfully',

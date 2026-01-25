@@ -6,6 +6,14 @@ const requireRole = require('../middleware/requireRole');
 const asyncHandler = require('../utils/asyncHandler');
 const dugcController = require('../controllers/dugcController');
 
+// Get DUGC profile (name and department)
+router.get(
+    '/profile',
+    auth,
+    requireRole(['dugc']),
+    asyncHandler(dugcController.getProfile)
+);
+
 // Get pending outstation gatepasses (card view)
 router.get(
     '/pending-gatepasses',

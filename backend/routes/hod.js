@@ -6,6 +6,14 @@ const requireRole = require('../middleware/requireRole');
 const asyncHandler = require('../utils/asyncHandler');
 const hodController = require('../controllers/hodController');
 
+// Get HOD profile (name and department)
+router.get(
+    '/profile',
+    auth,
+    requireRole(['hod']),
+    asyncHandler(hodController.getProfile)
+);
+
 // Get pending outstation gatepasses (card view)
 router.get(
     '/pending-gatepasses',

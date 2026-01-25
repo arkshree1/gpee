@@ -6,6 +6,14 @@ const requireRole = require('../middleware/requireRole');
 const asyncHandler = require('../utils/asyncHandler');
 const officeSecretaryController = require('../controllers/officeSecretaryController');
 
+// Get Office Secretary profile (name and department)
+router.get(
+    '/profile',
+    auth,
+    requireRole(['officeSecretary']),
+    asyncHandler(officeSecretaryController.getProfile)
+);
+
 // Get pending outstation gatepasses (card view)
 router.get(
     '/pending-gatepasses',

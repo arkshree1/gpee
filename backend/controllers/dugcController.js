@@ -2,6 +2,18 @@ const OutstationGatepass = require('../models/OutstationGatepass');
 const Dugc = require('../models/Dugc');
 const { sendMeetingInviteEmail } = require('../utils/emailService');
 
+// Get DUGC profile (name and department)
+exports.getProfile = async (req, res) => {
+    const dugcId = req.user.userId;
+
+    const dugc = await Dugc.findById(dugcId).select('name department');
+    if (!dugc) {
+        return res.status(404).json({ message: 'DUGC not found' });
+    }
+
+    return res.json({ name: dugc.name, department: dugc.department });
+};
+
 // Get pending outstation gatepasses for DUGC's department
 exports.getPendingGatepasses = async (req, res) => {
     const dugcId = req.user.userId;
@@ -115,7 +127,7 @@ exports.getGatepassHistory = async (req, res) => {
 // Approve or reject an outstation gatepass
 exports.decideGatepass = async (req, res) => {
     const dugcId = req.user.userId;
-    const { gatepassId, decision, rejectionReason } = req.body;
+    const { gatepassId, decision, rejectionReason, dugcNote } = req.body;
 
     if (!gatepassId || !decision) {
         return res.status(400).json({ message: 'Gatepass ID and decision are required' });
@@ -157,6 +169,11 @@ exports.decideGatepass = async (req, res) => {
         decidedBy: dugcId,
         decidedAt: new Date(),
     };
+
+    // Save DUGC note for PhD students (shown to HOD)
+    if (dugcNote && dugcNote.trim() && gatepass.course === 'PhD') {
+        gatepass.dugcNote = dugcNote.trim();
+    }
 
     if (decision === 'approved') {
         // Move to next stage (HOD)

@@ -25,6 +25,31 @@ exports.getStatus = async (req, res) => {
     expiresAt: { $gt: new Date() },
   }).select('_id direction purpose place expiresAt createdAt');
 
+  // Check for recently rejected request (within last 30 seconds)
+  // Only show rejection if there's no approved request after it
+  const recentRejection = await GateRequest.findOne({
+    student: userId,
+    status: 'rejected',
+    decidedAt: { $gte: new Date(Date.now() - 30000) }, // Last 30 seconds
+  }).select('_id direction decidedAt').sort({ decidedAt: -1 });
+
+  // Check if there's an approved request after the rejection
+  let showRejection = null;
+  if (recentRejection) {
+    const approvedAfterRejection = await GateRequest.findOne({
+      student: userId,
+      status: 'approved',
+      decidedAt: { $gt: recentRejection.decidedAt },
+    });
+    // Only show rejection if no approved request came after it
+    if (!approvedAfterRejection) {
+      showRejection = {
+        direction: recentRejection.direction,
+        decidedAt: recentRejection.decidedAt,
+      };
+    }
+  }
+
   // Determine active gatepass number (OS takes priority)
   const activeGatePassNo = student.OSActiveGPNo || student.localActiveGPNo || null;
 
@@ -33,6 +58,8 @@ exports.getStatus = async (req, res) => {
     nextAction: getDirectionFromPresence(student.presence),
     hasPendingRequest: !!pendingRequest,
     pendingRequest,
+    // Recent rejection info for UI feedback (only if no approval after)
+    recentRejection: showRejection,
     // Active gatepass info
     activeGatePassNo,
     // Student profile data for forms
@@ -55,15 +82,45 @@ exports.apply = async (req, res) => {
   const student = await User.findById(userId).select('presence role outPurpose outPlace outTime localActiveGPNo OSActiveGPNo');
   if (!student) return res.status(404).json({ message: 'Student not found' });
 
-  // Prevent applying if an active pending request exists.
+  // Check if there's an active pending request - if so, regenerate QR for it
   const activePending = await GateRequest.findOne({
     student: userId,
     status: 'pending',
     usedAt: null,
     expiresAt: { $gt: new Date() },
   });
+
   if (activePending) {
-    return res.status(409).json({ message: 'You already have a pending request' });
+    // Regenerate QR for existing pending request
+    const rawToken = generateRawToken();
+    const tokenHash = hashToken(rawToken);
+    const newExpiresAt = new Date(Date.now() + TOKEN_TTL_MS);
+
+    activePending.tokenHash = tokenHash;
+    activePending.expiresAt = newExpiresAt;
+    await activePending.save();
+
+    // Generate QR with gatepass number if applicable
+    let qrData = rawToken;
+    if (activePending.gatePassNo) {
+      qrData = `${rawToken}|GP:${activePending.gatePassNo}`;
+    }
+
+    const qrDataUrl = await QRCode.toDataURL(qrData, {
+      errorCorrectionLevel: 'M',
+      margin: 1,
+      scale: 8,
+    });
+
+    return res.status(200).json({
+      requestId: activePending._id,
+      token: rawToken,
+      expiresAt: newExpiresAt,
+      qrDataUrl,
+      direction: activePending.direction,
+      gatePassNo: activePending.gatePassNo || null,
+      reused: true,
+    });
   }
 
   const direction = getDirectionFromPresence(student.presence);
@@ -275,6 +332,36 @@ exports.applyGatepassExit = async (req, res) => {
 
   if (!gatepass) {
     return res.status(404).json({ message: 'Approved gatepass not found' });
+  }
+
+  // Check 15-minute before exit time restriction
+  if (gatepass.dateOut && gatepass.timeOut) {
+    try {
+      const exitDate = new Date(gatepass.dateOut);
+      const timeParts = gatepass.timeOut.split(':');
+      exitDate.setHours(parseInt(timeParts[0], 10), parseInt(timeParts[1], 10), 0, 0);
+      
+      // Calculate 15 minutes before scheduled exit
+      const allowedTime = new Date(exitDate.getTime() - 15 * 60 * 1000);
+      
+      if (Date.now() < allowedTime.getTime()) {
+        // Format available time for error message
+        let hours = allowedTime.getHours();
+        const mins = String(allowedTime.getMinutes()).padStart(2, '0');
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12 || 12;
+        const availableAt = `${hours}:${mins} ${ampm}`;
+        
+        return res.status(400).json({
+          message: `Exit QR can only be generated 15 minutes before your scheduled exit time. Available at ${availableAt}`,
+          code: 'EXIT_TIME_RESTRICTION',
+          availableAt,
+        });
+      }
+    } catch (err) {
+      // If date parsing fails, allow the request
+      console.error('Failed to parse gatepass exit time:', err);
+    }
   }
 
   const rawToken = generateRawToken();

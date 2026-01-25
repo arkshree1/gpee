@@ -2,6 +2,18 @@ const OutstationGatepass = require('../models/OutstationGatepass');
 const Hod = require('../models/Hod');
 const { sendMeetingInviteEmail } = require('../utils/emailService');
 
+// Get HOD profile (name and department)
+exports.getProfile = async (req, res) => {
+    const hodId = req.user.userId;
+
+    const hod = await Hod.findById(hodId).select('name department');
+    if (!hod) {
+        return res.status(404).json({ message: 'HOD not found' });
+    }
+
+    return res.json({ name: hod.name, department: hod.department });
+};
+
 // Get pending outstation gatepasses for HOD's department
 exports.getPendingGatepasses = async (req, res) => {
     const hodId = req.user.userId;

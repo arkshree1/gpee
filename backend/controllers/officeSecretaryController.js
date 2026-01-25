@@ -3,6 +3,18 @@ const OfficeSecretary = require('../models/OfficeSecretary');
 const User = require('../models/User');
 const { sendMeetingInviteEmail } = require('../utils/emailService');
 
+// Get Office Secretary profile (name and department)
+exports.getProfile = async (req, res) => {
+    const secretaryId = req.user.userId;
+
+    const secretary = await OfficeSecretary.findById(secretaryId).select('name department');
+    if (!secretary) {
+        return res.status(404).json({ message: 'Secretary not found' });
+    }
+
+    return res.json({ name: secretary.name, department: secretary.department });
+};
+
 // Get pending outstation gatepasses for the secretary's department (card view)
 exports.getPendingGatepasses = async (req, res) => {
     const secretaryId = req.user.userId;
@@ -116,7 +128,7 @@ exports.getGatepassHistory = async (req, res) => {
 // Approve or reject an outstation gatepass
 exports.decideGatepass = async (req, res) => {
     const secretaryId = req.user.userId;
-    const { gatepassId, decision, classesMissed, missedDays, previousLeavesTaken, rejectionReason } = req.body;
+    const { gatepassId, decision, classesMissed, missedDays, previousLeavesTaken, rejectionReason, phdLeaveBalance } = req.body;
 
     if (!gatepassId || !decision) {
         return res.status(400).json({ message: 'Gatepass ID and decision are required' });
@@ -170,6 +182,16 @@ exports.decideGatepass = async (req, res) => {
     // Save previous leaves taken (filled by office secretary)
     if (previousLeavesTaken && previousLeavesTaken.trim()) {
         gatepass.previousLeavesTaken = previousLeavesTaken.trim();
+    }
+
+    // Save PhD leave balance (filled by office secretary for PhD students)
+    if (phdLeaveBalance && gatepass.course === 'PhD') {
+        gatepass.phdLeaveBalance = {
+            cl: phdLeaveBalance.cl || null,
+            medical: phdLeaveBalance.medical || null,
+            other: phdLeaveBalance.other || null,
+            otherType: phdLeaveBalance.otherType || null,
+        };
     }
 
     if (decision === 'approved') {

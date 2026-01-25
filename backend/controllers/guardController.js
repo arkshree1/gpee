@@ -218,15 +218,15 @@ exports.decide = async (req, res) => {
     await student.save();
   }
 
-  // Logging rules (immutable-style audit trail):
-  // 1) EXIT DENIED     -> NEW document
-  // 2) EXIT APPROVED   -> NEW document (base exit document)
-  // 3) ENTRY DENIED    -> NEW document
-  // 4) ENTRY APPROVED  -> MODIFY ONLY the latest exit-approved document for this student
+  // Logging rules:
+  // 1) EXIT DENIED     -> NO log created (student can try again)
+  // 2) EXIT APPROVED   -> NEW document (base exit document, status: In Progress)
+  // 3) ENTRY DENIED    -> NO log update (base exit log stays as In Progress)
+  // 4) ENTRY APPROVED  -> MODIFY the base exit log to mark as Completed
 
   if (requestDoc.direction === 'exit') {
     if (approved) {
-      // EXIT APPROVED -> base exit document
+      // EXIT APPROVED -> create base exit document
       await GateLog.create({
         student: student._id,
         guard: guard._id,
@@ -245,37 +245,20 @@ exports.decide = async (req, res) => {
         exitStatusTime: decidedAt,
         entryStatusTime: null,
       });
-    } else {
-      // EXIT DENIED -> new immutable document
-      await GateLog.create({
-        student: student._id,
-        guard: guard._id,
-        request: requestDoc._id,
-        direction: 'exit',
-        outcome: 'denied',
-        purpose: requestDoc.purpose,
-        place: requestDoc.place,
-        decidedAt,
-        gatepassId: requestDoc.gatepassId || null,
-        gatePassNo: requestDoc.gatePassNo || null,
-        exitStatus: 'exit denied',
-        exitOutcome: 'denied',
-        entryStatus: '--',
-        entryOutcome: '--',
-        exitStatusTime: decidedAt,
-        entryStatusTime: null,
-      });
     }
+    // EXIT DENIED -> No log created, student can try again
   } else if (requestDoc.direction === 'entry') {
-    // Find latest approved exit log for this student (base document)
+    // Find latest approved exit log for this student that hasn't been completed yet
+    // (entryOutcome must be '--' meaning no entry has been recorded)
     const baseExitLog = await GateLog.findOne({
       student: student._id,
       direction: 'exit',
       exitOutcome: 'approved',
+      entryOutcome: '--', // Only find incomplete exit logs
     }).sort({ exitStatusTime: -1 });
 
     if (approved) {
-      // ENTRY APPROVED -> modify only the base exit-approved document
+      // ENTRY APPROVED -> modify the base exit log to mark as Completed
       if (baseExitLog) {
         baseExitLog.entryStatus = 'entry approved';
         baseExitLog.entryOutcome = 'approved';
@@ -304,42 +287,8 @@ exports.decide = async (req, res) => {
           entryStatusTime: decidedAt,
         });
       }
-    } else {
-      // ENTRY DENIED -> new immutable document
-      let exitStatus = '--';
-      let exitOutcome = '--';
-      let exitStatusTime = null;
-
-      if (baseExitLog) {
-        exitStatus = baseExitLog.exitStatus;
-        exitOutcome = baseExitLog.exitOutcome;
-        exitStatusTime = baseExitLog.exitStatusTime;
-      } else if (student.outTime) {
-        // Fallback if base log missing but we know student went out
-        exitStatus = 'exit done';
-        exitOutcome = 'approved';
-        exitStatusTime = student.outTime;
-      }
-
-      await GateLog.create({
-        student: student._id,
-        guard: guard._id,
-        request: requestDoc._id,
-        direction: 'entry',
-        outcome: 'denied',
-        purpose: requestDoc.purpose,
-        place: requestDoc.place,
-        decidedAt,
-        gatepassId: requestDoc.gatepassId || null,
-        gatePassNo: requestDoc.gatePassNo || null,
-        exitStatus,
-        exitOutcome,
-        entryStatus: 'entry denied',
-        entryOutcome: 'denied',
-        exitStatusTime,
-        entryStatusTime: decidedAt,
-      });
     }
+    // ENTRY DENIED -> No log update, base exit log stays as In Progress
   }
 
   return res.json({
@@ -488,11 +437,12 @@ exports.manualEntry = async (req, res) => {
   student.OSActiveGPNo = null;
   await student.save();
 
-  // Find latest approved exit log for this student (base document)
+  // Find latest approved exit log for this student that hasn't been completed yet
   const baseExitLog = await GateLog.findOne({
     student: student._id,
     direction: 'exit',
     exitOutcome: 'approved',
+    entryOutcome: '--', // Only find incomplete exit logs
   }).sort({ exitStatusTime: -1 });
 
   if (baseExitLog) {
