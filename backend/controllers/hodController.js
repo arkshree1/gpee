@@ -1,6 +1,7 @@
 const OutstationGatepass = require('../models/OutstationGatepass');
 const Hod = require('../models/Hod');
 const HostelOffice = require('../models/HostelOffice');
+const Dean = require('../models/Dean');
 const User = require('../models/User');
 const { sendMeetingInviteEmail, sendOutstationGatepassNotification, sendOutstationRejectionNotification } = require('../utils/emailService');
 
@@ -129,7 +130,7 @@ exports.getGatepassHistory = async (req, res) => {
 // Approve or reject an outstation gatepass
 exports.decideGatepass = async (req, res) => {
     const hodId = req.user.userId;
-    const { gatepassId, decision, rejectionReason } = req.body;
+    const { gatepassId, decision, rejectionReason, hodNote } = req.body;
 
     if (!gatepassId || !decision) {
         return res.status(400).json({ message: 'Gatepass ID and decision are required' });
@@ -170,11 +171,16 @@ exports.decideGatepass = async (req, res) => {
         status: decision,
         decidedBy: hodId,
         decidedAt: new Date(),
+        hodNote: (gatepass.course === 'PhD' && hodNote) ? hodNote.trim() : undefined,
     };
 
     if (decision === 'approved') {
-        // Move to hostel office for final approval
-        gatepass.currentStage = 'hostelOffice';
+        // PhD students go to Dean, others go directly to Hostel Office
+        if (gatepass.course === 'PhD') {
+            gatepass.currentStage = 'dean';
+        } else {
+            gatepass.currentStage = 'hostelOffice';
+        }
     } else {
         // Rejected - end the workflow
         gatepass.finalStatus = 'rejected';
@@ -195,32 +201,60 @@ exports.decideGatepass = async (req, res) => {
         const studentData = await User.findById(gatepass.student).select('email');
         
         if (decision === 'approved') {
-            // Send email to ALL Hostel Office accounts (they don't have department)
-            const hostelOffices = await HostelOffice.find({}).select('email');
-            if (hostelOffices && hostelOffices.length > 0) {
-                const reviewLink = `${process.env.FRONTEND_URL || 'https://gothru.vercel.app'}/hostel-office/outstation`;
-                // Send to all hostel office emails
-                for (const hostelOffice of hostelOffices) {
-                    if (hostelOffice.email) {
-                        await sendOutstationGatepassNotification({
-                            to: hostelOffice.email,
-                            approverName: 'Hostel Office',
-                            approverRole: 'Hostel Office',
-                            studentName: gatepass.studentName,
-                            rollnumber: gatepass.rollnumber,
-                            department: gatepass.department,
-                            branch: gatepass.branch,
-                            roomNumber: gatepass.roomNumber,
-                            contact: gatepass.contact,
-                            reasonOfLeave: gatepass.reasonOfLeave,
-                            address: gatepass.address,
-                            dateOut: gatepass.dateOut,
-                            dateIn: gatepass.dateIn,
-                            classesMissed: gatepass.classesMissed,
-                            missedDays: gatepass.missedDays,
-                            forwardedBy: 'Head of Department',
-                            reviewLink,
-                        });
+            // PhD students: Send email to Dean, Others: Send to Hostel Office
+            if (gatepass.course === 'PhD') {
+                // Send email to Dean (there's only one dean for all departments)
+                const dean = await Dean.findOne({}).select('name email');
+                if (dean && dean.email) {
+                    const reviewLink = `${process.env.FRONTEND_URL || 'https://gothru.vercel.app'}/dean/outstation`;
+                    await sendOutstationGatepassNotification({
+                        to: dean.email,
+                        approverName: dean.name,
+                        approverRole: 'Dean',
+                        studentName: gatepass.studentName,
+                        rollnumber: gatepass.rollnumber,
+                        department: gatepass.department,
+                        branch: gatepass.branch,
+                        roomNumber: gatepass.roomNumber,
+                        contact: gatepass.contact,
+                        reasonOfLeave: gatepass.reasonOfLeave,
+                        address: gatepass.address,
+                        dateOut: gatepass.dateOut,
+                        dateIn: gatepass.dateIn,
+                        classesMissed: gatepass.classesMissed,
+                        missedDays: gatepass.missedDays,
+                        forwardedBy: 'Head of Department',
+                        reviewLink,
+                    });
+                }
+            } else {
+                // Send email to ALL Hostel Office accounts (they don't have department)
+                const hostelOffices = await HostelOffice.find({}).select('email');
+                if (hostelOffices && hostelOffices.length > 0) {
+                    const reviewLink = `${process.env.FRONTEND_URL || 'https://gothru.vercel.app'}/hostel-office/outstation`;
+                    // Send to all hostel office emails
+                    for (const hostelOffice of hostelOffices) {
+                        if (hostelOffice.email) {
+                            await sendOutstationGatepassNotification({
+                                to: hostelOffice.email,
+                                approverName: 'Hostel Office',
+                                approverRole: 'Hostel Office',
+                                studentName: gatepass.studentName,
+                                rollnumber: gatepass.rollnumber,
+                                department: gatepass.department,
+                                branch: gatepass.branch,
+                                roomNumber: gatepass.roomNumber,
+                                contact: gatepass.contact,
+                                reasonOfLeave: gatepass.reasonOfLeave,
+                                address: gatepass.address,
+                                dateOut: gatepass.dateOut,
+                                dateIn: gatepass.dateIn,
+                                classesMissed: gatepass.classesMissed,
+                                missedDays: gatepass.missedDays,
+                                forwardedBy: 'Head of Department',
+                                reviewLink,
+                            });
+                        }
                     }
                 }
             }
@@ -247,7 +281,7 @@ exports.decideGatepass = async (req, res) => {
 
     return res.json({
         message: decision === 'approved'
-            ? 'Gatepass approved and passed to Hostel Office'
+            ? (gatepass.course === 'PhD' ? 'Gatepass approved and passed to Dean' : 'Gatepass approved and passed to Hostel Office')
             : 'Gatepass rejected',
         gatepass: {
             _id: gatepass._id,

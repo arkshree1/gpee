@@ -1,6 +1,7 @@
 const OutstationGatepass = require('../models/OutstationGatepass');
 const OfficeSecretary = require('../models/OfficeSecretary');
 const Dugc = require('../models/Dugc');
+const Dpgc = require('../models/Dpgc');
 const User = require('../models/User');
 const { sendMeetingInviteEmail, sendOutstationGatepassNotification, sendOutstationRejectionNotification } = require('../utils/emailService');
 
@@ -129,7 +130,7 @@ exports.getGatepassHistory = async (req, res) => {
 // Approve or reject an outstation gatepass
 exports.decideGatepass = async (req, res) => {
     const secretaryId = req.user.userId;
-    const { gatepassId, decision, classesMissed, missedDays, previousLeavesTaken, rejectionReason, phdLeaveBalance } = req.body;
+    const { gatepassId, decision, classesMissed, missedDays, previousLeavesTaken, rejectionReason, phdLeaveBalance, secretaryNote } = req.body;
 
     if (!gatepassId || !decision) {
         return res.status(400).json({ message: 'Gatepass ID and decision are required' });
@@ -170,6 +171,7 @@ exports.decideGatepass = async (req, res) => {
         status: decision,
         decidedBy: secretaryId,
         decidedAt: new Date(),
+        secretaryNote: (gatepass.course === 'PhD' && secretaryNote) ? secretaryNote.trim() : undefined,
     };
 
     // Update classes missed fields if provided (filled by office secretary)
@@ -196,8 +198,12 @@ exports.decideGatepass = async (req, res) => {
     }
 
     if (decision === 'approved') {
-        // Move to next stage (DUGC)
-        gatepass.currentStage = 'dugc';
+        // PhD students go to DPGC, others go to DUGC
+        if (gatepass.course === 'PhD') {
+            gatepass.currentStage = 'dpgc';
+        } else {
+            gatepass.currentStage = 'dugc';
+        }
     } else {
         // Rejected - end the workflow
         gatepass.finalStatus = 'rejected';
@@ -218,29 +224,56 @@ exports.decideGatepass = async (req, res) => {
         const studentData = await User.findById(gatepass.student).select('email');
         
         if (decision === 'approved') {
-            // Send email to DUGC of the same department
-            const dugc = await Dugc.findOne({ department: gatepass.department }).select('name email');
-            if (dugc && dugc.email) {
-                const reviewLink = `${process.env.FRONTEND_URL || 'https://gothru.vercel.app'}/dugc/outstation`;
-                await sendOutstationGatepassNotification({
-                    to: dugc.email,
-                    approverName: dugc.name,
-                    approverRole: 'DUGC',
-                    studentName: gatepass.studentName,
-                    rollnumber: gatepass.rollnumber,
-                    department: gatepass.department,
-                    branch: gatepass.branch,
-                    roomNumber: gatepass.roomNumber,
-                    contact: gatepass.contact,
-                    reasonOfLeave: gatepass.reasonOfLeave,
-                    address: gatepass.address,
-                    dateOut: gatepass.dateOut,
-                    dateIn: gatepass.dateIn,
-                    classesMissed: gatepass.classesMissed,
-                    missedDays: gatepass.missedDays,
-                    forwardedBy: 'Office Secretary',
-                    reviewLink,
-                });
+            // PhD students: Send email to DPGC, Others: Send to DUGC
+            if (gatepass.course === 'PhD') {
+                const dpgc = await Dpgc.findOne({ department: gatepass.department }).select('name email');
+                if (dpgc && dpgc.email) {
+                    const reviewLink = `${process.env.FRONTEND_URL || 'https://gothru.vercel.app'}/dpgc/outstation`;
+                    await sendOutstationGatepassNotification({
+                        to: dpgc.email,
+                        approverName: dpgc.name,
+                        approverRole: 'DPGC',
+                        studentName: gatepass.studentName,
+                        rollnumber: gatepass.rollnumber,
+                        department: gatepass.department,
+                        branch: gatepass.branch,
+                        roomNumber: gatepass.roomNumber,
+                        contact: gatepass.contact,
+                        reasonOfLeave: gatepass.reasonOfLeave,
+                        address: gatepass.address,
+                        dateOut: gatepass.dateOut,
+                        dateIn: gatepass.dateIn,
+                        classesMissed: gatepass.classesMissed,
+                        missedDays: gatepass.missedDays,
+                        forwardedBy: 'Office Secretary',
+                        reviewLink,
+                    });
+                }
+            } else {
+                // Send email to DUGC of the same department for BTech/MBA
+                const dugc = await Dugc.findOne({ department: gatepass.department }).select('name email');
+                if (dugc && dugc.email) {
+                    const reviewLink = `${process.env.FRONTEND_URL || 'https://gothru.vercel.app'}/dugc/outstation`;
+                    await sendOutstationGatepassNotification({
+                        to: dugc.email,
+                        approverName: dugc.name,
+                        approverRole: 'DUGC',
+                        studentName: gatepass.studentName,
+                        rollnumber: gatepass.rollnumber,
+                        department: gatepass.department,
+                        branch: gatepass.branch,
+                        roomNumber: gatepass.roomNumber,
+                        contact: gatepass.contact,
+                        reasonOfLeave: gatepass.reasonOfLeave,
+                        address: gatepass.address,
+                        dateOut: gatepass.dateOut,
+                        dateIn: gatepass.dateIn,
+                        classesMissed: gatepass.classesMissed,
+                        missedDays: gatepass.missedDays,
+                        forwardedBy: 'Office Secretary',
+                        reviewLink,
+                    });
+                }
             }
         } else {
             // Send rejection email to student
@@ -265,7 +298,7 @@ exports.decideGatepass = async (req, res) => {
 
     return res.json({
         message: decision === 'approved'
-            ? 'Gatepass approved and passed to DUGC'
+            ? (gatepass.course === 'PhD' ? 'Gatepass approved and passed to DPGC' : 'Gatepass approved and passed to DUGC')
             : 'Gatepass rejected',
         gatepass: {
             _id: gatepass._id,

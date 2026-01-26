@@ -102,8 +102,9 @@ exports.createOutstationGatepass = async (req, res) => {
     reasonOfLeave,
     proofFile,
     consent: !!consent,
-    classesMissed: classesMissed || 0,
-    missedDays: calculatedLeaveDays,
+    // classesMissed will be filled by Office Secretary, not student
+    classesMissed: null,
+    missedDays: 0,
     currentStage: initialStage,
     instructor: course === 'PhD' ? instructorId : undefined,
     instructorName: instructorName,

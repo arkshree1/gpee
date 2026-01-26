@@ -144,6 +144,7 @@ const sendLocalGatepassNotification = async ({
     throw new Error('Email configuration is missing');
   }
 
+  //hey
   const subject = `New Local Gatepass Request - ${gatePassNo} | ${studentName}`;
   const html = `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 650px; margin: 0 auto; padding: 0; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
