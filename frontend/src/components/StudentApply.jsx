@@ -12,6 +12,9 @@ const Icons = {
   arrowLeft: <svg className="sa-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>,
 };
 
+// localStorage key for persisting QR state
+const QR_STORAGE_KEY = 'gpee_pending_qr';
+
 const msLeft = (expiresAt) => {
   if (!expiresAt) return 0;
   const t = new Date(expiresAt).getTime() - Date.now();
@@ -47,6 +50,19 @@ const StudentApply = () => {
   useEffect(() => {
     (async () => {
       try {
+        // First check localStorage for a persisted QR
+        const storedQr = localStorage.getItem(QR_STORAGE_KEY);
+        if (storedQr) {
+          const parsed = JSON.parse(storedQr);
+          if (new Date(parsed.expiresAt) > new Date()) {
+            // QR still valid, restore it
+            setQr(parsed);
+          } else {
+            // QR expired, clear localStorage
+            localStorage.removeItem(QR_STORAGE_KEY);
+          }
+        }
+
         const res = await getStudentStatus();
         setDirection(res.data.nextAction);
       } catch {
@@ -61,6 +77,8 @@ const StudentApply = () => {
       try {
         const res = await getStudentStatus();
         if (!res.data.hasPendingRequest) {
+          // Clear localStorage since request is no longer pending (approved/rejected/expired)
+          localStorage.removeItem(QR_STORAGE_KEY);
           // Check if there was a recent rejection
           if (res.data.recentRejection) {
             setRejectionInfo(res.data.recentRejection);
@@ -96,6 +114,8 @@ const StudentApply = () => {
 
   const confirmDismiss = async () => {
     setShowConfirmModal(false);
+    // Clear localStorage on dismiss
+    localStorage.removeItem(QR_STORAGE_KEY);
     if (!qr) {
       navigate('/student');
       return;
@@ -127,11 +147,14 @@ const StudentApply = () => {
     setSubmitting(true);
     try {
       const res = await applyGate({ purpose: trimmedPurpose, place: trimmedPlace });
-      setQr({
+      const qrData = {
         requestId: res.data.requestId,
         qrDataUrl: res.data.qrDataUrl,
         expiresAt: res.data.expiresAt,
-      });
+      };
+      setQr(qrData);
+      // Persist to localStorage so refresh doesn't lose QR
+      localStorage.setItem(QR_STORAGE_KEY, JSON.stringify(qrData));
     } catch (e) {
       setApiError(e?.response?.data?.message || 'Failed to apply');
     } finally {
