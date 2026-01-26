@@ -1375,6 +1375,47 @@ body {
 
     .admin-dashboard-content {
         order: 0;
+        overflow: visible;
+    }
+
+    /* Fix for tablet view - dashboard main section */
+    .admin-dashboard-main {
+        flex-direction: row;
+        gap: 16px;
+        flex-wrap: nowrap;
+        overflow: visible;
+        min-height: auto;
+        align-items: stretch;
+    }
+
+    /* Donut chart container for tablet */
+    .admin-donut-container {
+        flex: 1;
+        min-height: 320px;
+        max-height: none;
+        padding: 16px;
+        overflow: visible;
+    }
+
+    /* Metrics panel for tablet - narrower width */
+    .admin-metrics-panel {
+        width: 240px;
+        min-width: 200px;
+        flex-shrink: 0;
+        gap: 0;
+    }
+
+    /* Metric cards for tablet - smaller padding */
+    .admin-metric-card {
+        padding: 10px 12px;
+    }
+
+    .admin-metric-title {
+        font-size: 10px;
+    }
+
+    .admin-metric-value {
+        font-size: 22px;
     }
 
     .admin-total-value {
@@ -1383,6 +1424,165 @@ body {
 
     .admin-stat-value {
         font-size: 26px;
+    }
+}
+
+/* ==================== RESPONSIVE - TABLET ONLY (768px - 1024px) ==================== */
+@media (min-width: 769px) and (max-width: 1024px) {
+    /* Show mobile donut with clickable metrics on tablet */
+    .mobile-only {
+        display: block !important;
+    }
+
+    /* Hide desktop donut and metrics panel on tablet */
+    .desktop-only {
+        display: none !important;
+    }
+
+    /* Ensure the main content doesn't overflow */
+    .admin-main {
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .admin-dashboard-layout {
+        overflow: visible;
+    }
+
+    .admin-dashboard-content {
+        overflow: visible;
+        min-height: auto;
+    }
+
+    /* Dashboard main - single column for tablet with donut + metrics */
+    .admin-dashboard-main {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        min-height: auto;
+        height: auto;
+        overflow: visible;
+        align-items: center;
+    }
+
+    /* Donut container - full width for tablet */
+    .admin-donut-container {
+        width: 100%;
+        min-height: auto;
+        max-height: none;
+        height: auto;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Mobile donut wrapper - horizontal layout for tablet */
+    .donut-mobile-wrapper {
+        display: flex !important;
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 24px;
+        width: 100%;
+        padding: 16px;
+    }
+
+    /* Donut chart stays centered */
+    .donut-mobile-chart {
+        flex-shrink: 0;
+    }
+
+    /* Legend + Metrics column for tablet */
+    .donut-mobile-legend {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px 10px;
+        width: auto;
+        max-width: 200px;
+    }
+
+    .donut-mobile-legend-item {
+        padding: 4px 6px;
+    }
+
+    .donut-mobile-legend-label {
+        font-size: 8px;
+    }
+
+    .donut-mobile-legend-value {
+        font-size: 12px;
+    }
+
+    /* Metrics panel for tablet - HIDDEN by default on tablet portrait */
+    .donut-mobile-metrics {
+        display: none;
+    }
+
+    .donut-mobile-metric-card {
+        padding: 8px 12px;
+    }
+
+    .donut-mobile-metric-title {
+        font-size: 9px;
+    }
+
+    .donut-mobile-metric-value {
+        font-size: 20px;
+    }
+
+    /* College banner - smaller for tablet */
+    .admin-college-banner {
+        padding: 14px 20px;
+    }
+
+    .admin-college-name {
+        font-size: 14px;
+    }
+
+    .admin-college-subtitle {
+        font-size: 10px;
+    }
+
+    .admin-college-name-hi {
+        font-size: 12px;
+    }
+
+    .admin-college-subtitle-hi {
+        font-size: 9px;
+    }
+
+    /* Sidebar overlay for tablet - covers the dimmed area when sidebar is open */
+    .admin-sidebar-overlay {
+        display: block;
+        position: fixed;
+        top: var(--header-height);
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(30, 30, 44, 0.5);
+        z-index: 199;
+        cursor: pointer;
+    }
+}
+
+/* ==================== TABLET LANDSCAPE ONLY - Show metrics ==================== */
+@media (min-width: 769px) and (max-width: 1024px) and (orientation: landscape) {
+    /* Show metrics panel only in tablet landscape (horizontal) orientation */
+    .donut-mobile-metrics {
+        display: flex !important;
+        flex-direction: column;
+        gap: 6px;
+        width: 220px;
+        margin-top: 0;
+    }
+
+    /* Horizontal layout for tablet landscape - donut left, metrics right */
+    .donut-mobile-wrapper {
+        flex-direction: row !important;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 24px;
     }
 }
 
@@ -1481,6 +1681,18 @@ body {
         background: var(--color-surface);
         border: 1px solid var(--color-border-light);
         border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .donut-mobile-legend-item:hover {
+        background: rgba(242, 159, 103, 0.1);
+        border-color: var(--color-primary);
+        transform: scale(1.02);
+    }
+
+    .donut-mobile-legend-item:active {
+        transform: scale(0.98);
     }
 
     .donut-mobile-legend-dot {
@@ -1502,6 +1714,13 @@ body {
         font-size: 14px;
         font-weight: 700;
         flex-shrink: 0;
+    }
+
+    /* ==================== MOBILE METRICS PANEL - HIDDEN ON MOBILE ==================== */
+    /* These metric cards are hidden on mobile (portrait phone) view */
+    /* They only show on tablet horizontal orientation */
+    .donut-mobile-metrics {
+        display: none !important;
     }
 
     /* ==================== MOBILE LIVE ACTIVITY LOG ==================== */
@@ -1622,12 +1841,12 @@ body {
         display: block;
         position: fixed;
         top: var(--header-height);
-        left: 60px;
-        /* Start after the collapsed sidebar */
+        left: 0;
         right: 0;
         bottom: 0;
         background: rgba(30, 30, 44, 0.5);
         z-index: 199;
+        cursor: pointer;
     }
 
     /* When sidebar is open */
@@ -2777,6 +2996,10 @@ body {
     font-size: 14px;
     color: var(--text-primary);
     font-weight: 500;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    max-width: 100%;
 }
 
 /* Approval Timeline */
@@ -3133,6 +3356,162 @@ body {
 .os-history-dates {
     font-size: 12px;
     color: var(--text-muted);
+}
+
+/* Gatepass Tag in History - Admin Theme */
+.os-history-gatepass-tag {
+    background: linear-gradient(135deg, var(--color-dark) 0%, #2d2d42 100%);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    margin-right: 10px;
+    transition: all 0.2s ease;
+    display: inline-block;
+    letter-spacing: 0.5px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.os-history-gatepass-tag:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(30, 30, 44, 0.4);
+    background: linear-gradient(135deg, var(--color-primary) 0%, #e08a4f 100%);
+}
+
+.os-history-gatepass-tag:active {
+    transform: scale(0.98);
+}
+
+/* History Gatepass Popup - Admin Theme */
+.os-history-popup {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    padding: 0;
+    width: 90%;
+    max-width: 480px;
+    max-height: 85vh;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.25);
+    animation: popupSlideIn 0.25s ease;
+}
+
+@keyframes popupSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.os-history-popup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 20px 24px;
+    background: linear-gradient(135deg, var(--color-dark) 0%, #2d2d42 100%);
+    border-bottom: none;
+}
+
+.os-history-popup-tag {
+    background: var(--color-primary);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 8px 18px;
+    border-radius: 25px;
+    letter-spacing: 0.5px;
+}
+
+.os-history-popup-header .os-status-badge {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.os-history-popup-header .os-status-badge.approved {
+    background: var(--status-success);
+    border-color: var(--status-success);
+}
+
+.os-history-popup-header .os-status-badge.rejected {
+    background: var(--status-danger);
+    border-color: var(--status-danger);
+}
+
+.os-history-popup-header .os-status-badge.pending {
+    background: var(--status-warning);
+    border-color: var(--status-warning);
+    color: var(--color-dark);
+}
+
+.os-history-popup-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 20px 24px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.os-history-popup-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 14px 0;
+    background: transparent;
+    border-radius: 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.os-history-popup-row:last-child {
+    border-bottom: none;
+}
+
+.os-history-popup-row label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+
+.os-history-popup-row span {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+/* Close button for history popup */
+.os-history-popup .confirm-modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.os-history-popup .confirm-modal-close:hover {
+    background: rgba(255, 255, 255, 0.35);
+    transform: rotate(90deg);
 }
 
 /* History Page */
@@ -4137,6 +4516,9 @@ body {
     border-radius: 8px;
     padding: 16px !important;
     margin-top: 16px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
 }
 
 .os-previous-leaves-display .os-detail-label {
@@ -4146,6 +4528,10 @@ body {
 
 .os-previous-leaves-display .os-detail-value {
     color: #664d03;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    max-width: 100%;
 }
 
 /* Rejection Reason Input */
@@ -4213,6 +4599,9 @@ body {
     background: #f8d7da;
     border: 1px solid #f5c2c7;
     border-radius: 8px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
 }
 
 .gatepass-rejection-reason .rejection-label {
@@ -4223,6 +4612,10 @@ body {
 
 .gatepass-rejection-reason .rejection-text {
     color: #58151c;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    max-width: 100%;
 }
 
 /* Profile Photo Placeholder */
@@ -4870,4 +5263,55 @@ body {
     .os-email-student-section {
         padding: 16px;
     }
+}
+
+/* ==================== PROFILE PICTURE HOVER EFFECT ==================== */
+/* Hover effect for clickable profile pictures */
+.profile-pic-hover {
+    cursor: pointer;
+    transition: all 0.25s ease;
+    position: relative;
+}
+
+.profile-pic-hover::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border: 2px solid transparent;
+    border-radius: inherit;
+    transition: all 0.25s ease;
+    pointer-events: none;
+}
+
+.profile-pic-hover:hover {
+    transform: scale(1.05);
+}
+
+.profile-pic-hover:hover::after {
+    border-color: #3B8FF3;
+    box-shadow: 0 4px 15px rgba(59, 143, 243, 0.35);
+}
+
+/* Specific adjustments for circular avatars */
+.os-card-avatar.profile-pic-hover,
+.os-history-avatar.profile-pic-hover,
+.gatepass-popup-avatar.profile-pic-hover,
+.os-student-avatar-large.profile-pic-hover {
+    border-radius: 50%;
+}
+
+.os-card-avatar.profile-pic-hover::after,
+.os-history-avatar.profile-pic-hover::after,
+.gatepass-popup-avatar.profile-pic-hover::after,
+.os-student-avatar-large.profile-pic-hover::after {
+    border-radius: 50%;
+}
+
+/* Specific adjustments for rectangular photo frames */
+.os-student-photo-large.profile-pic-hover {
+    border-radius: 12px;
+}
+
+.os-student-photo-large.profile-pic-hover::after {
+    border-radius: 12px;
 }

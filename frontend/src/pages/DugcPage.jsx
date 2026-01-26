@@ -11,6 +11,7 @@ import {
 } from '../api/api';
 import PopupBox from '../components/PopupBox';
 import ConfirmModal from '../components/ConfirmModal';
+import StudentIdCardPopup from '../components/StudentIdCardPopup';
 import '../styles/admin.css';
 
 //hey
@@ -139,6 +140,24 @@ const RequestsView = ({ onViewDetails }) => {
   const [gatepasses, setGatepasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // ID Card popup state
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [showIdCard, setShowIdCard] = useState(false);
+
+  const handleProfileClick = (student, gatepass) => {
+    setSelectedStudent({
+      ...student,
+      name: gatepass.studentName,
+      rollnumber: gatepass.rollnumber,
+      branch: gatepass.branch || gatepass.department,
+      department: gatepass.department,
+      contact: gatepass.contact,
+      roomNumber: gatepass.roomNumber,
+      hostelName: gatepass.hostelName,
+    });
+    setShowIdCard(true);
+  };
 
   const fetchGatepasses = async () => {
     try {
@@ -168,7 +187,7 @@ const RequestsView = ({ onViewDetails }) => {
     const mins = String(d.getMinutes()).padStart(2, '0');
     const ampm = hours >= 12 ? 'PM' : 'AM';
     hours = hours % 12 || 12;
-    return `${day}/${month}/${year} ${hours}:${mins} ${ampm}`;
+    return `${day}/${month}/${year},  ${hours}:${mins} ${ampm}`;
   };
 
   const sortedGatepasses = [...gatepasses].sort((a, b) =>
@@ -189,7 +208,11 @@ const RequestsView = ({ onViewDetails }) => {
       <div className="os-cards-grid">
         {sortedGatepasses.map((gp) => (
           <div key={gp._id} className="os-request-card">
-            <div className="os-card-avatar">
+            <div 
+              className="os-card-avatar profile-pic-hover"
+              onClick={() => handleProfileClick(gp.student, gp)}
+              title="Click to view GoThru ID Card"
+            >
               {gp.student?.imageUrl ? (
                 <img
                   src={`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${gp.student.imageUrl}`}
@@ -214,6 +237,13 @@ const RequestsView = ({ onViewDetails }) => {
           </div>
         ))}
       </div>
+
+      {/* Student ID Card Popup */}
+      <StudentIdCardPopup
+        student={selectedStudent}
+        isOpen={showIdCard}
+        onClose={() => setShowIdCard(false)}
+      />
     </div>
   );
 };
@@ -243,6 +273,12 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
   const [emailDate, setEmailDate] = useState('');
   const [emailTime, setEmailTime] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
+
+  // ID Card popup state
+  const [showIdCard, setShowIdCard] = useState(false);
+
+  // History gatepass popup state
+  const [historyPopup, setHistoryPopup] = useState({ open: false, gatepass: null });
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -292,7 +328,7 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
     const mins = String(d.getMinutes()).padStart(2, '0');
     const ampm = hours >= 12 ? 'PM' : 'AM';
     hours = hours % 12 || 12;
-    return `${day}/${month}/${year} ${hours}:${mins} ${ampm}`;
+    return `${day}/${month}/${year}, ${hours}:${mins} ${ampm}`;
   };
 
   const openConfirmModal = (decision) => {
@@ -408,7 +444,11 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
       <div className="os-details-card">
         {/* Student Profile Section */}
         <div className="os-student-profile-section">
-          <div className="os-student-photo-large">
+          <div 
+            className="os-student-photo-large profile-pic-hover"
+            onClick={() => setShowIdCard(true)}
+            title="Click to view GoThru ID Card"
+          >
             {gatepass.student?.imageUrl ? (
               <img
                 src={`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${gatepass.student.imageUrl}`}
@@ -596,6 +636,15 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
         {studentHistory.filter(h => h._id !== gatepassId).map((h) => (
           <div key={h._id} className={`os-history-item ${h.finalStatus}`}>
             <div className="os-history-header">
+              {h.gatePassNo && (
+                <span 
+                  className="os-history-gatepass-tag"
+                  onClick={() => setHistoryPopup({ open: true, gatepass: h })}
+                  title="Click to view details"
+                >
+                  {h.gatePassNo}
+                </span>
+              )}
               <span className="os-history-reason">{h.reasonOfLeave}</span>
               <span className={`os-status-badge ${h.finalStatus}`}>
                 {h.finalStatus?.toUpperCase() || 'PENDING'}
@@ -607,6 +656,49 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
           </div>
         ))}
       </div>
+
+      {/* History Gatepass Details Popup */}
+      {historyPopup.open && historyPopup.gatepass && (
+        <div className="confirm-modal-overlay" onClick={() => setHistoryPopup({ open: false, gatepass: null })}>
+          <div className="os-history-popup" onClick={(e) => e.stopPropagation()}>
+            <button className="confirm-modal-close" onClick={() => setHistoryPopup({ open: false, gatepass: null })}>×</button>
+            <div className="os-history-popup-header">
+              <span className="os-history-popup-tag">{historyPopup.gatepass.gatePassNo}</span>
+              <span className={`os-status-badge ${historyPopup.gatepass.finalStatus}`}>
+                {historyPopup.gatepass.finalStatus?.toUpperCase() || 'PENDING'}
+              </span>
+            </div>
+            <div className="os-history-popup-body">
+              <div className="os-history-popup-row">
+                <label>Reason of Leave:</label>
+                <span>{historyPopup.gatepass.reasonOfLeave}</span>
+              </div>
+              <div className="os-history-popup-row">
+                <label>Address:</label>
+                <span>{historyPopup.gatepass.address || '--'}</span>
+              </div>
+              <div className="os-history-popup-row">
+                <label>Date Out:</label>
+                <span>{formatDate(historyPopup.gatepass.dateOut)}</span>
+              </div>
+              <div className="os-history-popup-row">
+                <label>Date In:</label>
+                <span>{formatDate(historyPopup.gatepass.dateIn)}</span>
+              </div>
+              {historyPopup.gatepass.classesMissed && (
+                <div className="os-history-popup-row">
+                  <label>Classes Missed:</label>
+                  <span>{historyPopup.gatepass.classesMissed === 'yes' ? `Yes (${historyPopup.gatepass.missedDays || 0} days)` : 'No'}</span>
+                </div>
+              )}
+              <div className="os-history-popup-row">
+                <label>Applied On:</label>
+                <span>{new Date(historyPopup.gatepass.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ConfirmModal
         isOpen={confirmModal.open}
@@ -736,6 +828,22 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
         </div>
       )}
 
+      {/* Student ID Card Popup */}
+      <StudentIdCardPopup
+        student={gatepass ? {
+          ...gatepass.student,
+          name: gatepass.studentName,
+          rollnumber: gatepass.rollnumber,
+          branch: gatepass.branch || gatepass.department,
+          department: gatepass.department,
+          contact: gatepass.contact,
+          roomNumber: gatepass.roomNumber,
+          hostelName: gatepass.hostelName,
+        } : null}
+        isOpen={showIdCard}
+        onClose={() => setShowIdCard(false)}
+      />
+
       <PopupBox message={popupMessage} onClose={() => setPopupMessage('')} />
     </div>
   );
@@ -752,6 +860,25 @@ const HistoryView = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [popupData, setPopupData] = useState(null);
   const [popupLoading, setPopupLoading] = useState(false);
+
+  // ID Card popup state
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [showIdCard, setShowIdCard] = useState(false);
+
+  const handleProfileClick = (e, student, gp) => {
+    e.stopPropagation(); // Prevent row click
+    setSelectedStudent({
+      ...student,
+      name: gp.studentName,
+      rollnumber: gp.rollnumber,
+      branch: gp.branch || gp.department,
+      department: gp.department,
+      contact: gp.contact,
+      roomNumber: gp.roomNumber,
+      hostelName: gp.hostelName,
+    });
+    setShowIdCard(true);
+  };
 
   const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 
@@ -787,14 +914,17 @@ const HistoryView = () => {
   const formatDateTime = (dateStr) => {
     if (!dateStr) return null;
     const d = new Date(dateStr);
-    return d.toLocaleString('en-IN', {
+    const datePart = d.toLocaleDateString('en-IN', {
       day: '2-digit',
-      month: 'short',
-      year: 'numeric',
+      month: '2-digit',
+      year: 'numeric'
+    });
+    const timePart = d.toLocaleTimeString('en-IN', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: true
     });
+    return `${datePart}, ${timePart}`;
   };
 
   const handleRowClick = async (gp) => {
@@ -877,7 +1007,11 @@ const HistoryView = () => {
               tabIndex={isClickable ? 0 : undefined}
             >
               {/* Student Avatar */}
-              <div className="os-history-avatar">
+              <div 
+                className="os-history-avatar profile-pic-hover"
+                onClick={(e) => handleProfileClick(e, gp.student, gp)}
+                title="Click to view GoThru ID Card"
+              >
                 {gp.student?.imageUrl ? (
                   <img src={`${API_BASE}${gp.student.imageUrl}`} alt="" />
                 ) : (
@@ -896,9 +1030,9 @@ const HistoryView = () => {
               {/* Gatepass Number */}
               {hasGatepassNo ? (
                 <span className="os-history-gp-number">{gp.gatePassNo}</span>
-              ) : (
+              ) : status !== 'rejected' ? (
                 <span className="os-history-gp-pending">Yet to be Approved</span>
-              )}
+              ) : null}
 
               {/* Leave Info */}
               <div className="os-history-leave-enhanced">
@@ -931,7 +1065,14 @@ const HistoryView = () => {
               {!popupLoading && popupData && !popupData.error && (
                 <>
                   <div className="gatepass-popup-student">
-                    <div className="gatepass-popup-avatar">
+                    <div 
+                      className="gatepass-popup-avatar profile-pic-hover"
+                      onClick={() => {
+                        setSelectedStudent(popupData.student);
+                        setShowIdCard(true);
+                      }}
+                      title="Click to view GoThru ID Card"
+                    >
                       {popupData.student?.imageUrl ? (
                         <img src={`${API_BASE}${popupData.student.imageUrl}`} alt="" />
                       ) : (
@@ -1034,6 +1175,13 @@ const HistoryView = () => {
           </div>
         </div>
       )}
+
+      {/* Student ID Card Popup */}
+      <StudentIdCardPopup
+        student={selectedStudent}
+        isOpen={showIdCard}
+        onClose={() => setShowIdCard(false)}
+      />
     </div>
   );
 };

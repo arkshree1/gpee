@@ -9,6 +9,11 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:500
 // RGIPT Logo - place logo at public/rgipt-logo.png
 const RGIPT_LOGO = '/rgipt-logo.png';
 
+// Professional SVG Icons
+const Icons = {
+  camera: <svg className="sp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>,
+};
+
 const StudentProfile = () => {
     const navigate = useNavigate();
     const [status, setStatus] = useState(null);
@@ -142,12 +147,12 @@ const StudentProfile = () => {
                                         onError={(e) => {
                                             e.target.onerror = null;
                                             e.target.style.display = 'none';
-                                            e.target.parentElement.innerHTML = '<div class="id-card-photo-placeholder"><span>📷</span></div>';
+                                            e.target.parentElement.innerHTML = '<div class="id-card-photo-placeholder"><span class="sp-camera-icon"></span></div>';
                                         }}
                                     />
                                 ) : (
                                     <div className="id-card-photo-placeholder">
-                                        <span>📷</span>
+                                        {Icons.camera}
                                     </div>
                                 )}
                             </div>

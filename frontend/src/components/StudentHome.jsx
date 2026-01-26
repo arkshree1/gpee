@@ -5,6 +5,16 @@ import '../styles/student-dashboard.css';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 
+// Professional SVG Icons
+const Icons = {
+  home: <svg className="sd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>,
+  walking: <svg className="sd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="2"></circle><path d="M10 22V18L7 15l1-5 4 2 4-2 1 5-3 3v4"></path></svg>,
+  doorExit: <svg className="sd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>,
+  file: <svg className="sd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>,
+  mapPin: <svg className="sd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>,
+  wave: <svg className="sd-logout-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8.5V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v.5M14 12V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v8M10 10V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v10M6 14V10a2 2 0 0 0-2-2 2 2 0 0 0-2 2v4c0 5.52 4.48 10 10 10h2c5.52 0 10-4.48 10-10V8a2 2 0 0 0-2-2 2 2 0 0 0-2 2v4"></path></svg>,
+};
+
 const StudentHome = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -194,7 +204,7 @@ const StudentHome = () => {
           <div className="sd-stat-card">
             <div className="sd-stat-label">Current Status</div>
             <div className={`sd-stat-badge ${status?.presence === 'inside' ? 'inside' : 'outside'}`}>
-              {status?.presence === 'inside' ? '🏠 Inside' : '🚶 Outside'}
+              {status?.presence === 'inside' ? <>{Icons.home} Inside</> : <>{Icons.walking} Outside</>}
             </div>
           </div>
           <div className="sd-stat-card">
@@ -233,7 +243,7 @@ const StudentHome = () => {
               disabled={loading}
               onClick={handleApply}
             >
-              <span className="sd-btn-icon">🚪</span>
+              <span className="sd-btn-icon">{Icons.doorExit}</span>
               {loading ? (
                 <span className="loader loader--inline" role="status" aria-label="Loading"></span>
               ) : (
@@ -245,7 +255,7 @@ const StudentHome = () => {
               disabled={loading}
               onClick={() => navigate('/student/gatepass')}
             >
-              <span className="sd-btn-icon">📄</span>
+              <span className="sd-btn-icon">{Icons.file}</span>
               Apply for Gatepass
             </button>
             <button
@@ -253,7 +263,7 @@ const StudentHome = () => {
               disabled={loading}
               onClick={() => navigate('/student/track-gatepass')}
             >
-              <span className="sd-btn-icon">📍</span>
+              <span className="sd-btn-icon">{Icons.mapPin}</span>
               Gatepass Status
             </button>
           </div>
@@ -359,7 +369,7 @@ const StudentHome = () => {
         <div className="sd-modal-overlay" onClick={() => setShowLogoutConfirm(false)}>
           <div className="sd-modal sd-logout-modal" onClick={(e) => e.stopPropagation()}>
             <button className="sd-modal-close" onClick={() => setShowLogoutConfirm(false)}>×</button>
-            <div className="sd-logout-icon">👋</div>
+            <div className="sd-logout-icon">{Icons.wave}</div>
             <h3 className="sd-modal-title">Logout</h3>
             <p className="sd-logout-text">Are you sure you want to logout?</p>
             <div className="sd-logout-actions">

@@ -4,6 +4,12 @@ import { createLocalGatepass, getStudentStatus } from '../api/api';
 import PopupBox from '../components/PopupBox';
 import '../styles/student-dashboard.css';
 
+// Professional SVG Icons
+const Icons = {
+  arrowLeft: <svg className="sa-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>,
+  file: <svg className="sa-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>,
+};
+
 const LocalGatepass = () => {
   const navigate = useNavigate();
 
@@ -186,7 +192,7 @@ const LocalGatepass = () => {
           className="sa-back-btn"
           onClick={() => navigate('/student/gatepass')}
         >
-          Back →
+          {Icons.arrowLeft} Back
         </button>
       </header>
 
@@ -334,7 +340,7 @@ const LocalGatepass = () => {
           </label>
 
           <button type="submit" className="lg-submit-btn" disabled={loading}>
-            {loading ? 'Submitting...' : '📄 Submit Application'}
+            {loading ? 'Submitting...' : <>{Icons.file} Submit Application</>}
           </button>
         </form>
 

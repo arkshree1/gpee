@@ -1,10 +1,10 @@
 import React from 'react';
 
 /**
- * DonutChartMobile - Mobile-optimized donut chart with legend below
- * Desktop donut component remains untouched - this is mobile-only
+ * DonutChartMobile - Mobile/Tablet-optimized donut chart with clickable metrics below
+ * Desktop donut component remains untouched - this is mobile/tablet-only
  */
-const DonutChartMobile = ({ data = [], totalStudents = 0 }) => {
+const DonutChartMobile = ({ data = [], totalStudents = 0, overview = {}, onCardClick }) => {
     // Larger donut to fill container - mobile optimized
     const size = 180;
     const strokeWidth = 28;
@@ -31,14 +31,39 @@ const DonutChartMobile = ({ data = [], totalStudents = 0 }) => {
         };
     });
 
-    // Compact label names for mobile
-    const getCompactLabel = (label) => {
-        if (label.includes('Inside')) return 'Inside Campus';
-        if (label.includes('Normal')) return 'Outside (Normal)';
-        if (label.includes('Local')) return 'Local GP';
-        if (label.includes('Outstation')) return 'Outstation GP';
-        return label;
-    };
+    // Metrics data - matches desktop exactly
+    const metrics = [
+        {
+            type: 'total',
+            title: 'TOTAL STUDENTS',
+            value: totalStudents,
+            color: '#6366f1'
+        },
+        {
+            type: 'inside',
+            title: 'STUDENTS IN CAMPUS',
+            value: overview?.studentsInside || 0,
+            color: '#34B1AA'
+        },
+        {
+            type: 'outside',
+            title: 'STUDENTS OUTSIDE – NORMAL EXIT',
+            value: overview?.normalExits || 0,
+            color: '#F29F67'
+        },
+        {
+            type: 'local',
+            title: 'STUDENT OUT ON LOCAL GATEPASS',
+            value: overview?.localGatepassExits || 0,
+            color: '#3B8FF3'
+        },
+        {
+            type: 'outstation',
+            title: 'STUDENT OUT ON OUTSTATION GATEPASS',
+            value: overview?.outstationGatepassExits || 0,
+            color: '#1E1E2C'
+        }
+    ];
 
     return (
         <div className="donut-mobile-wrapper">
@@ -118,17 +143,37 @@ const DonutChartMobile = ({ data = [], totalStudents = 0 }) => {
                 </svg>
             </div>
 
-            {/* Legend - 2x2 grid below donut */}
+            {/* Legend - clickable items that show student lists */}
             <div className="donut-mobile-legend">
-                {segments.map((seg, i) => (
-                    seg.value > 0 && (
-                        <div key={i} className="donut-mobile-legend-item">
+                {segments.map((seg, i) => {
+                    // Map segment labels to click types
+                    const getClickType = (label) => {
+                        if (label.includes('Inside')) return 'inside';
+                        if (label.includes('Normal')) return 'outside';
+                        if (label.includes('Local')) return 'local';
+                        if (label.includes('Outstation')) return 'outstation';
+                        return null;
+                    };
+                    
+                    const clickType = getClickType(seg.label);
+                    
+                    return seg.value > 0 && (
+                        <div 
+                            key={i} 
+                            className="donut-mobile-legend-item clickable"
+                            onClick={() => clickType && onCardClick && onCardClick(clickType)}
+                            style={{ cursor: 'pointer' }}
+                            title="Click to view students"
+                        >
                             <span
                                 className="donut-mobile-legend-dot"
                                 style={{ backgroundColor: seg.color }}
                             />
                             <span className="donut-mobile-legend-label">
-                                {getCompactLabel(seg.label)}
+                                {seg.label.includes('Inside') ? 'Inside Campus' :
+                                 seg.label.includes('Normal') ? 'Outside (Normal)' :
+                                 seg.label.includes('Local') ? 'Local GP' :
+                                 seg.label.includes('Outstation') ? 'Outstation GP' : seg.label}
                             </span>
                             <span
                                 className="donut-mobile-legend-value"
@@ -137,7 +182,24 @@ const DonutChartMobile = ({ data = [], totalStudents = 0 }) => {
                                 {seg.value}
                             </span>
                         </div>
-                    )
+                    );
+                })}
+            </div>
+
+            {/* Clickable Metrics Panel - Same as Desktop */}
+            <div className="donut-mobile-metrics">
+                {metrics.map((metric, i) => (
+                    <div 
+                        key={i}
+                        className="donut-mobile-metric-card"
+                        style={{ borderLeft: `4px solid ${metric.color}` }}
+                        onClick={() => onCardClick && onCardClick(metric.type)}
+                    >
+                        <div className="donut-mobile-metric-title">{metric.title}</div>
+                        <div className="donut-mobile-metric-value" style={{ color: metric.color }}>
+                            {metric.value}
+                        </div>
+                    </div>
                 ))}
             </div>
         </div>

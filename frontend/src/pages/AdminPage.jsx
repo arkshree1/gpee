@@ -17,6 +17,7 @@ import LiveActivityLogs from '../components/LiveActivityLogs';
 import DonutChart from '../components/DonutChart';
 import DonutChartMobile from '../components/DonutChartMobile';
 import GuardEntryExitTable from '../components/GuardEntryExitTable';
+import StudentIdCardPopup from '../components/StudentIdCardPopup';
 import '../styles/admin.css';
 import '../styles/student.css';
 import '../styles/guard.css';
@@ -38,6 +39,10 @@ const AdminPage = () => {
   const [modalTitle, setModalTitle] = useState('');
   const [modalStudents, setModalStudents] = useState([]);
   const [modalLoading, setModalLoading] = useState(false);
+
+  // ID Card popup state for modal students
+  const [modalIdCardStudent, setModalIdCardStudent] = useState(null);
+  const [showModalIdCard, setShowModalIdCard] = useState(false);
 
   // Detailed logs state for Students page
   const [detailedLogs, setDetailedLogs] = useState([]);
@@ -421,6 +426,8 @@ const AdminPage = () => {
                 <div className="mobile-only">
                   <DonutChartMobile
                     totalStudents={totalStudents}
+                    overview={overview}
+                    onCardClick={handleCardClick}
                     data={[
                       {
                         value: overview?.studentsInside || 0,
@@ -777,14 +784,18 @@ const AdminPage = () => {
 
       const formatDateTime = (date) => {
         if (!date) return '--';
-        return new Date(date).toLocaleString('en-IN', {
+        const d = new Date(date);
+        const datePart = d.toLocaleDateString('en-IN', {
           day: '2-digit',
-          month: 'short',
-          year: 'numeric',
+          month: '2-digit',
+          year: 'numeric'
+        });
+        const timePart = d.toLocaleTimeString('en-IN', {
           hour: '2-digit',
           minute: '2-digit',
           hour12: true
         });
+        return `${datePart}, ${timePart}`;
       };
 
       const formatTimeTo12hr = (timeStr) => {
@@ -1024,6 +1035,7 @@ const AdminPage = () => {
                 <table className="admin-student-table">
                   <thead>
                     <tr>
+                      <th>Photo</th>
                       <th>Name</th>
                       <th>Roll Number</th>
                       <th>Email</th>
@@ -1033,6 +1045,26 @@ const AdminPage = () => {
                   <tbody>
                     {modalStudents.map((student, idx) => (
                       <tr key={student._id || idx}>
+                        <td>
+                          <div 
+                            className="profile-pic-hover profile-pic-clickable"
+                            style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', cursor: 'pointer' }}
+                            onClick={() => { setModalIdCardStudent(student); setShowModalIdCard(true); }}
+                            title="Click to view ID Card"
+                          >
+                            {student.imageUrl ? (
+                              <img 
+                                src={student.imageUrl.startsWith('http') ? student.imageUrl : `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${student.imageUrl}`} 
+                                alt={student.name} 
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              />
+                            ) : (
+                              <div style={{ width: '100%', height: '100%', background: '#e0e0e0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold', color: '#666' }}>
+                                {student.name ? student.name.charAt(0).toUpperCase() : '?'}
+                              </div>
+                            )}
+                          </div>
+                        </td>
                         <td>{student.name}</td>
                         <td>{student.rollnumber}</td>
                         <td>{student.email || '--'}</td>
@@ -1043,6 +1075,13 @@ const AdminPage = () => {
                 </table>
               )}
             </div>
+            
+            {/* ID Card Popup for modal students */}
+            <StudentIdCardPopup 
+              student={modalIdCardStudent} 
+              isOpen={showModalIdCard} 
+              onClose={() => setShowModalIdCard(false)} 
+            />
           </div>
         </div>
       )}

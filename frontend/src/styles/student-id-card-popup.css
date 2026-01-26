@@ -1,0 +1,335 @@
+/* ===========================================
+   Student ID Card Popup Styles
+   =========================================== */
+
+/* Overlay */
+.id-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: idPopupFadeIn 0.2s ease-out;
+}
+
+@keyframes idPopupFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Container */
+.id-popup-container {
+  position: relative;
+  max-width: 500px;
+  width: 95%;
+  animation: idPopupSlideIn 0.25s ease-out;
+}
+
+@keyframes idPopupSlideIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Close Button */
+.id-popup-close {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #dc3545;
+  border: 3px solid #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+  transition: all 0.2s ease;
+}
+
+.id-popup-close:hover {
+  background: #c82333;
+  transform: scale(1.1);
+}
+
+.id-popup-close svg {
+  width: 18px;
+  height: 18px;
+  color: #fff;
+}
+
+/* ID Card */
+.id-popup-card {
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border: 1px solid #e0e0e0;
+}
+
+/* Header Section */
+.id-popup-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+  border-bottom: 1px solid #eee;
+}
+
+.id-popup-logo-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+}
+
+.id-popup-logo {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+}
+
+.id-popup-logo-text {
+  font-size: 7px;
+  font-weight: 700;
+  color: #1a73e8;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.id-popup-college-info {
+  flex: 1;
+  text-align: center;
+}
+
+.id-popup-college-name-en {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1a237e;
+  line-height: 1.3;
+}
+
+.id-popup-college-subtitle {
+  font-size: 7px;
+  color: #666;
+  margin-top: 1px;
+}
+
+.id-popup-college-name-hi {
+  font-size: 10px;
+  font-weight: 600;
+  color: #1a237e;
+  margin-top: 3px;
+}
+
+.id-popup-college-subtitle-hi {
+  font-size: 7px;
+  color: #666;
+}
+
+.id-popup-address {
+  font-size: 6px;
+  color: #888;
+  margin-top: 3px;
+  line-height: 1.2;
+}
+
+/* Tricolor Line */
+.id-popup-tricolor {
+  display: flex;
+  height: 6px;
+}
+
+.tricolor-saffron {
+  flex: 1;
+  background: #FF9933;
+}
+
+.tricolor-white {
+  flex: 1;
+  background: #fff;
+  border-top: 1px solid #e0e0e0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.tricolor-green {
+  flex: 1;
+  background: #138808;
+}
+
+/* Card Title */
+.id-popup-title {
+  text-align: center;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a237e;
+  background: linear-gradient(135deg, #f0f4ff 0%, #e8ecff 100%);
+  border-bottom: 1px solid #e0e0e0;
+  letter-spacing: 0.5px;
+}
+
+/* Main Body */
+.id-popup-body {
+  display: flex;
+  gap: 20px;
+  padding: 16px 20px 20px;
+  background: linear-gradient(180deg, #fff 0%, #fafbff 100%);
+}
+
+/* Photo Section */
+.id-popup-photo-section {
+  flex-shrink: 0;
+}
+
+.id-popup-photo-frame {
+  width: 100px;
+  height: 120px;
+  border: 3px solid #1a237e;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(26, 35, 126, 0.15);
+}
+
+.id-popup-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.id-popup-photo-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: #e8ecff;
+}
+
+.id-popup-photo-placeholder svg {
+  width: 36px;
+  height: 36px;
+  color: #9ca3af;
+}
+
+/* Details Section */
+.id-popup-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.id-popup-row {
+  display: grid;
+  grid-template-columns: 100px 12px 1fr;
+  align-items: start;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.id-popup-label {
+  font-weight: 600;
+  color: #333;
+}
+
+.id-popup-colon {
+  font-weight: 600;
+  color: #333;
+  text-align: center;
+}
+
+.id-popup-value {
+  color: #555;
+  word-break: break-word;
+}
+
+/* Hover Effect for Profile Pictures (add to admin.css) */
+.profile-pic-hover {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+  border-radius: 50%;
+}
+
+.profile-pic-hover:hover {
+  border-color: #1a73e8;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .id-popup-container {
+    width: 92%;
+    max-width: none;
+  }
+
+  .id-popup-body {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .id-popup-photo-frame {
+    width: 90px;
+    height: 108px;
+  }
+
+  .id-popup-row {
+    grid-template-columns: 85px 10px 1fr;
+    font-size: 11px;
+  }
+
+  .id-popup-details {
+    width: 100%;
+  }
+
+  .id-popup-header {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .id-popup-logo {
+    width: 40px;
+    height: 40px;
+  }
+
+  .id-popup-college-name-en {
+    font-size: 9px;
+  }
+
+  .id-popup-close {
+    top: -10px;
+    right: -10px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .id-popup-close svg {
+    width: 16px;
+    height: 16px;
+  }
+}

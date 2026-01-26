@@ -3,6 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { applyGate, getStudentStatus, cancelGate } from '../api/api';
 import '../styles/student-dashboard.css';
 
+// Professional SVG Icons
+const Icons = {
+  doorExit: <svg className="sa-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>,
+  doorEntry: <svg className="sa-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>,
+  clock: <svg className="sa-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>,
+  x: <svg className="sa-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>,
+  arrowLeft: <svg className="sa-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>,
+};
+
 const msLeft = (expiresAt) => {
   if (!expiresAt) return 0;
   const t = new Date(expiresAt).getTime() - Date.now();
@@ -153,7 +162,7 @@ const StudentApply = () => {
 
         <main className="sd-main sa-main">
           <div className="sa-rejection-screen">
-            <div className="sa-rejection-icon">❌</div>
+            <div className="sa-rejection-icon">{Icons.x}</div>
             <h1 className="sa-rejection-title">
               {rejectionInfo.direction === 'exit' ? 'Exit Denied' : 'Entry Denied'}
             </h1>
@@ -188,7 +197,7 @@ const StudentApply = () => {
           className="sa-back-btn"
           onClick={() => qr ? handleDismissClick() : navigate('/student')}
         >
-          Back →
+          {Icons.arrowLeft} Back
         </button>
       </header>
 
@@ -224,7 +233,7 @@ const StudentApply = () => {
               disabled={submitting}
               onClick={doApply}
             >
-              {submitting ? 'Generating...' : '🚪 Generate Exit QR'}
+              {submitting ? 'Generating...' : <>{Icons.doorExit} Generate Exit QR</>}
             </button>
 
             {apiError && <div className="sa-error">{apiError}</div>}
@@ -241,7 +250,7 @@ const StudentApply = () => {
               disabled={submitting}
               onClick={doApply}
             >
-              {submitting ? 'Generating...' : '🏠 Generate Entry QR'}
+              {submitting ? 'Generating...' : <>{Icons.doorEntry} Generate Entry QR</>}
             </button>
             {apiError && <div className="sa-error">{apiError}</div>}
           </div>
@@ -254,7 +263,7 @@ const StudentApply = () => {
               <div className="sa-qr-instruction">Show this QR to the guard</div>
               {expired ? (
                 <div className="sa-expired">
-                  ⏰ QR expired. Please apply again.
+                  {Icons.clock} QR expired. Please apply again.
                 </div>
               ) : (
                 <>
