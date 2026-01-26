@@ -15,6 +15,9 @@ import StudentIdCardPopup from '../components/StudentIdCardPopup';
 import '../styles/admin.css';
 
 //hey
+//hey
+
+
 
 const DugcPage = () => {
   const navigate = useNavigate();
@@ -55,7 +58,7 @@ const DugcPage = () => {
     localStorage.removeItem('token');
     navigate('/login');
   };
-
+//hey
   const handleNavClick = (pageId) => {
     setActivePage(pageId);
     setViewingGatepass(null);

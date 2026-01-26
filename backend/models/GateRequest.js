@@ -89,5 +89,5 @@ const gateRequestSchema = new mongoose.Schema(
 
 // Helps keep the collection small even if something isn't marked used.
 gateRequestSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-
+//hey
 module.exports = mongoose.model('GateRequest', gateRequestSchema);
