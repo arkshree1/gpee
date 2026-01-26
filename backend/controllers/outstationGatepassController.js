@@ -1,6 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 const OutstationGatepass = require('../models/OutstationGatepass');
+const GateRequest = require('../models/GateRequest');
+const OfficeSecretary = require('../models/OfficeSecretary');
+const { sendOutstationGatepassNotification } = require('../utils/emailService');
 
 exports.createOutstationGatepass = async (req, res) => {
   const studentId = req.user.userId;
@@ -21,6 +24,7 @@ exports.createOutstationGatepass = async (req, res) => {
     natureOfLeave,
     reasonOfLeave,
     consent,
+    classesMissed,
   } = req.body;
 
   if (
@@ -79,7 +83,39 @@ exports.createOutstationGatepass = async (req, res) => {
     reasonOfLeave,
     proofFile,
     consent: !!consent,
+    classesMissed: classesMissed || 0,
+    missedDays: calculatedLeaveDays,
   });
+
+  // Send email notification to Office Secretary of the student's department
+  try {
+    const officeSecretary = await OfficeSecretary.findOne({ department }).select('name email');
+    if (officeSecretary && officeSecretary.email) {
+      const reviewLink = `${process.env.FRONTEND_URL || 'https://gothru.vercel.app'}/office-secretary/outstation`;
+      await sendOutstationGatepassNotification({
+        to: officeSecretary.email,
+        approverName: officeSecretary.name,
+        approverRole: 'Office Secretary',
+        studentName,
+        rollnumber,
+        department,
+        branch,
+        roomNumber,
+        contact,
+        reasonOfLeave,
+        address,
+        dateOut,
+        dateIn,
+        classesMissed: classesMissed || 0,
+        missedDays: calculatedLeaveDays,
+        forwardedBy: null, // New request, not forwarded
+        reviewLink,
+      });
+    }
+  } catch (emailErr) {
+    console.error('Failed to send email to Office Secretary:', emailErr);
+    // Don't fail the request if email fails
+  }
 
   return res
     .status(201)
@@ -98,10 +134,35 @@ exports.getMyOutstationGatepasses = async (req, res) => {
     .sort({ createdAt: -1 })
     .select('-__v');
 
+  // Check for recently rejected request (within last 30 seconds) for outstation gatepass QR
+  const recentRejection = await GateRequest.findOne({
+    student: studentId,
+    status: 'rejected',
+    decidedAt: { $gte: new Date(Date.now() - 30000) },
+    gatePassNo: { $exists: true, $ne: null, $regex: /^OS-/ }, // Outstation gatepass only
+  }).select('_id direction decidedAt gatePassNo').sort({ decidedAt: -1 });
+
+  let showRejection = null;
+  if (recentRejection) {
+    const approvedAfterRejection = await GateRequest.findOne({
+      student: studentId,
+      status: 'approved',
+      decidedAt: { $gt: recentRejection.decidedAt },
+    });
+    if (!approvedAfterRejection) {
+      showRejection = {
+        direction: recentRejection.direction,
+        decidedAt: recentRejection.decidedAt,
+        gatePassNo: recentRejection.gatePassNo,
+      };
+    }
+  }
+
   return res.json({
     gatepasses,
     presence: student?.presence || 'inside',
     OSActiveGPNo: student?.OSActiveGPNo || null,
+    recentRejection: showRejection,
   });
 };
 

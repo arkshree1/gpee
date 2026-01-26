@@ -1,7 +1,8 @@
 const OutstationGatepass = require('../models/OutstationGatepass');
 const OfficeSecretary = require('../models/OfficeSecretary');
+const Dugc = require('../models/Dugc');
 const User = require('../models/User');
-const { sendMeetingInviteEmail } = require('../utils/emailService');
+const { sendMeetingInviteEmail, sendOutstationGatepassNotification, sendOutstationRejectionNotification } = require('../utils/emailService');
 
 // Get Office Secretary profile (name and department)
 exports.getProfile = async (req, res) => {
@@ -210,6 +211,57 @@ exports.decideGatepass = async (req, res) => {
     }
 
     await gatepass.save();
+
+    // Send email notifications
+    try {
+        // Get student email for rejection notification
+        const studentData = await User.findById(gatepass.student).select('email');
+        
+        if (decision === 'approved') {
+            // Send email to DUGC of the same department
+            const dugc = await Dugc.findOne({ department: gatepass.department }).select('name email');
+            if (dugc && dugc.email) {
+                const reviewLink = `${process.env.FRONTEND_URL || 'https://gothru.vercel.app'}/dugc/outstation`;
+                await sendOutstationGatepassNotification({
+                    to: dugc.email,
+                    approverName: dugc.name,
+                    approverRole: 'DUGC',
+                    studentName: gatepass.studentName,
+                    rollnumber: gatepass.rollnumber,
+                    department: gatepass.department,
+                    branch: gatepass.branch,
+                    roomNumber: gatepass.roomNumber,
+                    contact: gatepass.contact,
+                    reasonOfLeave: gatepass.reasonOfLeave,
+                    address: gatepass.address,
+                    dateOut: gatepass.dateOut,
+                    dateIn: gatepass.dateIn,
+                    classesMissed: gatepass.classesMissed,
+                    missedDays: gatepass.missedDays,
+                    forwardedBy: 'Office Secretary',
+                    reviewLink,
+                });
+            }
+        } else {
+            // Send rejection email to student
+            if (studentData && studentData.email) {
+                await sendOutstationRejectionNotification({
+                    to: studentData.email,
+                    studentName: gatepass.studentName,
+                    rollnumber: gatepass.rollnumber,
+                    rejectedByRole: 'Office Secretary',
+                    rejectionReason: gatepass.rejectionReason,
+                    dateOut: gatepass.dateOut,
+                    dateIn: gatepass.dateIn,
+                    reasonOfLeave: gatepass.reasonOfLeave,
+                    address: gatepass.address,
+                });
+            }
+        }
+    } catch (emailErr) {
+        console.error('Failed to send email notification:', emailErr);
+        // Don't fail the request if email fails
+    }
 
     return res.json({
         message: decision === 'approved'

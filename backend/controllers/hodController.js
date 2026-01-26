@@ -1,6 +1,8 @@
 const OutstationGatepass = require('../models/OutstationGatepass');
 const Hod = require('../models/Hod');
-const { sendMeetingInviteEmail } = require('../utils/emailService');
+const HostelOffice = require('../models/HostelOffice');
+const User = require('../models/User');
+const { sendMeetingInviteEmail, sendOutstationGatepassNotification, sendOutstationRejectionNotification } = require('../utils/emailService');
 
 // Get HOD profile (name and department)
 exports.getProfile = async (req, res) => {
@@ -186,6 +188,62 @@ exports.decideGatepass = async (req, res) => {
     }
 
     await gatepass.save();
+
+    // Send email notifications
+    try {
+        // Get student email for rejection notification
+        const studentData = await User.findById(gatepass.student).select('email');
+        
+        if (decision === 'approved') {
+            // Send email to ALL Hostel Office accounts (they don't have department)
+            const hostelOffices = await HostelOffice.find({}).select('email');
+            if (hostelOffices && hostelOffices.length > 0) {
+                const reviewLink = `${process.env.FRONTEND_URL || 'https://gothru.vercel.app'}/hostel-office/outstation`;
+                // Send to all hostel office emails
+                for (const hostelOffice of hostelOffices) {
+                    if (hostelOffice.email) {
+                        await sendOutstationGatepassNotification({
+                            to: hostelOffice.email,
+                            approverName: 'Hostel Office',
+                            approverRole: 'Hostel Office',
+                            studentName: gatepass.studentName,
+                            rollnumber: gatepass.rollnumber,
+                            department: gatepass.department,
+                            branch: gatepass.branch,
+                            roomNumber: gatepass.roomNumber,
+                            contact: gatepass.contact,
+                            reasonOfLeave: gatepass.reasonOfLeave,
+                            address: gatepass.address,
+                            dateOut: gatepass.dateOut,
+                            dateIn: gatepass.dateIn,
+                            classesMissed: gatepass.classesMissed,
+                            missedDays: gatepass.missedDays,
+                            forwardedBy: 'Head of Department',
+                            reviewLink,
+                        });
+                    }
+                }
+            }
+        } else {
+            // Send rejection email to student
+            if (studentData && studentData.email) {
+                await sendOutstationRejectionNotification({
+                    to: studentData.email,
+                    studentName: gatepass.studentName,
+                    rollnumber: gatepass.rollnumber,
+                    rejectedByRole: 'Head of Department',
+                    rejectionReason: gatepass.rejectionReason,
+                    dateOut: gatepass.dateOut,
+                    dateIn: gatepass.dateIn,
+                    reasonOfLeave: gatepass.reasonOfLeave,
+                    address: gatepass.address,
+                });
+            }
+        }
+    } catch (emailErr) {
+        console.error('Failed to send email notification:', emailErr);
+        // Don't fail the request if email fails
+    }
 
     return res.json({
         message: decision === 'approved'

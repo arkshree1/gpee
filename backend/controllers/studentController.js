@@ -258,10 +258,35 @@ exports.getMyGatepasses = async (req, res) => {
     .sort({ createdAt: -1 })
     .select('-__v');
 
+  // Check for recently rejected request (within last 30 seconds) for gatepass QR
+  const recentRejection = await GateRequest.findOne({
+    student: userId,
+    status: 'rejected',
+    decidedAt: { $gte: new Date(Date.now() - 30000) },
+    gatePassNo: { $exists: true, $ne: null, $regex: /^L-/ }, // Local gatepass only
+  }).select('_id direction decidedAt gatePassNo').sort({ decidedAt: -1 });
+
+  let showRejection = null;
+  if (recentRejection) {
+    const approvedAfterRejection = await GateRequest.findOne({
+      student: userId,
+      status: 'approved',
+      decidedAt: { $gt: recentRejection.decidedAt },
+    });
+    if (!approvedAfterRejection) {
+      showRejection = {
+        direction: recentRejection.direction,
+        decidedAt: recentRejection.decidedAt,
+        gatePassNo: recentRejection.gatePassNo,
+      };
+    }
+  }
+
   return res.json({
     gatepasses,
     presence: student?.presence || 'inside',
     localActiveGPNo: student?.localActiveGPNo || null,
+    recentRejection: showRejection,
   });
 };
 

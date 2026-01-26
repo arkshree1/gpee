@@ -2,6 +2,7 @@ const LocalGatepass = require('../models/LocalGatepass');
 const OutstationGatepass = require('../models/OutstationGatepass');
 const GateLog = require('../models/GateLog');
 const User = require('../models/User');
+const { sendOutstationApprovalNotification, sendOutstationRejectionNotification } = require('../utils/emailService');
 
 // Get all pending local gatepasses for hostel office to review
 exports.getPendingGatepasses = async (req, res) => {
@@ -288,6 +289,45 @@ exports.decideOSGatepass = async (req, res) => {
     }
 
     await gatepass.save();
+
+    // Send email notification to student
+    try {
+        const studentData = await User.findById(gatepass.student).select('email');
+        
+        if (decision === 'approved') {
+            // Send approval email to student with gatepass number
+            if (studentData && studentData.email) {
+                await sendOutstationApprovalNotification({
+                    to: studentData.email,
+                    studentName: gatepass.studentName,
+                    rollnumber: gatepass.rollnumber,
+                    gatePassNo: gatepass.gatePassNo,
+                    dateOut: gatepass.dateOut,
+                    dateIn: gatepass.dateIn,
+                    reasonOfLeave: gatepass.reasonOfLeave,
+                    address: gatepass.address,
+                });
+            }
+        } else {
+            // Send rejection email to student
+            if (studentData && studentData.email) {
+                await sendOutstationRejectionNotification({
+                    to: studentData.email,
+                    studentName: gatepass.studentName,
+                    rollnumber: gatepass.rollnumber,
+                    rejectedByRole: 'Hostel Office',
+                    rejectionReason: gatepass.rejectionReason,
+                    dateOut: gatepass.dateOut,
+                    dateIn: gatepass.dateIn,
+                    reasonOfLeave: gatepass.reasonOfLeave,
+                    address: gatepass.address,
+                });
+            }
+        }
+    } catch (emailErr) {
+        console.error('Failed to send email notification:', emailErr);
+        // Don't fail the request if email fails
+    }
 
     return res.json({
         message: decision === 'approved'
