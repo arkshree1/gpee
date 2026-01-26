@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  getHodProfile,
-  getHodPendingGatepasses,
-  getHodGatepassDetails,
-  getHodStudentOSHistory,
-  getHodGatepassHistory,
-  decideHodGatepass,
-  sendHodMeetingEmail,
+  getDpgcProfile,
+  getDpgcPendingGatepasses,
+  getDpgcGatepassDetails,
+  getDpgcStudentOSHistory,
+  getDpgcGatepassHistory,
+  decideDpgcGatepass,
+  sendDpgcMeetingEmail,
 } from '../api/api';
 import PopupBox from '../components/PopupBox';
 import ConfirmModal from '../components/ConfirmModal';
 import StudentIdCardPopup from '../components/StudentIdCardPopup';
 import '../styles/admin.css';
 
-const HodPage = () => {
+const DpgcPage = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activePage, setActivePage] = useState(() => searchParams.get('page') || 'requests');
@@ -24,7 +24,7 @@ const HodPage = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await getHodProfile();
+        const res = await getDpgcProfile();
         setDepartment(res.data.department || '');
       } catch (err) {
         console.error('Failed to fetch profile:', err);
@@ -60,8 +60,6 @@ const HodPage = () => {
     setSidebarOpen(false);
   };
 
-
-
   return (
     <div className="admin-layout">
       <header className="admin-header">
@@ -75,7 +73,7 @@ const HodPage = () => {
           </div>
         </div>
         <div className="admin-header-right">
-          <span className="admin-header-role">{department} HOD</span>
+          <span className="admin-header-role">{department} DPGC</span>
           <button className="admin-logout-btn" onClick={handleLogout}>
             Logout
           </button>
@@ -160,7 +158,7 @@ const RequestsView = ({ onViewDetails }) => {
   const fetchGatepasses = async () => {
     try {
       setError('');
-      const res = await getHodPendingGatepasses();
+      const res = await getDpgcPendingGatepasses();
       setGatepasses(res.data.gatepasses || []);
     } catch (err) {
       setError(err?.response?.data?.message || 'Failed to fetch gatepasses');
@@ -194,7 +192,7 @@ const RequestsView = ({ onViewDetails }) => {
 
   return (
     <div className="os-section">
-      <h2 className="os-section-title">Pending Outstation Gatepass Requests (HOD)</h2>
+      <h2 className="os-section-title">Pending Outstation Gatepass Requests (DPGC)</h2>
 
       {loading && <div className="os-loading">Loading requests...</div>}
       {error && <div className="os-error">{error}</div>}
@@ -256,8 +254,8 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
   const [deciding, setDeciding] = useState(false);
   const [confirmModal, setConfirmModal] = useState({ open: false, decision: null });
 
-  // HOD Note input (for PhD students)
-  const [hodNote, setHodNote] = useState('');
+  // DPGC Note input
+  const [dpgcNote, setDpgcNote] = useState('');
 
   // Rejection modal state
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -282,11 +280,11 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
     const fetchDetails = async () => {
       try {
         setError('');
-        const gpRes = await getHodGatepassDetails(gatepassId);
+        const gpRes = await getDpgcGatepassDetails(gatepassId);
         setGatepass(gpRes.data.gatepass);
 
         if (gpRes.data.gatepass?.student?._id) {
-          const historyRes = await getHodStudentOSHistory(gpRes.data.gatepass.student._id);
+          const historyRes = await getDpgcStudentOSHistory(gpRes.data.gatepass.student._id);
           setStudentHistory(historyRes.data.gatepasses || []);
         }
       } catch (err) {
@@ -348,12 +346,7 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
     }
     setDeciding(true);
     try {
-      const payload = { gatepassId, decision: 'rejected', rejectionReason };
-      // Include HOD note for PhD students
-      if (gatepass?.course === 'PhD') {
-        payload.hodNote = hodNote;
-      }
-      const res = await decideHodGatepass(payload);
+      const res = await decideDpgcGatepass({ gatepassId, decision: 'rejected', rejectionReason, dpgcNote });
       setShowRejectModal(false);
       setPopupMessage(res.data.message);
       setTimeout(() => onBack(), 1500);
@@ -367,12 +360,7 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
   const handleDecision = async (decision) => {
     setDeciding(true);
     try {
-      const payload = { gatepassId, decision };
-      // Include HOD note for PhD students
-      if (gatepass?.course === 'PhD') {
-        payload.hodNote = hodNote;
-      }
-      const res = await decideHodGatepass(payload);
+      const res = await decideDpgcGatepass({ gatepassId, decision, dpgcNote });
       closeConfirmModal();
       setPopupMessage(res.data.message);
       setTimeout(() => onBack(), 1500);
@@ -411,7 +399,7 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
     }
     setSendingEmail(true);
     try {
-      const res = await sendHodMeetingEmail({
+      const res = await sendDpgcMeetingEmail({
         gatepassId,
         meetingDate: formatDateForEmail(emailDate),
         meetingTime: formatTimeForEmail(emailTime),
@@ -546,40 +534,19 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
           </div>
         )}
 
-        {/* DUGC Note Display (for BTech/MBA students) */}
-        {gatepass?.course !== 'PhD' && gatepass.dugcNote && (
-          <div className="os-dugc-note-display">
-            <h4>📝 Note by DUGC</h4>
-            <p>{gatepass.dugcNote}</p>
+        {/* Instructor Note Display (for PhD students) */}
+        {gatepass?.course === 'PhD' && gatepass.instructorNote && (
+          <div className="os-instructor-note-display" style={{ marginTop: '16px', padding: '12px', backgroundColor: '#fff8e5', border: '1px solid #ffc107', borderRadius: '8px' }}>
+            <h4 style={{ margin: '0 0 8px 0', color: '#b8860b' }}>📝 Note by Instructor ({gatepass.instructor?.name || 'Faculty'})</h4>
+            <p style={{ margin: 0, color: '#5a5a5a' }}>{gatepass.instructorNote}</p>
           </div>
         )}
 
-        {/* All Notes Display for PhD students */}
-        {gatepass?.course === 'PhD' && (
-          <div className="os-notes-section" style={{ marginTop: '16px' }}>
-            {/* Instructor Note */}
-            {gatepass.instructorNote && (
-              <div className="os-instructor-note-display" style={{ padding: '12px', marginBottom: '12px', backgroundColor: '#fff8e5', border: '1px solid #ffc107', borderRadius: '8px' }}>
-                <h4 style={{ margin: '0 0 8px 0', color: '#b8860b' }}>📝 Note by Instructor ({gatepass.instructor?.name || 'Faculty'})</h4>
-                <p style={{ margin: 0, color: '#5a5a5a' }}>{gatepass.instructorNote}</p>
-              </div>
-            )}
-
-            {/* Office Secretary Note */}
-            {gatepass.officeSecretaryNote && (
-              <div className="os-secretary-note-display" style={{ padding: '12px', marginBottom: '12px', backgroundColor: '#fff8e5', border: '1px solid #ffc107', borderRadius: '8px' }}>
-                <h4 style={{ margin: '0 0 8px 0', color: '#b8860b' }}>📝 Note by Office Secretary</h4>
-                <p style={{ margin: 0, color: '#5a5a5a' }}>{gatepass.officeSecretaryNote}</p>
-              </div>
-            )}
-
-            {/* DPGC Note */}
-            {gatepass.dpgcNote && (
-              <div className="os-dpgc-note-display" style={{ padding: '12px', marginBottom: '12px', backgroundColor: '#e6f3ff', border: '1px solid #3182ce', borderRadius: '8px' }}>
-                <h4 style={{ margin: '0 0 8px 0', color: '#2c5282' }}>📝 Note by DPGC</h4>
-                <p style={{ margin: 0, color: '#5a5a5a' }}>{gatepass.dpgcNote}</p>
-              </div>
-            )}
+        {/* Office Secretary Note Display (for PhD students) */}
+        {gatepass?.course === 'PhD' && gatepass.officeSecretaryNote && (
+          <div className="os-secretary-note-display" style={{ marginTop: '16px', padding: '12px', backgroundColor: '#fff8e5', border: '1px solid #ffc107', borderRadius: '8px' }}>
+            <h4 style={{ margin: '0 0 8px 0', color: '#b8860b' }}>📝 Note by Office Secretary</h4>
+            <p style={{ margin: 0, color: '#5a5a5a' }}>{gatepass.officeSecretaryNote}</p>
           </div>
         )}
 
@@ -599,64 +566,48 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
           </div>
         )}
 
-        {/* Approval Timeline - Full timeline for HOD */}
+        {/* Approval Timeline */}
         <div className="os-approval-timeline">
           <h4>Approval Timeline</h4>
           <div className="os-timeline-item">
             <span className="os-timeline-label">Student Applied</span>
             <span className="os-timeline-value">{formatDateTime(gatepass.createdAt)}</span>
           </div>
+          {gatepass.stageStatus?.instructor?.decidedAt && (
+            <div className="os-timeline-item approved">
+              <span className="os-timeline-label">Instructor Approved</span>
+              <span className="os-timeline-value">{formatDateTime(gatepass.stageStatus.instructor.decidedAt)}</span>
+            </div>
+          )}
           {gatepass.stageStatus?.officeSecretary?.decidedAt && (
             <div className="os-timeline-item approved">
               <span className="os-timeline-label">Office Secretary Approved</span>
               <span className="os-timeline-value">{formatDateTime(gatepass.stageStatus.officeSecretary.decidedAt)}</span>
             </div>
           )}
-          {/* For BTech/MBA: Show DUGC */}
-          {gatepass?.course !== 'PhD' && gatepass.stageStatus?.dugc?.decidedAt && (
-            <div className="os-timeline-item approved">
-              <span className="os-timeline-label">DUGC Approved</span>
-              <span className="os-timeline-value">{formatDateTime(gatepass.stageStatus.dugc.decidedAt)}</span>
-            </div>
-          )}
-          {/* For PhD: Show Instructor and DPGC */}
-          {gatepass?.course === 'PhD' && gatepass.stageStatus?.instructor?.decidedAt && (
-            <div className="os-timeline-item approved">
-              <span className="os-timeline-label">Instructor Approved</span>
-              <span className="os-timeline-value">{formatDateTime(gatepass.stageStatus.instructor.decidedAt)}</span>
-            </div>
-          )}
-          {gatepass?.course === 'PhD' && gatepass.stageStatus?.dpgc?.decidedAt && (
-            <div className="os-timeline-item approved">
-              <span className="os-timeline-label">DPGC Approved</span>
-              <span className="os-timeline-value">{formatDateTime(gatepass.stageStatus.dpgc.decidedAt)}</span>
-            </div>
-          )}
         </div>
 
-        {/* HOD Note Input (for PhD students only) */}
-        {gatepass?.course === 'PhD' && (
-          <div className="os-phd-leave-section" style={{ marginTop: '20px', padding: '16px', backgroundColor: '#f0f7ff', borderRadius: '10px', border: '1px solid #3182ce' }}>
-            <h4 style={{ margin: '0 0 12px 0', color: '#2c5282' }}>📝 Add Your Note (HOD)</h4>
-            <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#666' }}>
-              Add any note or comment that will be visible to Dean and Hostel Office.
-            </p>
-            <textarea
-              value={hodNote}
-              onChange={(e) => setHodNote(e.target.value)}
-              placeholder="Enter your note here (optional)..."
-              style={{
-                width: '100%',
-                minHeight: '80px',
-                padding: '10px',
-                borderRadius: '6px',
-                border: '1px solid #ccc',
-                fontSize: '14px',
-                resize: 'vertical'
-              }}
-            />
-          </div>
-        )}
+        {/* DPGC Note Input */}
+        <div className="os-phd-leave-section" style={{ marginTop: '20px', padding: '16px', backgroundColor: '#f0f7ff', borderRadius: '10px', border: '1px solid #3182ce' }}>
+          <h4 style={{ margin: '0 0 12px 0', color: '#2c5282' }}>📝 Add Your Note (DPGC)</h4>
+          <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#666' }}>
+            Add any note or comment that will be visible to HOD, Dean, and Hostel Office.
+          </p>
+          <textarea
+            value={dpgcNote}
+            onChange={(e) => setDpgcNote(e.target.value)}
+            placeholder="Enter your note here (optional)..."
+            style={{
+              width: '100%',
+              minHeight: '80px',
+              padding: '10px',
+              borderRadius: '6px',
+              border: '1px solid #ccc',
+              fontSize: '14px',
+              resize: 'vertical'
+            }}
+          />
+        </div>
 
         {/* Email Student Section */}
         <div className="os-email-student-section">
@@ -687,7 +638,7 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
             onClick={() => openConfirmModal('approved')}
             disabled={deciding}
           >
-            {gatepass?.course === 'PhD' ? 'Approve & Pass to Dean' : 'Approve & Pass to Hostel Office'}
+            Approve & Pass to HOD
           </button>
         </div>
       </div>
@@ -950,7 +901,7 @@ const HistoryView = () => {
     try {
       setError('');
       setLoading(true);
-      const res = await getHodGatepassHistory(searchQuery);
+      const res = await getDpgcGatepassHistory(searchQuery);
       setGatepasses(res.data.gatepasses || []);
     } catch (err) {
       setError(err?.response?.data?.message || 'Failed to fetch history');
@@ -999,7 +950,7 @@ const HistoryView = () => {
     setPopupData(null);
 
     try {
-      const res = await getHodGatepassDetails(gp._id);
+      const res = await getDpgcGatepassDetails(gp._id);
       const gatepass = res.data.gatepass;
       setPopupData({
         student: gatepass.student,
@@ -1036,7 +987,7 @@ const HistoryView = () => {
   return (
     <div className="os-section">
       <div className="os-history-header-row">
-        <h2 className="os-section-title">Gatepass History (HOD)</h2>
+        <h2 className="os-section-title">Gatepass History (DPGC)</h2>
         <form onSubmit={handleSearch} className="os-search-form">
           <input
             type="text"
@@ -1060,7 +1011,7 @@ const HistoryView = () => {
         {gatepasses.map((gp) => {
           const hasGatepassNo = !!gp.gatePassNo;
           const isClickable = hasGatepassNo;
-          const status = gp.stageStatus?.hod?.status || 'pending';
+          const status = gp.stageStatus?.dpgc?.status || 'pending';
 
           return (
             <div
@@ -1250,5 +1201,4 @@ const HistoryView = () => {
   );
 };
 
-export default HodPage;
-
+export default DpgcPage;

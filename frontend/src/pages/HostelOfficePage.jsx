@@ -1172,6 +1172,8 @@ const OSGatepassDetailsView = ({ gatepassId, onBack }) => {
           </div>
         )}
 
+        {/* Notes are intentionally hidden from Hostel Office - they only see the final approval stage */}
+
         <div className="os-detail-full" style={{ marginTop: '12px' }}>
           <span className="os-detail-label">Classes Missed</span>
           <span className="os-detail-value">
@@ -1204,13 +1206,28 @@ const OSGatepassDetailsView = ({ gatepassId, onBack }) => {
             <span className="os-timeline-label">Student Applied</span>
             <span className="os-timeline-value">{formatDateTime(gatepass.createdAt)}</span>
           </div>
+          {/* PhD: Instructor Approved */}
+          {gatepass.course === 'PhD' && gatepass.stageStatus?.instructor?.decidedAt && (
+            <div className="os-timeline-item approved">
+              <span className="os-timeline-label">Instructor Approved</span>
+              <span className="os-timeline-value">{formatDateTime(gatepass.stageStatus.instructor.decidedAt)}</span>
+            </div>
+          )}
           {gatepass.stageStatus?.officeSecretary?.decidedAt && (
             <div className="os-timeline-item approved">
               <span className="os-timeline-label">Office Secretary Approved</span>
               <span className="os-timeline-value">{formatDateTime(gatepass.stageStatus.officeSecretary.decidedAt)}</span>
             </div>
           )}
-          {gatepass.stageStatus?.dugc?.decidedAt && (
+          {/* PhD: DPGC Approved */}
+          {gatepass.course === 'PhD' && gatepass.stageStatus?.dpgc?.decidedAt && (
+            <div className="os-timeline-item approved">
+              <span className="os-timeline-label">DPGC Approved</span>
+              <span className="os-timeline-value">{formatDateTime(gatepass.stageStatus.dpgc.decidedAt)}</span>
+            </div>
+          )}
+          {/* BTech/MBA: DUGC Approved */}
+          {gatepass.course !== 'PhD' && gatepass.stageStatus?.dugc?.decidedAt && (
             <div className="os-timeline-item approved">
               <span className="os-timeline-label">DUGC Approved</span>
               <span className="os-timeline-value">{formatDateTime(gatepass.stageStatus.dugc.decidedAt)}</span>
@@ -1220,6 +1237,13 @@ const OSGatepassDetailsView = ({ gatepassId, onBack }) => {
             <div className="os-timeline-item approved">
               <span className="os-timeline-label">HOD Approved</span>
               <span className="os-timeline-value">{formatDateTime(gatepass.stageStatus.hod.decidedAt)}</span>
+            </div>
+          )}
+          {/* PhD: Dean Approved */}
+          {gatepass.course === 'PhD' && gatepass.stageStatus?.dean?.decidedAt && (
+            <div className="os-timeline-item approved">
+              <span className="os-timeline-label">Dean Approved</span>
+              <span className="os-timeline-value">{formatDateTime(gatepass.stageStatus.dean.decidedAt)}</span>
             </div>
           )}
         </div>

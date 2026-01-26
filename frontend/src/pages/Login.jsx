@@ -216,6 +216,12 @@ const Login = () => {
         navigate('/dugc');
       } else if (user && user.role === 'hostelOffice') {
         navigate('/hostel-office');
+      } else if (user && user.role === 'faculty') {
+        navigate('/faculty');
+      } else if (user && user.role === 'dpgc') {
+        navigate('/dpgc');
+      } else if (user && user.role === 'dean') {
+        navigate('/dean');
       } else {
         navigate('/login');
       }

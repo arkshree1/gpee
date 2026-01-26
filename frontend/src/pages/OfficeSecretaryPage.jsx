@@ -284,6 +284,9 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
     otherType: '',
   });
 
+  // Office Secretary Note (for PhD students)
+  const [officeSecretaryNote, setOfficeSecretaryNote] = useState('');
+
   // Document popup state
   const [showDocPopup, setShowDocPopup] = useState(false);
 
@@ -365,9 +368,10 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
         previousLeavesTaken,
         rejectionReason
       };
-      // Include PhD leave balance for PhD students
+      // Include PhD leave balance and secretary note for PhD students
       if (gatepass?.course === 'PhD') {
         payload.phdLeaveBalance = phdLeaveBalance;
+        payload.officeSecretaryNote = officeSecretaryNote;
       }
       const res = await decideOutstationGatepass(payload);
       setShowRejectModal(false);
@@ -390,9 +394,10 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
         missedDays: Number(missedDays),
         previousLeavesTaken
       };
-      // Include PhD leave balance for PhD students
+      // Include PhD leave balance and secretary note for PhD students
       if (gatepass?.course === 'PhD') {
         payload.phdLeaveBalance = phdLeaveBalance;
+        payload.officeSecretaryNote = officeSecretaryNote;
       }
       const res = await decideOutstationGatepass(payload);
       closeConfirmModal();
@@ -636,6 +641,38 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
           </div>
         )}
 
+        {/* Instructor Note Display (for PhD students only) */}
+        {gatepass?.course === 'PhD' && gatepass.instructorNote && (
+          <div className="os-instructor-note-display" style={{ marginTop: '16px', padding: '12px', backgroundColor: '#fff8e5', border: '1px solid #ffc107', borderRadius: '8px' }}>
+            <h4 style={{ margin: '0 0 8px 0', color: '#b8860b' }}>📝 Note by Instructor ({gatepass.instructor?.name || 'Faculty'})</h4>
+            <p style={{ margin: 0, color: '#5a5a5a' }}>{gatepass.instructorNote}</p>
+          </div>
+        )}
+
+        {/* Office Secretary Note Input (for PhD students only) */}
+        {gatepass?.course === 'PhD' && (
+          <div className="os-classes-section" style={{ marginTop: '16px', padding: '16px', backgroundColor: '#fff8e5', borderRadius: '10px', border: '1px solid #ffc107' }}>
+            <h4 style={{ margin: '0 0 12px 0', color: '#b8860b' }}>📝 Add Your Note (Office Secretary)</h4>
+            <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#666' }}>
+              Add any note or comment that will be visible to DPGC, HOD, Dean, and Hostel Office.
+            </p>
+            <textarea
+              value={officeSecretaryNote}
+              onChange={(e) => setOfficeSecretaryNote(e.target.value)}
+              placeholder="Enter your note here (optional)..."
+              style={{
+                width: '100%',
+                minHeight: '80px',
+                padding: '10px',
+                borderRadius: '6px',
+                border: '1px solid #ccc',
+                fontSize: '14px',
+                resize: 'vertical'
+              }}
+            />
+          </div>
+        )}
+
         {/* Email Student Section */}
         <div className="os-email-student-section">
           <p className="os-email-student-label">📧 Mail the student to meet you at your convenient time</p>
@@ -665,7 +702,7 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
             onClick={() => openConfirmModal('approved')}
             disabled={deciding}
           >
-            Approve & Pass to DUGC
+            {gatepass?.course === 'PhD' ? 'Approve & Pass to DPGC' : 'Approve & Pass to DUGC'}
           </button>
         </div>
       </div>

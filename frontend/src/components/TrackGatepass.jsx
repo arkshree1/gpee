@@ -700,9 +700,16 @@ const OutstationGatepassList = ({ gatepasses, presence, OSActiveGPNo, qrData, qr
 };
 
 const OutstationGatepassCard = ({ gp, presence, OSActiveGPNo, qrData, qrLoading, deleteState, onExitQR, onEntryQR, onWithdraw, formatDate, formatTime12hr, onShowPopup, onViewDetails }) => {
+    // Check if student is PhD
+    const isPhD = gp.course === 'PhD';
+    
+    // Stage order differs for PhD vs BTech/MBA
+    const stageOrderPhD = ['instructor', 'officeSecretary', 'dpgc', 'hod', 'dean', 'hostelOffice'];
+    const stageOrderBTech = ['officeSecretary', 'dugc', 'hod', 'hostelOffice'];
+    const stageOrder = isPhD ? stageOrderPhD : stageOrderBTech;
+
     // Check if any previous stage was rejected
     function isRejectedBefore(gp, stage) {
-        const stageOrder = ['officeSecretary', 'dugc', 'hod', 'hostelOffice'];
         const stageIdx = stageOrder.indexOf(stage);
         for (let i = 0; i < stageIdx; i++) {
             if (gp.stageStatus?.[stageOrder[i]]?.status === 'rejected') {
@@ -720,20 +727,31 @@ const OutstationGatepassCard = ({ gp, presence, OSActiveGPNo, qrData, qrLoading,
         if (stageData?.status === 'approved') return 'approved';
         if (stageData?.status === 'rejected') return 'rejected';
         if (gp.currentStage === stage) return 'current';
-        const stageOrder = ['officeSecretary', 'dugc', 'hod', 'hostelOffice', 'completed'];
-        const currentIdx = stageOrder.indexOf(gp.currentStage);
-        const stageIdx = stageOrder.indexOf(stage);
+        const fullStageOrder = [...stageOrder, 'completed'];
+        const currentIdx = fullStageOrder.indexOf(gp.currentStage);
+        const stageIdx = fullStageOrder.indexOf(stage);
         if (currentIdx > stageIdx) return 'completed';
         return 'pending';
     }
 
-    const stages = [
-        { id: 'applied', label: 'Applied', status: 'completed' },
-        { id: 'officeSecretary', label: 'Secretary', status: getStageStatus(gp, 'officeSecretary') },
-        { id: 'dugc', label: 'DUGC', status: getStageStatus(gp, 'dugc') },
-        { id: 'hod', label: 'HOD', status: getStageStatus(gp, 'hod') },
-        { id: 'hostelOffice', label: 'Hostel', status: getStageStatus(gp, 'hostelOffice') },
-    ];
+    // Different stages for PhD vs BTech/MBA
+    const stages = isPhD 
+        ? [
+            { id: 'applied', label: 'Applied', status: 'completed' },
+            { id: 'instructor', label: 'Instructor', status: getStageStatus(gp, 'instructor') },
+            { id: 'officeSecretary', label: 'Secretary', status: getStageStatus(gp, 'officeSecretary') },
+            { id: 'dpgc', label: 'DPGC', status: getStageStatus(gp, 'dpgc') },
+            { id: 'hod', label: 'HOD', status: getStageStatus(gp, 'hod') },
+            { id: 'dean', label: 'Dean', status: getStageStatus(gp, 'dean') },
+            { id: 'hostelOffice', label: 'Hostel', status: getStageStatus(gp, 'hostelOffice') },
+        ]
+        : [
+            { id: 'applied', label: 'Applied', status: 'completed' },
+            { id: 'officeSecretary', label: 'Secretary', status: getStageStatus(gp, 'officeSecretary') },
+            { id: 'dugc', label: 'DUGC', status: getStageStatus(gp, 'dugc') },
+            { id: 'hod', label: 'HOD', status: getStageStatus(gp, 'hod') },
+            { id: 'hostelOffice', label: 'Hostel', status: getStageStatus(gp, 'hostelOffice') },
+        ];
 
     const isRejected = gp.finalStatus === 'rejected';
     const isApproved = gp.finalStatus === 'approved';
@@ -767,8 +785,8 @@ const OutstationGatepassCard = ({ gp, presence, OSActiveGPNo, qrData, qrLoading,
     const getRejectionInfo = () => {
         if (!isRejected) return null;
         if (gp.rejectionReason) return { reason: gp.rejectionReason, by: gp.rejectedBy?.stage };
-        // Check each stage for rejection
-        for (const stage of ['officeSecretary', 'dugc', 'hod', 'hostelOffice']) {
+        // Check each stage for rejection (use the appropriate stage order)
+        for (const stage of stageOrder) {
             if (gp.stageStatus?.[stage]?.status === 'rejected') {
                 return { reason: gp.stageStatus[stage].rejectionReason, by: stage };
             }
@@ -776,6 +794,20 @@ const OutstationGatepassCard = ({ gp, presence, OSActiveGPNo, qrData, qrLoading,
         return null;
     };
     const rejectionInfo = getRejectionInfo();
+
+    // Helper function to get stage display name
+    const getStageDisplayName = (stage) => {
+        const stageNames = {
+            instructor: 'Instructor',
+            officeSecretary: 'Office Secretary',
+            dpgc: 'DPGC',
+            dugc: 'DUGC',
+            hod: 'HOD',
+            dean: 'Dean',
+            hostelOffice: 'Hostel Office'
+        };
+        return stageNames[stage] || 'Authority';
+    };
 
     return (
         <div className={`tg-card os-card ${cardClass}`}>
@@ -794,10 +826,7 @@ const OutstationGatepassCard = ({ gp, presence, OSActiveGPNo, qrData, qrLoading,
             {isRejected && rejectionInfo?.reason && (
                 <div className="gatepass-rejection-reason">
                     <div className="rejection-label">
-                        Rejected by {rejectionInfo.by === 'officeSecretary' ? 'Office Secretary' : 
-                                    rejectionInfo.by === 'dugc' ? 'DUGC' : 
-                                    rejectionInfo.by === 'hod' ? 'HOD' : 
-                                    rejectionInfo.by === 'hostelOffice' ? 'Hostel Office' : 'Authority'}
+                        Rejected by {getStageDisplayName(rejectionInfo.by)}
                     </div>
                     <div className="rejection-text">{rejectionInfo.reason}</div>
                 </div>

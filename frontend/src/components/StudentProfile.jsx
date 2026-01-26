@@ -75,6 +75,7 @@ const StudentProfile = () => {
 
     const studentName = status?.studentName || '--';
     const rollNumber = (status?.rollnumber || '--').toUpperCase();
+    const course = status?.course || 'B.Tech';
     const branch = normalizeBranch(status?.branch);
     const department = status?.department || '--';
     const batch = calculateBatch(status?.rollnumber);
@@ -181,9 +182,9 @@ const StudentProfile = () => {
                                 <span className="id-card-value">{rollNumber}</span>
                             </div>
                             <div className="id-card-row">
-                                <span className="id-card-label">Programme</span>
+                                <span className="id-card-label">Course</span>
                                 <span className="id-card-colon">:</span>
-                                <span className="id-card-value">B.Tech</span>
+                                <span className="id-card-value">{course}</span>
                             </div>
                             <div className="id-card-row">
                                 <span className="id-card-label">Branch</span>
