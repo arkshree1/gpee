@@ -91,36 +91,10 @@ exports.apply = async (req, res) => {
   });
 
   if (activePending) {
-    // Regenerate QR for existing pending request
-    const rawToken = generateRawToken();
-    const tokenHash = hashToken(rawToken);
-    const newExpiresAt = new Date(Date.now() + TOKEN_TTL_MS);
-
-    activePending.tokenHash = tokenHash;
-    activePending.expiresAt = newExpiresAt;
-    await activePending.save();
-
-    // Generate QR with gatepass number if applicable
-    let qrData = rawToken;
-    if (activePending.gatePassNo) {
-      qrData = `${rawToken}|GP:${activePending.gatePassNo}`;
-    }
-
-    const qrDataUrl = await QRCode.toDataURL(qrData, {
-      errorCorrectionLevel: 'M',
-      margin: 1,
-      scale: 8,
-    });
-
-    return res.status(200).json({
-      requestId: activePending._id,
-      token: rawToken,
-      expiresAt: newExpiresAt,
-      qrDataUrl,
-      direction: activePending.direction,
-      gatePassNo: activePending.gatePassNo || null,
-      reused: true,
-    });
+    // Delete the old pending request to allow fresh purpose/place
+    // This ensures re-applying always captures the new purpose/place values
+    await GateRequest.deleteOne({ _id: activePending._id });
+    // Fall through to create a new request with fresh data
   }
 
   const direction = getDirectionFromPresence(student.presence);
@@ -365,10 +339,10 @@ exports.applyGatepassExit = async (req, res) => {
       const exitDate = new Date(gatepass.dateOut);
       const timeParts = gatepass.timeOut.split(':');
       exitDate.setHours(parseInt(timeParts[0], 10), parseInt(timeParts[1], 10), 0, 0);
-      
+
       // Calculate 15 minutes before scheduled exit
       const allowedTime = new Date(exitDate.getTime() - 15 * 60 * 1000);
-      
+
       if (Date.now() < allowedTime.getTime()) {
         // Format available time for error message
         let hours = allowedTime.getHours();
@@ -376,7 +350,7 @@ exports.applyGatepassExit = async (req, res) => {
         const ampm = hours >= 12 ? 'PM' : 'AM';
         hours = hours % 12 || 12;
         const availableAt = `${hours}:${mins} ${ampm}`;
-        
+
         return res.status(400).json({
           message: `Exit QR can only be generated 15 minutes before your scheduled exit time. Available at ${availableAt}`,
           code: 'EXIT_TIME_RESTRICTION',
