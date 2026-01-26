@@ -8,6 +8,9 @@ const OfficeSecretary = require('../models/OfficeSecretary');
 const Hod = require('../models/Hod');
 const Dugc = require('../models/Dugc');
 const HostelOffice = require('../models/HostelOffice');
+const Faculty = require('../models/Faculty');
+const Dpgc = require('../models/Dpgc');
+const Dean = require('../models/Dean');
 
 // Real email sender using Nodemailer and environment variables
 const emailUser = process.env.EMAIL_USER;
@@ -77,6 +80,9 @@ const getDepartmentFromBranch = (branch) => {
     case 'PhD':
       return 'PHD';
 
+    case 'Energy and human sciences':
+      return 'Energy and human sciences';
+
     default:
       return null;
   }
@@ -84,18 +90,31 @@ const getDepartmentFromBranch = (branch) => {
 
 exports.signup = async (req, res) => {
   try {
-    let { name, rollnumber, course, branch, email, password, confirmPassword, hostelName, roomNumber, contactNumber } = req.body;
+    let { name, rollnumber, course, branch, department, email, password, confirmPassword, hostelName, roomNumber, contactNumber } = req.body;
 
-    // For MBA and PhD, set branch to be same as course
-    if (course === 'MBA' || course === 'PhD') {
-      branch = course;
+    // Course-specific handling:
+    // - BTech: branch is selected, department is derived from branch
+    // - PhD: department is selected directly, branch is empty
+    // - MBA: branch = "Management Studies", department = "Management Studies"
+    if (course === 'MBA') {
+      branch = 'Management Studies';
+      department = 'Management Studies';
+    } else if (course === 'PhD') {
+      // PhD: department comes directly from form, branch stays empty
+      branch = '';
+      // department is already set from form
+    } else if (course === 'BTech') {
+      // BTech: derive department from branch selection
+      department = getDepartmentFromBranch(branch);
     }
 
-    // Branch is required only for BTech
+    // Branch is required only for BTech, Department is required only for PhD
     const branchRequired = course === 'BTech';
-    if (!name || !rollnumber || !course || (branchRequired && !branch) || !email || !password || !confirmPassword || !hostelName || !roomNumber || !contactNumber) {
+    const departmentRequired = course === 'PhD';
+    if (!name || !rollnumber || !course || (branchRequired && !branch) || (departmentRequired && !department) || !email || !password || !confirmPassword || !hostelName || !roomNumber || !contactNumber) {
       return res.status(400).json({ message: 'All fields are required' });
     }
+
 
     if (!/^[A-Za-z0-9]+$/.test(rollnumber)) {
       return res.status(400).json({ message: 'Roll number must be alphanumeric (e.g. 23CD3037).' });
@@ -114,7 +133,6 @@ exports.signup = async (req, res) => {
     }
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
-    const department = getDepartmentFromBranch(branch);
 
     // If user exists and is verified, reject
     if (existingUser && existingUser.isVerified) {
@@ -341,7 +359,64 @@ exports.login = async (req, res) => {
       return res.json({ message: 'Login successful', token });
     }
 
-    // 7) Student login (User collection)
+    // 7) Faculty login (for PhD instructor approval)
+    const faculty = await Faculty.findOne({ email: normalizedEmail });
+    if (faculty) {
+      const isMatch = await faculty.comparePassword(password);
+      if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
+
+      const token = jwt.sign(
+        {
+          userId: faculty._id,
+          role: 'faculty',
+          userType: 'faculty',
+        },
+        process.env.JWT_SECRET || 'default_secret',
+        { expiresIn: '7d' }
+      );
+
+      return res.json({ message: 'Login successful', token });
+    }
+
+    // 8) DPGC login (for PhD approval)
+    const dpgc = await Dpgc.findOne({ email: normalizedEmail });
+    if (dpgc) {
+      const isMatch = await dpgc.comparePassword(password);
+      if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
+
+      const token = jwt.sign(
+        {
+          userId: dpgc._id,
+          role: 'dpgc',
+          userType: 'dpgc',
+        },
+        process.env.JWT_SECRET || 'default_secret',
+        { expiresIn: '7d' }
+      );
+
+      return res.json({ message: 'Login successful', token });
+    }
+
+    // 9) Dean login (for PhD final approval)
+    const dean = await Dean.findOne({ email: normalizedEmail });
+    if (dean) {
+      const isMatch = await dean.comparePassword(password);
+      if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
+
+      const token = jwt.sign(
+        {
+          userId: dean._id,
+          role: 'dean',
+          userType: 'dean',
+        },
+        process.env.JWT_SECRET || 'default_secret',
+        { expiresIn: '7d' }
+      );
+
+      return res.json({ message: 'Login successful', token });
+    }
+
+    // 10) Student login (User collection)
     const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {

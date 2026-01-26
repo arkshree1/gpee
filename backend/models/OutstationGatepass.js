@@ -123,16 +123,40 @@ const outstationGatepassSchema = new mongoose.Schema(
       required: true,
       default: false,
     },
-    // Multi-stage workflow fields
+
+    // ==================== PhD-SPECIFIC FIELDS ====================
+    // Instructor (Faculty) - only for PhD students
+    instructor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Faculty',
+      default: null,
+    },
+    instructorName: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    instructorDepartment: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+
+    // ==================== MULTI-STAGE WORKFLOW FIELDS ====================
+    // For BTech/MBA: officeSecretary -> dugc -> hod -> hostelOffice
+    // For PhD: instructor -> officeSecretary -> dpgc -> hod -> dean -> hostelOffice
     currentStage: {
       type: String,
-      enum: ['applied', 'officeSecretary', 'dugc', 'hod', 'hostelOffice', 'completed'],
-      default: 'officeSecretary', // Goes to office secretary immediately after submission
+      enum: ['applied', 'instructor', 'officeSecretary', 'dugc', 'dpgc', 'hod', 'dean', 'hostelOffice', 'completed'],
+      default: 'officeSecretary', // Default for BTech/MBA, PhD will be set to 'instructor'
     },
     stageStatus: {
+      instructor: { type: stageDecisionSchema, default: () => ({}) },      // PhD only
       officeSecretary: { type: stageDecisionSchema, default: () => ({}) },
-      dugc: { type: stageDecisionSchema, default: () => ({}) },
+      dugc: { type: stageDecisionSchema, default: () => ({}) },            // BTech/MBA only
+      dpgc: { type: stageDecisionSchema, default: () => ({}) },            // PhD only
       hod: { type: stageDecisionSchema, default: () => ({}) },
+      dean: { type: stageDecisionSchema, default: () => ({}) },            // PhD only
       hostelOffice: { type: stageDecisionSchema, default: () => ({}) },
     },
     finalStatus: {
@@ -164,36 +188,64 @@ const outstationGatepassSchema = new mongoose.Schema(
       enum: ['pending', 'in_use', 'completed'],
       default: 'pending',
     },
+
+    // ==================== NOTES FROM EACH STAGE ====================
     // Previous leaves taken - filled by Office Secretary
     previousLeavesTaken: {
       type: String,
       default: null,
       trim: true,
     },
-    // Rejection reason - filled by whoever rejects (Secretary/DUGC/HOD/HostelOffice)
-    rejectionReason: {
+    // Notes from each approval stage (passed to next levels)
+    instructorNote: {
       type: String,
       default: null,
       trim: true,
     },
-    // PhD-specific fields - Leave balance after taking this leave (filled by Office Secretary)
-    phdLeaveBalance: {
-      cl: { type: String, default: null, trim: true }, // Casual Leave balance
-      medical: { type: String, default: null, trim: true }, // Medical leave balance
-      other: { type: String, default: null, trim: true }, // Other leave type (specify)
-      otherType: { type: String, default: null, trim: true }, // What type of other leave
+    officeSecretaryNote: {
+      type: String,
+      default: null,
+      trim: true,
     },
-    // DUGC note - filled by DUGC for PhD students (shown to HOD)
     dugcNote: {
       type: String,
       default: null,
       trim: true,
     },
-    // Who rejected and at which stage
+    dpgcNote: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    hodNote: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    deanNote: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+
+    // ==================== PhD LEAVE BALANCE (filled by Office Secretary) ====================
+    phdLeaveBalance: {
+      cl: { type: String, default: null, trim: true },        // Casual Leave balance
+      medical: { type: String, default: null, trim: true },   // Medical leave balance
+      other: { type: String, default: null, trim: true },     // Other leave balance
+      otherType: { type: String, default: null, trim: true }, // What type of other leave
+    },
+
+    // ==================== REJECTION TRACKING ====================
+    rejectionReason: {
+      type: String,
+      default: null,
+      trim: true,
+    },
     rejectedBy: {
       stage: {
         type: String,
-        enum: ['officeSecretary', 'dugc', 'hod', 'hostelOffice'],
+        enum: ['instructor', 'officeSecretary', 'dugc', 'dpgc', 'hod', 'dean', 'hostelOffice'],
         default: null,
       },
       decidedBy: {

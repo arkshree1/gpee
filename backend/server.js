@@ -92,6 +92,15 @@ app.use('/api/dugc', dugcRoutes);
 const hodRoutes = require('./routes/hod');
 app.use('/api/hod', hodRoutes);
 
+const facultyRoutes = require('./routes/faculty');
+app.use('/api/faculty', facultyRoutes);
+
+const dpgcRoutes = require('./routes/dpgc');
+app.use('/api/dpgc', dpgcRoutes);
+
+const deanRoutes = require('./routes/dean');
+app.use('/api/dean', deanRoutes);
+
 const { bootstrapDefaultAccounts } = require('./utils/bootstrap');
 
 // MongoDB connection (UPDATED for Mongoose v7)

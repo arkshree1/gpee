@@ -68,6 +68,7 @@ const Signup = () => {
     rollnumber: '',
     course: '',
     branch: '',
+    department: '',
     hostelName: '',
     roomNumber: '',
     contactNumber: '',
@@ -106,7 +107,7 @@ const Signup = () => {
     setCameraError('');
     setCameraReady(false);
     setShowCamera(true);
-    
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 720 } },
@@ -144,17 +145,17 @@ const Signup = () => {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
-    
+
     // Mirror the image horizontally (since front camera is mirrored)
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
     ctx.drawImage(video, 0, 0);
-    
+
     const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9);
-    
+
     // Stop camera
     stopCamera();
-    
+
     // Open cropper with captured image
     setOriginalImage(imageDataUrl);
     setShowCropper(true);
@@ -193,17 +194,19 @@ const Signup = () => {
       });
       return;
     }
-    // When course changes, auto-set branch for MBA/PhD
+    // When course changes, handle branch/department logic
     if (name === 'course') {
       if (value === 'MBA') {
-        setFormValues((prev) => ({ ...prev, course: value, branch: 'MBA' }));
+        // MBA: auto-set branch to Management Studies, no department needed
+        setFormValues((prev) => ({ ...prev, course: value, branch: 'Management Studies', department: '' }));
         return;
       } else if (value === 'PhD') {
-        setFormValues((prev) => ({ ...prev, course: value, branch: 'PhD' }));
+        // PhD: needs department selection, reset branch
+        setFormValues((prev) => ({ ...prev, course: value, branch: '', department: '' }));
         return;
       } else {
-        // For BTech, reset branch so user can select
-        setFormValues((prev) => ({ ...prev, course: value, branch: '' }));
+        // For BTech, reset branch so user can select, clear department
+        setFormValues((prev) => ({ ...prev, course: value, branch: '', department: '' }));
         return;
       }
     }
@@ -243,11 +246,12 @@ const Signup = () => {
   }, [imagePreview]);
 
   const validate = () => {
-    const { name, rollnumber, course, branch, hostelName, roomNumber, contactNumber, email, password, confirmPassword } = formValues;
+    const { name, rollnumber, course, branch, department, hostelName, roomNumber, contactNumber, email, password, confirmPassword } = formValues;
 
-    // Branch is required only for BTech
+    // Branch is required only for BTech, Department is required only for PhD
     const branchRequired = course === 'BTech';
-    if (!name || !rollnumber || !course || (branchRequired && !branch) || !hostelName || !roomNumber || !contactNumber || !email || !password || !confirmPassword || !imageFile) {
+    const departmentRequired = course === 'PhD';
+    if (!name || !rollnumber || !course || (branchRequired && !branch) || (departmentRequired && !department) || !hostelName || !roomNumber || !contactNumber || !email || !password || !confirmPassword || !imageFile) {
       setPopupMessage('All fields including image are required.');
       return false;
     }
@@ -292,6 +296,7 @@ const Signup = () => {
       formData.append('rollnumber', formValues.rollnumber);
       formData.append('course', formValues.course);
       formData.append('branch', formValues.branch);
+      formData.append('department', formValues.department);
       formData.append('hostelName', formValues.hostelName);
       formData.append('roomNumber', formValues.roomNumber);
       formData.append('contactNumber', formValues.contactNumber);
@@ -433,6 +438,34 @@ const Signup = () => {
                     <option value="Petroleum Engineering (Major: Applied Petroleum Geoscience)">
                       Petroleum Engineering (Geoscience)
                     </option>
+                    <option value="Energy and human sciences">Energy and human sciences</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Department - Only shown for PhD */}
+            {formValues.course === 'PhD' && (
+              <div className="gothru-input-group">
+                <label className="gothru-label" htmlFor="department">Department</label>
+                <div className="gothru-input-wrapper">
+                  <select
+                    id="department"
+                    name="department"
+                    className="gothru-select"
+                    value={formValues.department}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="" disabled>Select department</option>
+                    <option value="Computer Science and Engineering">Computer Science and Engineering</option>
+                    <option value="Chemical and Biochemical Engineering">Chemical and Biochemical Engineering</option>
+                    <option value="Electrical and Electronics Engineering">Electrical and Electronics Engineering</option>
+                    <option value="Mechanical Engineering">Mechanical Engineering</option>
+                    <option value="Petroleum Engineering and Geoengineering">Petroleum Engineering and Geoengineering</option>
+                    <option value="Mathematical Sciences">Mathematical Sciences</option>
+                    <option value="Management Studies">Management Studies</option>
+                    <option value="Energy and Human Sciences">Energy and Human Sciences</option>
                   </select>
                 </div>
               </div>
@@ -569,8 +602,8 @@ const Signup = () => {
                 {imagePreview ? (
                   <div className="gothru-photo-captured">
                     <img src={imagePreview} alt="Captured selfie" className="gothru-captured-image" />
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className="gothru-retake-btn"
                       onClick={openCamera}
                     >
@@ -578,8 +611,8 @@ const Signup = () => {
                     </button>
                   </div>
                 ) : (
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className="gothru-camera-btn"
                     onClick={openCamera}
                   >
@@ -619,7 +652,7 @@ const Signup = () => {
           <div className="crop-modal">
             <h3 className="crop-modal-title">Crop Profile Photo</h3>
             <p className="crop-modal-subtitle">Adjust to fit a 1:1 square ratio</p>
-            
+
             <div className="crop-container">
               <Cropper
                 image={originalImage}
@@ -665,7 +698,7 @@ const Signup = () => {
           <div className="crop-modal camera-modal">
             <h3 className="crop-modal-title">Take a Selfie</h3>
             <p className="crop-modal-subtitle">Position your face in the frame</p>
-            
+
             <div className="camera-container">
               {cameraError ? (
                 <div className="camera-error">
@@ -676,11 +709,11 @@ const Signup = () => {
                 </div>
               ) : (
                 <>
-                  <video 
-                    ref={videoRef} 
-                    autoPlay 
-                    playsInline 
-                    muted 
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
                     className="camera-video"
                   />
                   <div className="camera-overlay">
@@ -695,8 +728,8 @@ const Signup = () => {
                 <button className="crop-btn crop-btn-cancel" onClick={stopCamera}>
                   Cancel
                 </button>
-                <button 
-                  className="crop-btn crop-btn-confirm camera-capture-btn" 
+                <button
+                  className="crop-btn crop-btn-confirm camera-capture-btn"
                   onClick={capturePhoto}
                   disabled={!cameraReady}
                 >

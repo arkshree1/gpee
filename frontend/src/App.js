@@ -14,6 +14,9 @@ import HodPage from './pages/HodPage';
 import DugcPage from './pages/DugcPage';
 import OfficeSecretaryPage from './pages/OfficeSecretaryPage';
 import HostelOfficePage from './pages/HostelOfficePage';
+import FacultyPage from './pages/FacultyPage';
+import DpgcPage from './pages/DpgcPage';
+import DeanPage from './pages/DeanPage';
 import { getUserFromToken } from './utils/auth';
 
 // Helper function to get home route based on user role
@@ -33,6 +36,12 @@ const getHomeRoute = (role) => {
       return '/office-secretary';
     case 'hostelOffice':
       return '/hostel-office';
+    case 'faculty':
+      return '/faculty';
+    case 'dpgc':
+      return '/dpgc';
+    case 'dean':
+      return '/dean';
     default:
       return '/login';
   }
@@ -137,6 +146,30 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['hostelOffice']}>
               <HostelOfficePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/faculty/*"
+          element={
+            <ProtectedRoute allowedRoles={['faculty']}>
+              <FacultyPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dpgc/*"
+          element={
+            <ProtectedRoute allowedRoles={['dpgc']}>
+              <DpgcPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dean/*"
+          element={
+            <ProtectedRoute allowedRoles={['dean']}>
+              <DeanPage />
             </ProtectedRoute>
           }
         />

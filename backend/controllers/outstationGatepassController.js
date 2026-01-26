@@ -3,6 +3,7 @@ const path = require('path');
 const OutstationGatepass = require('../models/OutstationGatepass');
 const GateRequest = require('../models/GateRequest');
 const OfficeSecretary = require('../models/OfficeSecretary');
+const Faculty = require('../models/Faculty');
 const { sendOutstationGatepassNotification } = require('../utils/emailService');
 
 exports.createOutstationGatepass = async (req, res) => {
@@ -25,6 +26,7 @@ exports.createOutstationGatepass = async (req, res) => {
     reasonOfLeave,
     consent,
     classesMissed,
+    instructorId,
   } = req.body;
 
   if (
@@ -51,6 +53,11 @@ exports.createOutstationGatepass = async (req, res) => {
       .json({ message: 'You must confirm that the information is correct.' });
   }
 
+  // PhD students must select an instructor
+  if (course === 'PhD' && !instructorId) {
+    return res.status(400).json({ message: 'PhD students must select an instructor' });
+  }
+
   if (!/^\d{10}$/.test(contact)) {
     return res.status(400).json({ message: 'Contact number must be 10 digits.' });
   }
@@ -63,6 +70,18 @@ exports.createOutstationGatepass = async (req, res) => {
 
   // Handle proof file upload
   const proofFile = req.file ? `/uploads/OS_GatePass_Proofs/${req.file.filename}` : null;
+
+  // PhD students start at instructor stage, others start at officeSecretary
+  const initialStage = course === 'PhD' ? 'instructor' : 'officeSecretary';
+
+  // Get instructor details for PhD students
+  let instructorName = null;
+  if (course === 'PhD' && instructorId) {
+    const instructor = await Faculty.findById(instructorId).select('name');
+    if (instructor) {
+      instructorName = instructor.name;
+    }
+  }
 
   const doc = await OutstationGatepass.create({
     student: studentId,
@@ -85,35 +104,66 @@ exports.createOutstationGatepass = async (req, res) => {
     consent: !!consent,
     classesMissed: classesMissed || 0,
     missedDays: calculatedLeaveDays,
+    currentStage: initialStage,
+    instructor: course === 'PhD' ? instructorId : undefined,
+    instructorName: instructorName,
   });
 
-  // Send email notification to Office Secretary of the student's department
+  // Send email notification based on course type
   try {
-    const officeSecretary = await OfficeSecretary.findOne({ department }).select('name email');
-    if (officeSecretary && officeSecretary.email) {
-      const reviewLink = `${process.env.FRONTEND_URL || 'https://gothru.vercel.app'}/office-secretary/outstation`;
-      await sendOutstationGatepassNotification({
-        to: officeSecretary.email,
-        approverName: officeSecretary.name,
-        approverRole: 'Office Secretary',
-        studentName,
-        rollnumber,
-        department,
-        branch,
-        roomNumber,
-        contact,
-        reasonOfLeave,
-        address,
-        dateOut,
-        dateIn,
-        classesMissed: classesMissed || 0,
-        missedDays: calculatedLeaveDays,
-        forwardedBy: null, // New request, not forwarded
-        reviewLink,
-      });
+    if (course === 'PhD' && instructorId) {
+      // PhD: Send email to instructor
+      const instructor = await Faculty.findById(instructorId).select('name email');
+      if (instructor && instructor.email) {
+        const reviewLink = `${process.env.FRONTEND_URL || 'https://gothru.vercel.app'}/faculty/outstation`;
+        await sendOutstationGatepassNotification({
+          to: instructor.email,
+          approverName: instructor.name,
+          approverRole: 'Instructor',
+          studentName,
+          rollnumber,
+          department,
+          branch,
+          roomNumber,
+          contact,
+          reasonOfLeave,
+          address,
+          dateOut,
+          dateIn,
+          classesMissed: classesMissed || 0,
+          missedDays: calculatedLeaveDays,
+          forwardedBy: null,
+          reviewLink,
+        });
+      }
+    } else {
+      // BTech/MBA: Send email to Office Secretary
+      const officeSecretary = await OfficeSecretary.findOne({ department }).select('name email');
+      if (officeSecretary && officeSecretary.email) {
+        const reviewLink = `${process.env.FRONTEND_URL || 'https://gothru.vercel.app'}/office-secretary/outstation`;
+        await sendOutstationGatepassNotification({
+          to: officeSecretary.email,
+          approverName: officeSecretary.name,
+          approverRole: 'Office Secretary',
+          studentName,
+          rollnumber,
+          department,
+          branch,
+          roomNumber,
+          contact,
+          reasonOfLeave,
+          address,
+          dateOut,
+          dateIn,
+          classesMissed: classesMissed || 0,
+          missedDays: calculatedLeaveDays,
+          forwardedBy: null,
+          reviewLink,
+        });
+      }
     }
   } catch (emailErr) {
-    console.error('Failed to send email to Office Secretary:', emailErr);
+    console.error('Failed to send email notification:', emailErr);
     // Don't fail the request if email fails
   }
 
@@ -185,7 +235,7 @@ exports.deleteOutstationGatepass = async (req, res) => {
 
   if (gatepass.proofFile) {
     const proofPath = path.join(__dirname, '..', gatepass.proofFile);
-    fs.unlink(proofPath, () => {});
+    fs.unlink(proofPath, () => { });
   }
 
   await gatepass.deleteOne();

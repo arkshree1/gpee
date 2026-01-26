@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/student-dashboard.css';
 import PopupBox from './PopupBox';
-import { createOutstationGatepass, getStudentStatus } from '../api/api';
+import { createOutstationGatepass, getStudentStatus, getAllFaculties } from '../api/api';
 
 // Professional SVG Icons
 const Icons = {
@@ -56,6 +56,10 @@ const OutstationGatepass = () => {
   const [, setProfileLoading] = useState(true);
   const [proofFile, setProofFile] = useState(null);
 
+  // PhD-specific: Instructor selection
+  const [faculties, setFaculties] = useState([]);
+  const [selectedInstructor, setSelectedInstructor] = useState('');
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -71,6 +75,16 @@ const OutstationGatepass = () => {
           branch: branch || '',
           contact: contactNumber || '',
         }));
+
+        // Fetch faculties for PhD students
+        if (course === 'PhD') {
+          try {
+            const facultyRes = await getAllFaculties();
+            setFaculties(facultyRes.data.faculties || []);
+          } catch (err) {
+            console.error('Failed to fetch faculties:', err);
+          }
+        }
       } catch (error) {
         console.error('Failed to fetch profile:', error);
       } finally {
@@ -165,9 +179,15 @@ const OutstationGatepass = () => {
       return;
     }
 
-  const outDateTime = new Date(`${dateOut}T${timeOut}`);
-  const inDateTime = new Date(`${dateIn}T${timeIn}`);
-  const now = getIndiaNow();
+    // PhD students must select an instructor
+    if (form.course === 'PhD' && !selectedInstructor) {
+      setPopup({ open: true, message: 'Please select your instructor.' });
+      return;
+    }
+
+    const outDateTime = new Date(`${dateOut}T${timeOut}`);
+    const inDateTime = new Date(`${dateIn}T${timeIn}`);
+    const now = getIndiaNow();
 
     if (outDateTime <= now) {
       setPopup({ open: true, message: 'Out time must be in the future.' });
@@ -188,6 +208,10 @@ const OutstationGatepass = () => {
     });
     if (proofFile) {
       formData.append('proofFile', proofFile);
+    }
+    // Add instructor for PhD students
+    if (form.course === 'PhD' && selectedInstructor) {
+      formData.append('instructorId', selectedInstructor);
     }
 
     createOutstationGatepass(formData)
@@ -261,7 +285,27 @@ const OutstationGatepass = () => {
             </div>
           </div>
 
-          {/* Travel Details Section */}
+          {/* PhD Instructor Selection */}
+          {form.course === 'PhD' && (
+            <div className="lg-section">
+              <div className="lg-section-label">INSTRUCTOR (GUIDE)</div>
+              <div className="lg-field">
+                <label className="lg-label">Select Your Instructor <span style={{ color: '#e74c3c' }}>*</span></label>
+                <select
+                  className="lg-input"
+                  value={selectedInstructor}
+                  onChange={(e) => setSelectedInstructor(e.target.value)}
+                >
+                  <option value="">-- Select Instructor --</option>
+                  {faculties.map((faculty) => (
+                    <option key={faculty._id} value={faculty._id}>
+                      {faculty.name} ({faculty.department})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
           <div className="lg-section">
             <div className="lg-section-label">TRAVEL DETAILS</div>
 

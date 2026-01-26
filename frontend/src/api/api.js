@@ -164,4 +164,54 @@ export const getMyOutstationGatepasses = async () =>
 export const deleteOutstationGatepass = async (gatepassId) =>
   apiClient.delete(`/api/student/outstation-gatepass/${gatepassId}`);
 
+// Faculty (Instructor) APIs
+export const getAllFaculties = async () =>
+  apiClient.get('/api/faculty/all');
+export const getFacultyProfile = async () =>
+  apiClient.get('/api/faculty/profile');
+export const getFacultyPendingGatepasses = async () =>
+  apiClient.get('/api/faculty/pending-gatepasses');
+export const getFacultyGatepassDetails = async (gatepassId) =>
+  apiClient.get(`/api/faculty/gatepass/${gatepassId}`);
+export const getFacultyStudentOSHistory = async (studentId) =>
+  apiClient.get(`/api/faculty/student-history/${studentId}`);
+export const getFacultyGatepassHistory = async (search) =>
+  apiClient.get('/api/faculty/gatepass-history', { params: { search } });
+export const decideFacultyGatepass = async (payload) =>
+  apiClient.post('/api/faculty/decide-gatepass', payload);
+export const sendFacultyMeetingEmail = async (payload) =>
+  apiClient.post('/api/faculty/send-meeting-email', payload);
+
+// DPGC APIs
+export const getDpgcProfile = async () =>
+  apiClient.get('/api/dpgc/profile');
+export const getDpgcPendingGatepasses = async () =>
+  apiClient.get('/api/dpgc/pending-gatepasses');
+export const getDpgcGatepassDetails = async (gatepassId) =>
+  apiClient.get(`/api/dpgc/gatepass/${gatepassId}`);
+export const getDpgcStudentOSHistory = async (studentId) =>
+  apiClient.get(`/api/dpgc/student-history/${studentId}`);
+export const getDpgcGatepassHistory = async (search) =>
+  apiClient.get('/api/dpgc/gatepass-history', { params: { search } });
+export const decideDpgcGatepass = async (payload) =>
+  apiClient.post('/api/dpgc/decide-gatepass', payload);
+export const sendDpgcMeetingEmail = async (payload) =>
+  apiClient.post('/api/dpgc/send-meeting-email', payload);
+
+// Dean APIs
+export const getDeanProfile = async () =>
+  apiClient.get('/api/dean/profile');
+export const getDeanPendingGatepasses = async () =>
+  apiClient.get('/api/dean/pending-gatepasses');
+export const getDeanGatepassDetails = async (gatepassId) =>
+  apiClient.get(`/api/dean/gatepass/${gatepassId}`);
+export const getDeanStudentOSHistory = async (studentId) =>
+  apiClient.get(`/api/dean/student-history/${studentId}`);
+export const getDeanGatepassHistory = async (search) =>
+  apiClient.get('/api/dean/gatepass-history', { params: { search } });
+export const decideDeanGatepass = async (payload) =>
+  apiClient.post('/api/dean/decide-gatepass', payload);
+export const sendDeanMeetingEmail = async (payload) =>
+  apiClient.post('/api/dean/send-meeting-email', payload);
+
 export default apiClient;
