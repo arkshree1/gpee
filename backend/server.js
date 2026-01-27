@@ -5,8 +5,6 @@ const path = require('path');
 const dotenv = require('dotenv');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const fs = require('fs');
-const https = require('https');
 
 dotenv.config();
 
@@ -117,25 +115,11 @@ mongoose
     console.log(`📦 MongoDB connected successfully`);
     await bootstrapDefaultAccounts();
 
-    // Check for SSL certificates for HTTPS
-    const certPath = path.join(__dirname, 'cert.crt');
-    const keyPath = path.join(__dirname, 'cert.key');
-
-    if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
-      // Start HTTPS server
-      const httpsOptions = {
-        key: fs.readFileSync(keyPath),
-        cert: fs.readFileSync(certPath),
-      };
-      https.createServer(httpsOptions, app).listen(PORT, () => {
-        console.log(`🔒 HTTPS Server running on port ${PORT}`);
-      });
-    } else {
-      // Fallback to HTTP
-      app.listen(PORT, () => {
-        console.log(`🚀 Server running on port ${PORT}`);
-      });
-    }
+    // Start HTTP server on localhost only
+    // HTTPS is handled at the proxy/CDN level (Cloudflare + IIS)
+    app.listen(PORT, 'localhost', () => {
+      console.log(`🚀 HTTP Server running on http://localhost:${PORT}`);
+    });
   })
   .catch((err) => {
     console.error(`❌ MongoDB connection error: ${err.message}`);
