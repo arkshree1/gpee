@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { decideRequest, getGuardDashboard, getGuardEntryExitLogs, scanQrToken } from '../api/api';
 import GuardScanner from '../components/GuardScanner';
+import GuardBatchScanner from '../components/GuardBatchScanner';
 import GuardEntryExitTable from '../components/GuardEntryExitTable';
 import GuardManualEntry from '../components/GuardManualEntry';
 import '../styles/guard.css';
@@ -18,8 +19,13 @@ const GuardPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [batchModeOpen, setBatchModeOpen] = useState(false);
   const [scanError, setScanError] = useState('');
   const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'scan');
+
+  // Pre-warmed camera stream for instant batch scanning
+  const [cameraStream, setCameraStream] = useState(null);
+  const cameraStreamRef = useRef(null);
 
   // Persist activeTab to URL
   useEffect(() => {
@@ -114,6 +120,51 @@ const GuardPage = () => {
       }
     };
   }, [refresh]);
+
+  // Pre-warm camera on mount for instant batch scanning
+  useEffect(() => {
+    let stream = null;
+    let cancelled = false;
+
+    const warmCamera = async () => {
+      try {
+        // Try to get camera with back-facing preference
+        const configs = [
+          { video: { facingMode: { ideal: 'environment' }, width: { ideal: 640 }, height: { ideal: 480 } }, audio: false },
+          { video: { width: { ideal: 640 }, height: { ideal: 480 } }, audio: false },
+          { video: true, audio: false },
+        ];
+
+        for (const config of configs) {
+          if (cancelled) return;
+          try {
+            stream = await navigator.mediaDevices.getUserMedia(config);
+            break;
+          } catch {
+            continue;
+          }
+        }
+
+        if (stream && !cancelled) {
+          cameraStreamRef.current = stream;
+          setCameraStream(stream);
+          console.log('[GuardPage] Camera pre-warmed successfully');
+        }
+      } catch (err) {
+        console.log('[GuardPage] Camera pre-warm failed:', err.message);
+      }
+    };
+
+    warmCamera();
+
+    return () => {
+      cancelled = true;
+      if (cameraStreamRef.current) {
+        cameraStreamRef.current.getTracks().forEach(t => t.stop());
+        cameraStreamRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (activeTab !== 'logs' || logsLoading || entryExitLogs.length) return;
@@ -338,6 +389,22 @@ const GuardPage = () => {
                     </svg>
                     <span>Scan QR Code</span>
                   </button>
+
+                  {/* Batch Mode Button */}
+                  <button
+                    className="guard-batch-mode-btn"
+                    type="button"
+                    onClick={() => setBatchModeOpen(true)}
+                    title="Opens persistent camera for scanning multiple students quickly"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="1" y="5" width="22" height="14" rx="2" />
+                      <circle cx="12" cy="12" r="3" />
+                      <line x1="1" y1="9" x2="3" y2="9" />
+                      <line x1="21" y1="9" x2="23" y2="9" />
+                    </svg>
+                    <span>Batch Scan Mode</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -408,9 +475,9 @@ const GuardPage = () => {
 
             <div className="guard-approval-body">
               <div className="guard-approval-photo-section">
-                <img 
-                  className="guard-approval-photo" 
-                  src={photoSrc} 
+                <img
+                  className="guard-approval-photo"
+                  src={photoSrc}
                   alt="Student"
                   onError={(e) => {
                     e.target.onerror = null;
@@ -525,6 +592,15 @@ const GuardPage = () => {
       )}
 
       {scannerOpen && <GuardScanner onToken={onToken} onClose={() => setScannerOpen(false)} />}
+
+      {/* Batch Scanner - Persistent Camera Mode */}
+      {batchModeOpen && cameraStream && (
+        <GuardBatchScanner
+          cameraStream={cameraStream}
+          onClose={() => setBatchModeOpen(false)}
+          onScanComplete={refresh}
+        />
+      )}
 
       {/* Verifying loader overlay */}
       {verifying && (
