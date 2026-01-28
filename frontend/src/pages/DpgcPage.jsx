@@ -8,6 +8,7 @@ import {
   getDpgcGatepassHistory,
   decideDpgcGatepass,
   sendDpgcMeetingEmail,
+  getImageUrl,
 } from '../api/api';
 import PopupBox from '../components/PopupBox';
 import ConfirmModal from '../components/ConfirmModal';
@@ -211,7 +212,7 @@ const RequestsView = ({ onViewDetails }) => {
             >
               {gp.student?.imageUrl ? (
                 <img
-                  src={`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${gp.student.imageUrl}`}
+                  src={getImageUrl(gp.student.imageUrl)}
                   alt="Student"
                 />
               ) : (
@@ -437,7 +438,7 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
           >
             {gatepass.student?.imageUrl ? (
               <img
-                src={`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${gatepass.student.imageUrl}`}
+                src={getImageUrl(gatepass.student.imageUrl)}
                 alt={gatepass.studentName}
               />
             ) : (

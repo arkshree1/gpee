@@ -142,7 +142,8 @@ exports.signup = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const otp = generateOtp();
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+    // Use /api/uploads for IIS reverse proxy compatibility
+    const imageUrl = req.file ? `/api/uploads/${req.file.filename}` : null;
 
     let user;
 

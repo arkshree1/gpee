@@ -1,7 +1,7 @@
 import React from 'react';
 import '../styles/student-id-card-popup.css';
+import { getImageUrl } from '../api/api';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 const RGIPT_LOGO = '/rgipt-logo.png';
 
 // Calculate batch from roll number (e.g., 23cd3037 → 2023-27)
@@ -36,7 +36,7 @@ const StudentIdCardPopup = ({ student, onClose, isOpen }) => {
   const roomNumber = student.roomNumber || '--';
   const hostelName = student.hostelName || '--';
   const contactNumber = student.contactNumber || student.contact || '--';
-  const imageUrl = student.imageUrl ? `${API_BASE_URL}${student.imageUrl}` : null;
+  const imageUrl = getImageUrl(student.imageUrl);
 
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) {

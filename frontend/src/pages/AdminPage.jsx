@@ -11,7 +11,8 @@ import {
   searchAdminStudents,
   getStudentLogsById,
   getAdminEntryExitLogs,
-  searchGatepass
+  searchGatepass,
+  getImageUrl
 } from '../api/api';
 import LiveActivityLogs from '../components/LiveActivityLogs';
 import DonutChart from '../components/DonutChart';
@@ -542,7 +543,7 @@ const AdminPage = () => {
                             tabIndex={0}
                           >
                             <img
-                              src={log.imageUrl ? `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${log.imageUrl}` : '/default-avatar.png'}
+                              src={getImageUrl(log.imageUrl) || '/default-avatar.png'}
                               alt=""
                               className="log-table-avatar"
                             />
@@ -593,7 +594,7 @@ const AdminPage = () => {
                           tabIndex={0}
                         >
                           <img
-                            src={log.imageUrl ? `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${log.imageUrl}` : '/default-avatar.png'}
+                            src={getImageUrl(log.imageUrl) || '/default-avatar.png'}
                             alt=""
                             className="log-card-avatar"
                           />
@@ -667,7 +668,7 @@ const AdminPage = () => {
                     onClick={() => handleStudentSelect(student)}
                   >
                     <img
-                      src={student.imageUrl ? `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${student.imageUrl}` : '/default-avatar.png'}
+                      src={getImageUrl(student.imageUrl) || '/default-avatar.png'}
                       alt={student.name}
                       className="suggestion-avatar"
                     />
@@ -691,7 +692,7 @@ const AdminPage = () => {
                     onClick={() => handleStudentSelect(student)}
                   >
                     <img
-                      src={student.imageUrl ? `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${student.imageUrl}` : '/default-avatar.png'}
+                      src={getImageUrl(student.imageUrl) || '/default-avatar.png'}
                       alt={student.name}
                       className="suggestion-avatar"
                     />
@@ -851,7 +852,7 @@ const AdminPage = () => {
                 {/* Left: Student Info */}
                 <div className="gp-student">
                   <img
-                    src={gatepassResult.student.imageUrl ? `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${gatepassResult.student.imageUrl}` : '/default-avatar.png'}
+                    src={getImageUrl(gatepassResult.student.imageUrl) || '/default-avatar.png'}
                     alt=""
                     className="gp-photo"
                   />
@@ -1054,7 +1055,7 @@ const AdminPage = () => {
                           >
                             {student.imageUrl ? (
                               <img 
-                                src={student.imageUrl.startsWith('http') ? student.imageUrl : `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${student.imageUrl}`} 
+                                src={getImageUrl(student.imageUrl)} 
                                 alt={student.name} 
                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                               />
@@ -1122,7 +1123,7 @@ const AdminPage = () => {
                   <div className="id-card-photo-section">
                     <div className="id-card-photo-frame">
                       {selectedStudent.imageUrl ? (
-                        <img src={selectedStudent.imageUrl.startsWith('http') ? selectedStudent.imageUrl : `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${selectedStudent.imageUrl}`} alt={selectedStudent.name} className="id-card-photo" />
+                        <img src={getImageUrl(selectedStudent.imageUrl)} alt={selectedStudent.name} className="id-card-photo" />
                       ) : (
                         <div className="id-card-photo-placeholder"><span>📷</span></div>
                       )}
@@ -1254,7 +1255,7 @@ const AdminPage = () => {
                     {/* Left: Student Info */}
                     <div className="gp-student">
                       <img
-                        src={gatepassModalData.student.imageUrl ? `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${gatepassModalData.student.imageUrl}` : '/default-avatar.png'}
+                        src={getImageUrl(gatepassModalData.student.imageUrl) || '/default-avatar.png'}
                         alt=""
                         className="gp-photo"
                       />

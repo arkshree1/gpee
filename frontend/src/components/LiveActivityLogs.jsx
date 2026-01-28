@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { getAdminLiveLogs } from '../api/api';
+import { getAdminLiveLogs, getImageUrl } from '../api/api';
 
 /**
  * LiveActivityLogs - Production-grade real-time activity logs panel
@@ -111,7 +111,7 @@ const LiveActivityLogs = ({ onStudentClick }) => {
                                 tabIndex={onStudentClick ? 0 : undefined}
                             >
                                 <img
-                                    src={log.imageUrl ? `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}${log.imageUrl}` : '/default-avatar.png'}
+                                    src={getImageUrl(log.imageUrl) || '/default-avatar.png'}
                                     alt=""
                                     className="live-log-avatar"
                                 />

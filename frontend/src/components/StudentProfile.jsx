@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getStudentStatus } from '../api/api';
+import { getStudentStatus, getImageUrl } from '../api/api';
 import '../styles/student.css';
 import '../styles/student-dashboard.css';
-
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 
 // RGIPT Logo - place logo at public/rgipt-logo.png
 const RGIPT_LOGO = '/rgipt-logo.png';
@@ -82,7 +80,7 @@ const StudentProfile = () => {
     const roomNumber = status?.roomNumber || '--';
     const hostelName = status?.hostelName || '--';
     const contactNumber = status?.contactNumber || '--';
-    const imageUrl = status?.imageUrl ? `${API_BASE_URL}${status.imageUrl}` : null;
+    const imageUrl = getImageUrl(status?.imageUrl);
 
     return (
         <div className="sd-shell">

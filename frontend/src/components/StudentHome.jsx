@@ -1,9 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getStudentStatus, getStudentLogs } from '../api/api';
+import { getStudentStatus, getStudentLogs, getImageUrl } from '../api/api';
 import '../styles/student-dashboard.css';
-
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 
 // Professional SVG Icons
 const Icons = {
@@ -174,7 +172,7 @@ const StudentHome = () => {
           >
             {status?.imageUrl ? (
               <img
-                src={`${API_BASE_URL}${status.imageUrl}`}
+                src={getImageUrl(status.imageUrl)}
                 alt="Profile"
                 className="sd-profile-img"
               />

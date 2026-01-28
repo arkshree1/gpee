@@ -1,10 +1,24 @@
 import axios from 'axios';
 
+const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+
 const apiClient = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000',
+  baseURL: API_BASE,
   withCredentials: false,
   timeout: 15000, // 15 second timeout to prevent hanging requests
 });
+
+// Helper to get proper image URL (handles /uploads -> /api/uploads for IIS proxy)
+export const getImageUrl = (imageUrl) => {
+  if (!imageUrl) return null;
+  // If already absolute URL, return as-is
+  if (imageUrl.startsWith('http')) return imageUrl;
+  // Transform /uploads/... to /api/uploads/... for IIS proxy compatibility
+  const path = imageUrl.startsWith('/uploads/') 
+    ? imageUrl.replace('/uploads/', '/api/uploads/') 
+    : imageUrl;
+  return `${API_BASE}${path}`;
+};
 
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');

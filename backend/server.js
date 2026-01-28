@@ -10,6 +10,9 @@ dotenv.config();
 
 const app = express();
 
+// Trust proxy for rate limiting behind reverse proxy (IIS/Cloudflare)
+app.set('trust proxy', 1);
+
 // Build allowed origins for CSP
 const frontendOrigins = (process.env.FRONTEND_ORIGIN || 'http://localhost:3000')
   .split(',')
@@ -39,6 +42,12 @@ app.use(
     limit: 120,
     standardHeaders: 'draft-7',
     legacyHeaders: false,
+    // Custom keyGenerator to handle cases where IP is undefined (behind proxy)
+    keyGenerator: (req) => {
+      return req.ip || req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
+    },
+    // Skip validation for IP address
+    validate: { ip: false },
   })
 );
 
@@ -64,6 +73,8 @@ app.use(express.urlencoded({ extended: true }));
 // Static folder for uploaded images
 const uploadsPath = process.env.IMAGE_UPLOAD_PATH || './uploads';
 app.use('/uploads', express.static(path.resolve(__dirname, uploadsPath)));
+// Also serve under /api/uploads for IIS proxy compatibility
+app.use('/api/uploads', express.static(path.resolve(__dirname, uploadsPath)));
 
 // Routes
 const authRoutes = require('./routes/auth');
@@ -109,6 +120,10 @@ app.get('/', (req, res) => {
   res.json({ message: 'Backend is running' });
 });
 
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', source: 'GoThru backend' });
+});
+
 mongoose
   .connect(mongoUri) // removed deprecated options
   .then(async () => {
@@ -117,9 +132,10 @@ mongoose
 
     // Start HTTP server on localhost only
     // HTTPS is handled at the proxy/CDN level (Cloudflare + IIS)
-    app.listen(PORT, 'localhost', () => {
-      console.log(`🚀 HTTP Server running on http://localhost:${PORT}`);
-    });
+    app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 HTTP Server running on port ${PORT}`);
+});
+
   })
   .catch((err) => {
     console.error(`❌ MongoDB connection error: ${err.message}`);

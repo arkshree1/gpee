@@ -68,8 +68,8 @@ exports.createOutstationGatepass = async (req, res) => {
   const diffTime = inDate.getTime() - outDate.getTime();
   const calculatedLeaveDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
 
-  // Handle proof file upload
-  const proofFile = req.file ? `/uploads/OS_GatePass_Proofs/${req.file.filename}` : null;
+  // Handle proof file upload - use /api/uploads for IIS reverse proxy compatibility
+  const proofFile = req.file ? `/api/uploads/OS_GatePass_Proofs/${req.file.filename}` : null;
 
   // PhD students start at instructor stage, others start at officeSecretary
   const initialStage = course === 'PhD' ? 'instructor' : 'officeSecretary';
