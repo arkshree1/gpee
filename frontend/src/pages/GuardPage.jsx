@@ -395,9 +395,15 @@ const GuardPage = () => {
           <div className="guard-approval-modal">
             <div className="guard-approval-header">
               <h3>Student {prettyDirection} Request</h3>
-              <span className={`guard-direction-badge ${pending.direction}`}>
+              <button
+                type="button"
+                className={`guard-direction-badge ${pending.direction}`}
+                onClick={() => setPending(null)}
+                title="Close this request"
+                style={{ cursor: 'pointer', border: 'none', background: 'inherit' }}
+              >
                 {prettyDirection}
-              </span>
+              </button>
             </div>
 
             <div className="guard-approval-body">

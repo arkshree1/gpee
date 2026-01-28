@@ -29,9 +29,10 @@ const StudentIdCardPopup = ({ student, onClose, isOpen }) => {
   // Extract student data with fallbacks
   const studentName = student.name || student.studentName || '--';
   const rollNumber = (student.rollnumber || student.rollNumber || '--').toUpperCase();
-  const course = student.course || 'B.Tech';
+  const course = student.course || '--';
   const branch = student.branch || '--';
   const department = student.department || '--';
+  const semester = student.semester || '--';
   const batch = calculateBatch(student.rollnumber || student.rollNumber);
   const roomNumber = student.roomNumber || '--';
   const hostelName = student.hostelName || '--';
@@ -142,6 +143,11 @@ const StudentIdCardPopup = ({ student, onClose, isOpen }) => {
                 <span className="id-popup-label">Course</span>
                 <span className="id-popup-colon">:</span>
                 <span className="id-popup-value">{course}</span>
+              </div>
+              <div className="id-popup-row">
+                <span className="id-popup-label">Semester</span>
+                <span className="id-popup-colon">:</span>
+                <span className="id-popup-value">{semester}</span>
               </div>
               <div className="id-popup-row">
                 <span className="id-popup-label">Branch</span>

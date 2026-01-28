@@ -503,6 +503,18 @@ body {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+.guard-direction-badge:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.guard-direction-badge:active {
+    transform: scale(0.98);
 }
 
 .guard-direction-badge.exit {
@@ -510,9 +522,17 @@ body {
     color: var(--guard-primary);
 }
 
+.guard-direction-badge.exit:hover {
+    background: rgba(242, 159, 103, 0.25);
+}
+
 .guard-direction-badge.entry {
     background: rgba(52, 177, 170, 0.15);
     color: var(--guard-teal);
+}
+
+.guard-direction-badge.entry:hover {
+    background: rgba(52, 177, 170, 0.25);
 }
 
 .guard-approval-body {

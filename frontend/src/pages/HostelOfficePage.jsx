@@ -202,6 +202,8 @@ const LocalRequestsView = ({ onViewDetails }) => {
       contact: gatepass.contact,
       roomNumber: gatepass.roomNumber,
       hostelName: gatepass.hostelName,
+      course: gatepass.course,
+      semester: gatepass.semester,
     });
     setShowIdCard(true);
   };
@@ -446,6 +448,14 @@ const LocalGatepassDetailsView = ({ gatepassId, onBack }) => {
             <span className="os-detail-value">{gatepass.purpose}</span>
           </div>
           <div className="os-detail-item">
+            <span className="os-detail-label">Course</span>
+            <span className="os-detail-value">{gatepass.course || '--'}</span>
+          </div>
+          <div className="os-detail-item">
+            <span className="os-detail-label">Semester</span>
+            <span className="os-detail-value">{gatepass.semester || '--'}</span>
+          </div>
+          <div className="os-detail-item">
             <span className="os-detail-label">Requested Exit</span>
             <span className="os-detail-value">{formatDateTimeFromParts(gatepass.dateOut, gatepass.timeOut)}</span>
           </div>
@@ -578,6 +588,8 @@ const LocalHistoryView = () => {
       contact: gp.contact,
       roomNumber: gp.roomNumber,
       hostelName: gp.hostelName,
+      course: gp.course,
+      semester: gp.semester,
     });
     setShowIdCard(true);
   };
@@ -886,6 +898,7 @@ const OSRequestsView = ({ onViewDetails }) => {
       contact: gatepass.contact,
       roomNumber: gatepass.roomNumber,
       hostelName: gatepass.hostelName,
+      course: gatepass.course,
     });
     setShowIdCard(true);
   };
@@ -1133,6 +1146,10 @@ const OSGatepassDetailsView = ({ gatepassId, onBack }) => {
           <div className="os-detail-item">
             <span className="os-detail-label">Room Number</span>
             <span className="os-detail-value">{gatepass.roomNumber}</span>
+          </div>
+          <div className="os-detail-item">
+            <span className="os-detail-label">Hostel</span>
+            <span className="os-detail-value">{gatepass.hostelName || gatepass.student?.hostelName || '--'}</span>
           </div>
           <div className="os-detail-item">
             <span className="os-detail-label">Contact</span>
@@ -1447,6 +1464,7 @@ const OSHistoryView = () => {
       contact: gp.contact,
       roomNumber: gp.roomNumber,
       hostelName: gp.hostelName,
+      course: gp.course,
     });
     setShowIdCard(true);
   };
