@@ -29,6 +29,32 @@ exports.createOutstationGatepass = async (req, res) => {
     instructorId,
   } = req.body;
 
+  // Check for existing unutilized Outstation gatepass (pending/approved but not completed)
+  console.log('[OutstationGatepass] Checking for existing gatepass for student:', studentId);
+
+  const existingOutstation = await OutstationGatepass.findOne({
+    student: studentId,
+    finalStatus: { $in: ['pending', 'approved'] },
+    $or: [
+      { utilizationStatus: { $ne: 'completed' } },
+      { utilizationStatus: { $exists: false } }, // Handle older gatepasses without this field
+    ],
+  });
+
+  console.log('[OutstationGatepass] Existing gatepass found:', existingOutstation ? (existingOutstation.gatePassNo || existingOutstation._id) : 'NONE');
+
+  if (existingOutstation) {
+    console.log('[OutstationGatepass] BLOCKING - Student already has active gatepass:', existingOutstation.gatePassNo || existingOutstation._id);
+    return res.status(400).json({
+      message: 'You already have an active Outstation gatepass. Please utilize or withdraw it before applying for a new one.',
+      existingGatepass: {
+        gatePassNo: existingOutstation.gatePassNo || 'Pending approval',
+        finalStatus: existingOutstation.finalStatus,
+        utilizationStatus: existingOutstation.utilizationStatus,
+      },
+    });
+  }
+
   if (
     !studentName ||
     !rollnumber ||

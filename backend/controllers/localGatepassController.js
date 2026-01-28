@@ -45,6 +45,32 @@ exports.createLocalGatepass = async (req, res) => {
     consent,
   } = req.body;
 
+  // Check for existing unutilized Local gatepass (pending/approved but not completed)
+  console.log('[LocalGatepass] Checking for existing gatepass for student:', studentId);
+
+  const existingLocal = await LocalGatepass.findOne({
+    student: studentId,
+    status: { $in: ['pending', 'approved'] },
+    $or: [
+      { utilizationStatus: { $ne: 'completed' } },
+      { utilizationStatus: { $exists: false } }, // Handle older gatepasses without this field
+    ],
+  });
+
+  console.log('[LocalGatepass] Existing gatepass found:', existingLocal ? existingLocal.gatePassNo : 'NONE');
+
+  if (existingLocal) {
+    console.log('[LocalGatepass] BLOCKING - Student already has active gatepass:', existingLocal.gatePassNo);
+    return res.status(400).json({
+      message: 'You already have an active Local gatepass. Please utilize or withdraw it before applying for a new one.',
+      existingGatepass: {
+        gatePassNo: existingLocal.gatePassNo,
+        status: existingLocal.status,
+        utilizationStatus: existingLocal.utilizationStatus,
+      },
+    });
+  }
+
   if (
     !studentName ||
     !rollnumber ||
@@ -96,10 +122,10 @@ exports.createLocalGatepass = async (req, res) => {
     try {
       // Get all hostel office emails
       const hostelOffices = await HostelOffice.find({}).select('email');
-      
+
       if (hostelOffices.length > 0) {
         const reviewLink = `${FRONTEND_URL}/hostel-office`;
-        
+
         // Format date for display (DD/MM/YYYY format)
         const formatDate = (dateStr) => {
           if (!dateStr) return dateStr;
@@ -109,7 +135,7 @@ exports.createLocalGatepass = async (req, res) => {
           }
           return dateStr;
         };
-        
+
         // Format time for display (12-hour format)
         const formatTime = (timeStr) => {
           if (!timeStr) return timeStr;
@@ -119,7 +145,7 @@ exports.createLocalGatepass = async (req, res) => {
           const h12 = h % 12 || 12;
           return `${h12}:${minutes} ${ampm}`;
         };
-        
+
         // Send email to all hostel office accounts
         for (const ho of hostelOffices) {
           await sendLocalGatepassNotification({
