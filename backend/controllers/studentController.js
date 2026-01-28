@@ -33,16 +33,16 @@ exports.getStatus = async (req, res) => {
     decidedAt: { $gte: new Date(Date.now() - 30000) }, // Last 30 seconds
   }).select('_id direction decidedAt').sort({ decidedAt: -1 });
 
-  // Check if there's an approved request after the rejection
+  // Check if there's an approved OR pending request after the rejection
   let showRejection = null;
   if (recentRejection) {
-    const approvedAfterRejection = await GateRequest.findOne({
+    const requestAfterRejection = await GateRequest.findOne({
       student: userId,
-      status: 'approved',
-      decidedAt: { $gt: recentRejection.decidedAt },
+      status: { $in: ['approved', 'pending'] },
+      createdAt: { $gt: recentRejection.decidedAt },
     });
-    // Only show rejection if no approved request came after it
-    if (!approvedAfterRejection) {
+    // Only show rejection if no approved/pending request came after it
+    if (!requestAfterRejection) {
       showRejection = {
         direction: recentRejection.direction,
         decidedAt: recentRejection.decidedAt,
@@ -242,12 +242,14 @@ exports.getMyGatepasses = async (req, res) => {
 
   let showRejection = null;
   if (recentRejection) {
-    const approvedAfterRejection = await GateRequest.findOne({
+    // Check if there's an approved OR pending request after the rejection
+    const requestAfterRejection = await GateRequest.findOne({
       student: userId,
-      status: 'approved',
-      decidedAt: { $gt: recentRejection.decidedAt },
+      status: { $in: ['approved', 'pending'] },
+      createdAt: { $gt: recentRejection.decidedAt },
     });
-    if (!approvedAfterRejection) {
+    // Only show rejection if no approved/pending request came after it
+    if (!requestAfterRejection) {
       showRejection = {
         direction: recentRejection.direction,
         decidedAt: recentRejection.decidedAt,

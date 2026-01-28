@@ -3,9 +3,11 @@ const router = express.Router();
 
 const upload = require('../utils/imageUpload');
 const authController = require('../controllers/authController');
+const { authLimiter } = require('../middleware/rateLimiter');
 
 // Signup with image upload (handle upload errors gracefully)
-router.post('/signup', (req, res, next) => {
+// Rate limited: 10 requests per 5 minutes per email
+router.post('/signup', authLimiter, (req, res, next) => {
 	upload.single('image')(req, res, function (err) {
 		if (err) {
 			return res.status(400).json({ message: err.message || 'Invalid image upload' });
@@ -17,15 +19,19 @@ router.post('/signup', (req, res, next) => {
 //heyff
 
 // Verify OTP after signup
-router.post('/verify-otp', authController.verifyOtp);
+// Rate limited: 10 requests per 5 minutes per email
+router.post('/verify-otp', authLimiter, authController.verifyOtp);
 
 // Login
-router.post('/login', authController.login);
+// Rate limited: 10 requests per 5 minutes per email
+router.post('/login', authLimiter, authController.login);
 
 // Forgot password - send OTP
-router.post('/forgot-password', authController.forgotPassword);
+// Rate limited: 10 requests per 5 minutes per email
+router.post('/forgot-password', authLimiter, authController.forgotPassword);
 
 // Reset password with OTP
-router.post('/reset-password', authController.resetPassword);
+// Rate limited: 10 requests per 5 minutes per email
+router.post('/reset-password', authLimiter, authController.resetPassword);
 
 module.exports = router;

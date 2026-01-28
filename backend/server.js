@@ -46,8 +46,8 @@ app.use(
     keyGenerator: (req) => {
       return req.ip || req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
     },
-    // Skip validation for IP address
-    validate: { ip: false },
+    // Skip all validations to avoid IPv6 and IP address issues
+    validate: false,
   })
 );
 

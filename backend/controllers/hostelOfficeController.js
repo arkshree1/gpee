@@ -7,11 +7,21 @@ const { sendOutstationApprovalNotification, sendOutstationRejectionNotification 
 // Get all pending local gatepasses for hostel office to review
 exports.getPendingGatepasses = async (req, res) => {
     const gatepasses = await LocalGatepass.find({ status: 'pending' })
-        .populate('student', 'imageUrl')
+        .populate('student', 'imageUrl hostelName course')
         .sort({ createdAt: -1 })
         .select('-__v');
 
-    return res.json({ gatepasses });
+    // Map gatepasses to include hostelName and course from student
+    const mappedGatepasses = gatepasses.map(gp => {
+        const gpObj = gp.toObject();
+        if (gpObj.student) {
+            gpObj.hostelName = gpObj.student.hostelName || null;
+            gpObj.course = gpObj.student.course || null;
+        }
+        return gpObj;
+    });
+
+    return res.json({ gatepasses: mappedGatepasses });
 };
 
 // Get all local gatepasses for history (approved and denied only)
@@ -31,10 +41,20 @@ exports.getGatepassHistory = async (req, res) => {
 
     const gatepasses = await LocalGatepass.find(query)
         .sort({ decidedAt: -1, createdAt: -1 })
-        .populate('student', 'imageUrl')
+        .populate('student', 'imageUrl hostelName course')
         .select('-__v');
 
-    return res.json({ gatepasses });
+    // Map gatepasses to include hostelName and course from student
+    const mappedGatepasses = gatepasses.map(gp => {
+        const gpObj = gp.toObject();
+        if (gpObj.student) {
+            gpObj.hostelName = gpObj.student.hostelName || null;
+            gpObj.course = gpObj.student.course || null;
+        }
+        return gpObj;
+    });
+
+    return res.json({ gatepasses: mappedGatepasses });
 };
 
 // Get entry-exit logs (only approved ones)
@@ -159,14 +179,15 @@ exports.getOSPendingGatepasses = async (req, res) => {
     })
         .sort({ createdAt: -1 })
         .select('studentName rollnumber course department branch contact roomNumber student createdAt')
-        .populate('student', 'imageUrl branch');
+        .populate('student', 'imageUrl branch hostelName');
 
-    // For existing records without branch, use the student's branch
+    // For existing records without branch, use the student's branch; add hostelName
     const mappedGatepasses = gatepasses.map(gp => {
         const gpObj = gp.toObject();
         if (!gpObj.branch && gpObj.student?.branch) {
             gpObj.branch = gpObj.student.branch;
         }
+        gpObj.hostelName = gpObj.student?.hostelName || null;
         return gpObj;
     });
 
@@ -178,13 +199,19 @@ exports.getOSGatepassDetails = async (req, res) => {
     const { gatepassId } = req.params;
 
     const gatepass = await OutstationGatepass.findById(gatepassId)
-        .populate('student', 'imageUrl name rollnumber branch department course');
+        .populate('student', 'imageUrl name rollnumber branch department course hostelName');
 
     if (!gatepass) {
         return res.status(404).json({ message: 'Gatepass not found' });
     }
 
-    return res.json({ gatepass });
+    // Add hostelName from student if not on gatepass
+    const gpObj = gatepass.toObject();
+    if (!gpObj.hostelName && gpObj.student?.hostelName) {
+        gpObj.hostelName = gpObj.student.hostelName;
+    }
+
+    return res.json({ gatepass: gpObj });
 };
 
 // Get student's OS gatepass history

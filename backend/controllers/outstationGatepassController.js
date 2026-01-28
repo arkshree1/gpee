@@ -195,12 +195,14 @@ exports.getMyOutstationGatepasses = async (req, res) => {
 
   let showRejection = null;
   if (recentRejection) {
-    const approvedAfterRejection = await GateRequest.findOne({
+    // Check if there's an approved OR pending request after the rejection
+    const requestAfterRejection = await GateRequest.findOne({
       student: studentId,
-      status: 'approved',
-      decidedAt: { $gt: recentRejection.decidedAt },
+      status: { $in: ['approved', 'pending'] },
+      createdAt: { $gt: recentRejection.decidedAt },
     });
-    if (!approvedAfterRejection) {
+    // Only show rejection if no approved/pending request came after it
+    if (!requestAfterRejection) {
       showRejection = {
         direction: recentRejection.direction,
         decidedAt: recentRejection.decidedAt,
