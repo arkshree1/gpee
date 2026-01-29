@@ -133,7 +133,7 @@ exports.getDetailedLogs = async (req, res) => {
 exports.getStudentsInside = async (req, res) => {
   try {
     const students = await User.find({ role: 'student', presence: 'inside' })
-      .select('name rollnumber email roomNumber hostelName contactNumber')
+      .select('name rollnumber email roomNumber hostelName contactNumber imageUrl')
       .sort({ name: 1 });
     return res.json({ students });
   } catch (error) {
@@ -151,7 +151,7 @@ exports.getStudentsOutside = async (req, res) => {
       localActiveGPNo: null,
       OSActiveGPNo: null
     })
-      .select('name rollnumber email roomNumber hostelName contactNumber')
+      .select('name rollnumber email roomNumber hostelName contactNumber imageUrl')
       .sort({ name: 1 });
     return res.json({ students });
   } catch (error) {
@@ -168,7 +168,7 @@ exports.getLocalGatepassExits = async (req, res) => {
       presence: 'outside',
       localActiveGPNo: { $ne: null }
     })
-      .select('name rollnumber email roomNumber hostelName contactNumber')
+      .select('name rollnumber email roomNumber hostelName contactNumber imageUrl')
       .sort({ name: 1 });
     return res.json({ students });
   } catch (error) {
@@ -185,7 +185,7 @@ exports.getOutstationGatepassExits = async (req, res) => {
       presence: 'outside',
       OSActiveGPNo: { $ne: null }
     })
-      .select('name rollnumber email roomNumber hostelName contactNumber')
+      .select('name rollnumber email roomNumber hostelName contactNumber imageUrl')
       .sort({ name: 1 });
     return res.json({ students });
   } catch (error) {
@@ -198,7 +198,7 @@ exports.getOutstationGatepassExits = async (req, res) => {
 exports.getAllStudents = async (req, res) => {
   try {
     const students = await User.find({ role: 'student' })
-      .select('name rollnumber email roomNumber hostelName contactNumber')
+      .select('name rollnumber email roomNumber hostelName contactNumber imageUrl')
       .sort({ name: 1 });
     return res.json({ students });
   } catch (error) {
@@ -247,14 +247,13 @@ exports.getStudentLogs = async (req, res) => {
       return res.status(404).json({ message: 'Student not found' });
     }
 
-    // Get the student's entry-exit logs from GateRequest (approved ones)
-    const logs = await GateRequest.find({
-      student: studentId,
-      status: 'approved'
+    // Get the student's entry-exit logs from GateLog (actual movements)
+    const logs = await GateLog.find({
+      student: studentId
     })
-      .sort({ decidedAt: -1 })
+      .sort({ exitStatusTime: -1 })
       .limit(50)
-      .select('direction decidedAt purpose place gatePassNo isOutstation');
+      .select('direction exitStatusTime entryStatusTime purpose place gatePassNo');
 
     const formattedLogs = logs.map(log => {
       let type = 'Normal';
@@ -266,16 +265,32 @@ exports.getStudentLogs = async (req, res) => {
         }
       }
 
-      return {
-        id: log._id,
-        direction: log.direction === 'exit' ? 'EXIT' : 'ENTRY',
-        timestamp: log.decidedAt,
-        purpose: log.purpose || '--',
-        place: log.place || '--',
-        gatePassNo: log.gatePassNo || null,
-        type
-      };
-    });
+      // Create two entries for exit and entry if both exist
+      const entries = [];
+      if (log.exitStatusTime) {
+        entries.push({
+          id: `${log._id}_exit`,
+          direction: 'EXIT',
+          timestamp: log.exitStatusTime,
+          purpose: log.purpose || '--',
+          place: log.place || '--',
+          gatePassNo: log.gatePassNo || null,
+          type
+        });
+      }
+      if (log.entryStatusTime) {
+        entries.push({
+          id: `${log._id}_entry`,
+          direction: 'ENTRY',
+          timestamp: log.entryStatusTime,
+          purpose: log.purpose || '--',
+          place: log.place || '--',
+          gatePassNo: log.gatePassNo || null,
+          type
+        });
+      }
+      return entries;
+    }).flat().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     return res.json({ student, logs: formattedLogs });
   } catch (error) {

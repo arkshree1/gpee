@@ -63,7 +63,7 @@ exports.getEntryExitLogs = async (req, res) => {
 
     let query = {
         exitOutcome: 'approved',
-        entryOutcome: 'approved',
+        // entryOutcome: 'approved', // Show all exits, even if entry is pending
     };
 
     // Filter by date if provided

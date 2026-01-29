@@ -132,6 +132,11 @@ exports.signup = async (req, res) => {
       return res.status(400).json({ message: 'Passwords do not match' });
     }
 
+    // Restrict to RGIPT email domain only
+    if (!email.toLowerCase().endsWith('@rgipt.ac.in')) {
+      return res.status(400).json({ message: 'Email must be your RGIPT college email (@rgipt.ac.in)' });
+    }
+
     const existingUser = await User.findOne({ email: email.toLowerCase() });
 
     // If user exists and is verified, reject
