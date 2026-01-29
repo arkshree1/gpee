@@ -272,6 +272,12 @@ const Signup = () => {
       return false;
     }
 
+    // Restrict to RGIPT email domain only
+    if (!email.toLowerCase().endsWith('@rgipt.ac.in')) {
+      setPopupMessage('Email must be your RGIPT college email (@rgipt.ac.in)');
+      return false;
+    }
+
     if (password.length < 6) {
       setPopupMessage('Password must be at least 6 characters.');
       return false;

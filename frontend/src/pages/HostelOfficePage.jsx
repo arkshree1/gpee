@@ -10,11 +10,14 @@ import {
   getHostelOfficeOSStudentHistory,
   getHostelOfficeOSGatepassHistory,
   decideHostelOfficeOSGatepass,
+
   getImageUrl,
+  getEntryExitLogs,
 } from '../api/api';
 import PopupBox from '../components/PopupBox';
 import ConfirmModal from '../components/ConfirmModal';
 import StudentIdCardPopup from '../components/StudentIdCardPopup';
+import GuardEntryExitTable from '../components/GuardEntryExitTable';
 import '../styles/admin.css';
 
 const HostelOfficePage = () => {
@@ -118,6 +121,22 @@ const HostelOfficePage = () => {
               <span className="admin-nav-label">History</span>
             </button>
 
+            {/* Logs Section */}
+            <div className="admin-nav-section-title" style={{ marginTop: '20px' }}>Logs</div>
+            <button
+              className={`admin-nav-item ${activePage === 'log-register' ? 'active' : ''}`}
+              onClick={() => handleNavClick('log-register')}
+            >
+              <svg className="admin-nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+              <span className="admin-nav-label">Log Register</span>
+            </button>
+
             {/* Outstation Gatepass Section */}
             <div className="admin-nav-section-title" style={{ marginTop: '20px' }}>Outstation Gatepass</div>
             <button
@@ -162,6 +181,7 @@ const HostelOfficePage = () => {
               <LocalGatepassDetailsView gatepassId={viewingGatepass} onBack={() => setViewingGatepass(null)} />
             )}
             {activePage === 'local-history' && <LocalHistoryView />}
+            {activePage === 'log-register' && <LogRegisterView />}
 
             {/* Outstation Gatepass Views */}
             {activePage === 'os-requests' && !viewingGatepass && (
@@ -1742,6 +1762,145 @@ const OSHistoryView = () => {
         isOpen={showIdCard}
         onClose={() => setShowIdCard(false)}
       />
+    </div>
+  );
+};
+
+const LogRegisterView = () => {
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [search, setSearch] = useState('');
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch logs when date or search changes
+  useEffect(() => {
+    const fetchLogs = async () => {
+      setLoading(true);
+      try {
+        const res = await getEntryExitLogs(date, search);
+        setLogs(res.data.logs || []);
+      } catch (err) {
+        console.error("Failed to fetch logs", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const timeoutId = setTimeout(() => {
+      fetchLogs();
+    }, 300); // Debounce search
+
+    return () => clearTimeout(timeoutId);
+  }, [date, search]);
+
+  const formatLogTime = (dateStr) => {
+    if (!dateStr) return '--';
+    const d = new Date(dateStr);
+    return d.toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    }).toUpperCase();
+  };
+
+  const handleDownloadExcel = () => {
+    if (!logs.length) return;
+
+    // Define headers
+    const headers = ["Sr No", "Name", "Roll No", "Room", "Contact", "Place", "Purpose", "Gate Pass", "Time Out", "Time In"];
+
+    // Convert logs to CSV rows
+    const rows = logs.map(log => [
+      log.srNo,
+      log.name,
+      log.rollNo,
+      log.roomNo,
+      log.contact,
+      log.place,
+      log.purpose,
+      log.gatePass,
+      formatLogTime(log.timeOut),
+      formatLogTime(log.timeIn)
+    ].map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(',')); // Handle quotes
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `EntryExitLogs_${date}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  return (
+    <div className="guard-logs-page" style={{ padding: '20px' }}>
+      <div className="guard-logs-header" style={{ marginBottom: '20px' }}>
+        <h2 className="guard-logs-title" style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>Entry-Exit Log Register</h2>
+        <div className="guard-logs-filters" style={{ display: 'flex', gap: '15px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <div className="guard-filter-group">
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Date</label>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
+                className="guard-date-input"
+                style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ddd' }}
+              />
+              {date && (
+                <button
+                  onClick={() => setDate('')}
+                  style={{ padding: '8px 12px', fontSize: '12px', background: '#f3f4f6', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                  title="Show all dates"
+                >
+                  All
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="guard-filter-group">
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Search</label>
+            <input
+              type="text"
+              placeholder="Name or Roll No..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="guard-search-input"
+              style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ddd', minWidth: '200px' }}
+            />
+          </div>
+          <button
+            onClick={handleDownloadExcel}
+            className="gp-action-btn"
+            disabled={logs.length === 0}
+            style={{
+              background: logs.length === 0 ? '#9ca3af' : '#10b981',
+              color: 'white',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '6px',
+              cursor: logs.length === 0 ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              height: '38px'
+            }}
+          >
+            <span>📥</span> Download Excel
+          </button>
+        </div>
+      </div>
+      <div style={{ background: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
+        <GuardEntryExitTable
+          logs={logs}
+          loading={loading}
+          formatLogTime={formatLogTime}
+        />
+      </div>
     </div>
   );
 };
