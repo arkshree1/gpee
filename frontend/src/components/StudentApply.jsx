@@ -254,6 +254,7 @@ const StudentApply = () => {
                 value={purpose}
                 onChange={(e) => setPurpose(e.target.value)}
                 placeholder="e.g., Medical, Shopping, Personal"
+                maxLength={30}
               />
             </div>
 
@@ -264,6 +265,7 @@ const StudentApply = () => {
                 value={place}
                 onChange={(e) => setPlace(e.target.value)}
                 placeholder="e.g., Market, Hospital, Home"
+                maxLength={30}
               />
             </div>
 

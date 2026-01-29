@@ -1809,21 +1809,29 @@ const LogRegisterView = () => {
     const headers = ["Sr No", "Name", "Roll No", "Room No", "Contact", "Place", "Purpose", "Gate Pass", "Time Out", "Time In"];
 
     const rows = logs.map(log => {
-      // Format each cell - prepend tab to contact to force text in Excel
       const srNo = log.srNo || '';
       const name = log.name || '';
       const rollNo = log.rollNo || '';
       const roomNo = log.roomNo || '';
-      const contact = log.contact ? `\t${log.contact}` : ''; // Tab prefix forces text format
+      // Prefix with apostrophe to force Excel to treat as text (apostrophe is hidden in Excel)
+      const contact = log.contact ? `'${log.contact}` : '';
       const place = log.place || '';
       const purpose = log.purpose || '';
       const gatePass = log.gatePass || '--';
       const timeOut = formatLogTime(log.timeOut);
       const timeIn = formatLogTime(log.timeIn);
 
-      // Escape quotes and wrap in quotes
+      // Escape quotes properly for CSV
+      const escapeCSV = (val) => {
+        const str = String(val);
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
+
       return [srNo, name, rollNo, roomNo, contact, place, purpose, gatePass, timeOut, timeIn]
-        .map(val => `"${val.toString().replace(/"/g, '""')}"`)
+        .map(escapeCSV)
         .join(',');
     });
 
