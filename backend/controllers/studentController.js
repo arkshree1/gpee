@@ -113,6 +113,10 @@ exports.apply = async (req, res) => {
     if (!effectivePurpose || !effectivePlace) {
       return res.status(400).json({ message: 'Purpose and place are required' });
     }
+    // Limit purpose and place to 30 characters
+    if (effectivePurpose.length > 30 || effectivePlace.length > 30) {
+      return res.status(400).json({ message: 'Purpose and place must be 30 characters or less' });
+    }
   } else if (direction === 'entry') {
     effectivePurpose = student.outPurpose;
     effectivePlace = student.outPlace;
