@@ -5,10 +5,15 @@ const path = require('path');
 const dotenv = require('dotenv');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const http = require('http');
+const { initSocket } = require('./utils/socket');
 
 dotenv.config();
 
 const app = express();
+
+// Create HTTP server (Socket.IO will attach to this)
+const server = http.createServer(app);
 
 // Trust proxy for rate limiting behind reverse proxy (IIS/Cloudflare)
 app.set('trust proxy', 1);
@@ -130,15 +135,17 @@ mongoose
     console.log(`📦 MongoDB connected successfully`);
     await bootstrapDefaultAccounts();
 
+    // Initialize Socket.IO with the HTTP server
+    initSocket(server, allowedOrigins);
+
     // Start HTTP server on localhost only
     // HTTPS is handled at the proxy/CDN level (Cloudflare + IIS)
-    app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 HTTP Server running on port ${PORT}`);
-});
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 HTTP Server running on port ${PORT}`);
+    });
 
   })
   .catch((err) => {
     console.error(`❌ MongoDB connection error: ${err.message}`);
     process.exit(1); // fail fast is FAANG-level
   });
-

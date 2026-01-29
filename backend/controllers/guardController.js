@@ -3,6 +3,7 @@ const Guard = require('../models/Guard');
 const GateRequest = require('../models/GateRequest');
 const GateLog = require('../models/GateLog');
 const { hashToken } = require('../utils/security');
+const { emitGateDecision, emitActivityUpdate } = require('../utils/socket');
 
 const computeNewPresence = (currentPresence, direction) => {
   // direction: exit => inside->outside
@@ -289,6 +290,30 @@ exports.decide = async (req, res) => {
       }
     }
     // ENTRY DENIED -> No log update, base exit log stays as In Progress
+  }
+
+  // Emit real-time socket event to student
+  try {
+    emitGateDecision(student._id.toString(), {
+      outcome: approved ? 'approved' : 'rejected',
+      direction: requestDoc.direction,
+      newPresence: student.presence,
+      decidedAt: new Date().toISOString(),
+      requestId: requestDoc._id.toString(),
+    });
+
+    // Also emit activity update for student home screen
+    if (approved) {
+      emitActivityUpdate(student._id.toString(), {
+        type: 'gate-log',
+        direction: requestDoc.direction,
+        outcome: 'approved',
+        decidedAt: new Date().toISOString(),
+      });
+    }
+  } catch (socketErr) {
+    // Don't fail the request if socket emit fails
+    console.error('Failed to emit socket event:', socketErr.message);
   }
 
   return res.json({
