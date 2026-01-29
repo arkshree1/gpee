@@ -34,11 +34,13 @@ const initSocket = (httpServer, allowedOrigins) => {
 
         try {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            socket.userId = decoded.id;
+            // IMPORTANT: JWT payload uses 'userId' not 'id'
+            socket.userId = decoded.userId;
             socket.userRole = decoded.role;
             next();
         } catch (err) {
             // Invalid token - allow connection but don't authenticate
+            console.warn('⚠️ Socket auth failed:', err.message);
             socket.userId = null;
             next();
         }
