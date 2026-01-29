@@ -267,27 +267,28 @@ exports.decide = async (req, res) => {
         baseExitLog.decidedAt = decidedAt;
         baseExitLog.outcome = 'approved';
         await baseExitLog.save();
-      } else {
-        // Fallback: if no base exit log found, create a standalone entry-approved log
-        await GateLog.create({
-          student: student._id,
-          guard: guard._id,
-          request: requestDoc._id,
-          direction: 'entry',
-          outcome: 'approved',
-          purpose: requestDoc.purpose,
-          place: requestDoc.place,
-          decidedAt,
-          gatepassId: requestDoc.gatepassId || null,
-          gatePassNo: requestDoc.gatePassNo || null,
-          exitStatus: '--',
-          exitOutcome: '--',
-          entryStatus: 'entry approved',
-          entryOutcome: 'approved',
-          exitStatusTime: null,
-          entryStatusTime: decidedAt,
-        });
       }
+
+      // ALWAYS create a separate ENTRY log for the activity feed display
+      // This ensures both EXIT and ENTRY appear as separate rows in live activity
+      await GateLog.create({
+        student: student._id,
+        guard: guard._id,
+        request: requestDoc._id,
+        direction: 'entry',
+        outcome: 'approved',
+        purpose: requestDoc.purpose || baseExitLog?.purpose || '--',
+        place: requestDoc.place || baseExitLog?.place || '--',
+        decidedAt,
+        gatepassId: requestDoc.gatepassId || baseExitLog?.gatepassId || null,
+        gatePassNo: requestDoc.gatePassNo || baseExitLog?.gatePassNo || null,
+        exitStatus: '--',
+        exitOutcome: '--',
+        entryStatus: 'entry approved',
+        entryOutcome: 'approved',
+        exitStatusTime: null,
+        entryStatusTime: decidedAt,
+      });
     }
     // ENTRY DENIED -> No log update, base exit log stays as In Progress
   }

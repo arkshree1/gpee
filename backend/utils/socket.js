@@ -48,7 +48,7 @@ const initSocket = (httpServer, allowedOrigins) => {
 
     // Handle new connections
     io.on('connection', (socket) => {
-        console.log(`🔌 Socket connected: ${socket.id} (userId: ${socket.userId || 'anonymous'})`);
+        console.log(`🔌 Socket connected: ${socket.id} (userId: ${socket.userId || 'anonymous'}, role: ${socket.userRole || 'none'})`);
 
         // Join user-specific room if authenticated
         if (socket.userId) {
@@ -56,11 +56,28 @@ const initSocket = (httpServer, allowedOrigins) => {
             console.log(`   → Joined room: user:${socket.userId}`);
         }
 
+        // Guards join a special 'guards' room for notifications
+        if (socket.userRole === 'guard') {
+            socket.join('guards');
+            console.log(`   → Guard joined 'guards' room`);
+        }
+
         // Handle manual room joining (for authenticated users changing context)
         socket.on('join-room', (roomId) => {
             if (socket.userId && roomId === socket.userId) {
                 socket.join(`user:${roomId}`);
             }
+        });
+
+        // Handle QR cancellation from students - notify guards
+        socket.on('qr-cancelled', (data) => {
+            console.log(`📤 Student cancelled QR:`, data.requestId);
+            // Notify all guards about the cancellation
+            io.to('guards').emit('qr-cancelled', {
+                requestId: data.requestId,
+                studentId: socket.userId,
+                timestamp: new Date().toISOString(),
+            });
         });
 
         socket.on('disconnect', (reason) => {
@@ -116,9 +133,28 @@ const emitActivityUpdate = (studentId, logData) => {
     });
 };
 
+/**
+ * Emit QR cancelled event to all guards
+ * @param {string} requestId - The request ID that was cancelled
+ * @param {string} studentId - The student's user ID
+ */
+const emitQrCancelled = (requestId, studentId) => {
+    if (!io) return;
+
+    io.to('guards').emit('qr-cancelled', {
+        requestId,
+        studentId,
+        timestamp: new Date().toISOString(),
+    });
+
+    console.log(`📤 Emitted qr-cancelled to guards for request:${requestId}`);
+};
+
 module.exports = {
     initSocket,
     getIO,
     emitGateDecision,
     emitActivityUpdate,
+    emitQrCancelled,
 };
+
