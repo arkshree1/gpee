@@ -62,15 +62,14 @@ exports.getUsers = async (req, res) => {
   return res.json({ users });
 };
 
-// Live activity logs for real-time dashboard panel - from GateRequest
-// Only show APPROVED requests (after guard has approved the QR)
+// Live activity logs for real-time dashboard panel - from GateLog
+// Shows recent gate activity (approved exits/entries)
 exports.getLiveLogs = async (req, res) => {
   try {
-    const logs = await GateRequest.find({ status: 'approved' })
+    const logs = await GateLog.find({ outcome: 'approved' })
       .sort({ decidedAt: -1 })
       .limit(50)
-      .populate('student', 'name rollnumber imageUrl')
-      .select('direction decidedAt student status purpose place');
+      .populate('student', 'name rollnumber imageUrl');
 
     // Transform to clean format for frontend
     const liveLogs = logs.map(log => ({
@@ -81,9 +80,9 @@ exports.getLiveLogs = async (req, res) => {
       rollNumber: log.student?.rollnumber || '--',
       imageUrl: log.student?.imageUrl || null,
       timestamp: log.decidedAt,
-      status: log.status,
-      purpose: log.purpose,
-      place: log.place,
+      status: log.outcome,
+      purpose: log.purpose || '--',
+      place: log.place || '--',
     }));
 
     return res.json({ logs: liveLogs });
@@ -93,14 +92,13 @@ exports.getLiveLogs = async (req, res) => {
   }
 };
 
-// Detailed activity logs for the Students page - includes contact number and type
+// Detailed activity logs for the Students page - from GateLog - includes contact number and type
 exports.getDetailedLogs = async (req, res) => {
   try {
-    const logs = await GateRequest.find({ status: 'approved' })
+    const logs = await GateLog.find({ outcome: 'approved' })
       .sort({ decidedAt: -1 })
       .limit(200)
-      .populate('student', 'name rollnumber contactNumber imageUrl')
-      .select('direction decidedAt student purpose place gatePassNo isOutstation');
+      .populate('student', 'name rollnumber contactNumber imageUrl');
 
     const detailedLogs = logs.map(log => {
       // gatePassNo already contains the format like "L-00008" or "OS-00002"
