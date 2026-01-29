@@ -1806,10 +1806,8 @@ const LogRegisterView = () => {
   const handleDownloadExcel = () => {
     if (!logs.length) return;
 
-    // Define headers
     const headers = ["Sr No", "Name", "Roll No", "Room", "Contact", "Place", "Purpose", "Gate Pass", "Time Out", "Time In"];
 
-    // Convert logs to CSV rows
     const rows = logs.map(log => [
       log.srNo,
       log.name,
@@ -1821,7 +1819,7 @@ const LogRegisterView = () => {
       log.gatePass,
       formatLogTime(log.timeOut),
       formatLogTime(log.timeIn)
-    ].map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(',')); // Handle quotes
+    ].map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(','));
 
     const csvContent = [headers.join(','), ...rows].join('\n');
 
@@ -1829,53 +1827,51 @@ const LogRegisterView = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `EntryExitLogs_${date}.csv`);
+    link.setAttribute("download", `EntryExitLogs_${date || 'all'}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
   return (
-    <div className="guard-logs-page" style={{ padding: '20px' }}>
-      <div className="guard-logs-header" style={{ marginBottom: '20px' }}>
-        <h2 className="guard-logs-title" style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>Entry-Exit Log Register</h2>
-        <div className="guard-logs-filters" style={{ display: 'flex', gap: '15px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <div className="guard-filter-group">
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Date</label>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                max={new Date().toISOString().split('T')[0]}
-                className="guard-date-input"
-                style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ddd' }}
-              />
-              {date && (
-                <button
-                  onClick={() => setDate('')}
-                  style={{ padding: '8px 12px', fontSize: '12px', background: '#f3f4f6', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
-                  title="Show all dates"
-                >
-                  All
-                </button>
-              )}
-            </div>
+    <div className="os-section">
+      {/* Header with Title and Filters */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
+        <h2 className="os-section-title" style={{ margin: 0 }}>Entry-Exit Log Register</h2>
+        <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* Date Filter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <label style={{ fontWeight: '500', fontSize: '14px', color: '#666' }}>DATE</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              max={new Date().toISOString().split('T')[0]}
+              style={{ padding: '8px 12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }}
+            />
+            {date && (
+              <button
+                onClick={() => setDate('')}
+                style={{ padding: '8px 12px', background: '#f3f4f6', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}
+              >
+                All
+              </button>
+            )}
           </div>
-          <div className="guard-filter-group">
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Search</label>
+          {/* Search Filter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <label style={{ fontWeight: '500', fontSize: '14px', color: '#666' }}>SEARCH</label>
             <input
               type="text"
               placeholder="Name or Roll No..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="guard-search-input"
-              style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ddd', minWidth: '200px' }}
+              style={{ padding: '8px 12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px', minWidth: '180px' }}
             />
           </div>
+          {/* Download Button */}
           <button
             onClick={handleDownloadExcel}
-            className="gp-action-btn"
             disabled={logs.length === 0}
             style={{
               background: logs.length === 0 ? '#9ca3af' : '#10b981',
@@ -1887,19 +1883,63 @@ const LogRegisterView = () => {
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              height: '38px'
+              fontSize: '14px',
+              fontWeight: '500'
             }}
           >
-            <span>📥</span> Download Excel
+            📥 Download Excel
           </button>
         </div>
       </div>
-      <div style={{ background: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
-        <GuardEntryExitTable
-          logs={logs}
-          loading={loading}
-          formatLogTime={formatLogTime}
-        />
+
+      {/* Table */}
+      <div style={{ background: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+            <thead>
+              <tr style={{ background: '#f8f9fa', borderBottom: '2px solid #e5e7eb' }}>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap' }}>SR NO.</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap' }}>NAME</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap' }}>ROLL NO.</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap' }}>ROOM NO.</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap' }}>CONTACT</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap' }}>PLACE</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap' }}>PURPOSE</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap' }}>GATE PASS</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap' }}>TIME OUT</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap' }}>TIME IN</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading && (
+                <tr>
+                  <td colSpan={10} style={{ padding: '40px', textAlign: 'center', color: '#666' }}>Loading...</td>
+                </tr>
+              )}
+              {!loading && logs.length === 0 && (
+                <tr>
+                  <td colSpan={10} style={{ padding: '40px', textAlign: 'center', color: '#666' }}>No records found</td>
+                </tr>
+              )}
+              {!loading && logs.map((log) => (
+                <tr key={log._id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <td style={{ padding: '12px 16px', color: '#ef4444', fontWeight: '500' }}>{log.srNo}</td>
+                  <td style={{ padding: '12px 16px', color: '#111' }}>{log.name}</td>
+                  <td style={{ padding: '12px 16px', color: '#111' }}>{log.rollNo}</td>
+                  <td style={{ padding: '12px 16px', color: '#111' }}>{log.roomNo}</td>
+                  <td style={{ padding: '12px 16px', color: '#111' }}>{log.contact}</td>
+                  <td style={{ padding: '12px 16px', color: '#2563eb' }}>{log.place}</td>
+                  <td style={{ padding: '12px 16px', color: '#059669' }}>{log.purpose}</td>
+                  <td style={{ padding: '12px 16px', color: '#666' }}>{log.gatePass}</td>
+                  <td style={{ padding: '12px 16px', color: '#111' }}>{formatLogTime(log.timeOut)}</td>
+                  <td style={{ padding: '12px 16px', color: log.timeIn ? '#059669' : '#999', fontWeight: log.timeIn ? '500' : 'normal' }}>
+                    {formatLogTime(log.timeIn)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
