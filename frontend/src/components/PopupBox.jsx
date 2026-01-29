@@ -22,7 +22,9 @@ const PopupBox = ({ message, onClose }) => {
     lowerMsg.includes('please fill') ||
     lowerMsg.includes('confirm that') ||
     lowerMsg.includes('incorrect') ||
-    lowerMsg.includes('10 digits');
+    lowerMsg.includes('10 digits') ||
+    lowerMsg.includes('active local gatepass') ||
+    lowerMsg.includes('active gatepass');
 
   return (
     <div className="sd-modal-overlay" onClick={onClose}>

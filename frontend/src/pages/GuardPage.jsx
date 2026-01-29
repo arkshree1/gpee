@@ -173,10 +173,10 @@ const GuardPage = () => {
     try {
       await decideRequest({ requestId: pending.requestId, decision });
       setPending(null);
-      await refresh();
+      // Refresh the page after successful decision
+      window.location.reload();
     } catch (e) {
       setScanError(e?.response?.data?.message || 'Failed to submit decision');
-    } finally {
       setDecisionLoading(false);
     }
   };

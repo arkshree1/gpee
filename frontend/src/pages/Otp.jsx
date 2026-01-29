@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { verifyOtp } from '../api/api';
 import '../styles/gothru-auth.css';
@@ -9,6 +9,7 @@ const Otp = () => {
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
   const [popupMessage, setPopupMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
   const inputsRef = useRef([]);
 
   const email = localStorage.getItem('pendingEmail') || '';
@@ -63,9 +64,9 @@ const Otp = () => {
     setLoading(true);
     try {
       const response = await verifyOtp({ email, otp });
-      setPopupMessage(response.data.message || 'OTP verified successfully.');
+      setPopupMessage(response.data.message || 'OTP verified. You can now login.');
+      setOtpVerified(true);
       localStorage.removeItem('pendingEmail');
-      navigate('/login');
     } catch (error) {
       if (error.response && error.response.data && error.response.data.message) {
         setPopupMessage(error.response.data.message);
@@ -76,6 +77,14 @@ const Otp = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!otpVerified) return undefined;
+    const timer = setTimeout(() => {
+      navigate('/login');
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [otpVerified, navigate]);
 
   return (
     <div className="gothru-auth-page">
@@ -147,7 +156,12 @@ const Otp = () => {
 
       <PopupBox
         message={popupMessage}
-        onClose={() => setPopupMessage('')}
+        onClose={() => {
+          setPopupMessage('');
+          if (otpVerified) {
+            navigate('/login');
+          }
+        }}
       />
     </div>
   );
