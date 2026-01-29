@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { applyGate, getStudentStatus, cancelGate } from '../api/api';
-import { initSocket, onGateDecision, disconnectSocket } from '../utils/socket';
+import { initSocket, onGateDecision, disconnectSocket, emitQrCancelled } from '../utils/socket';
 import '../styles/student-dashboard.css';
 
 // Professional SVG Icons
@@ -134,6 +134,10 @@ const StudentApply = () => {
       return;
     }
     try {
+      // Emit qr-cancelled event to notify guards in real-time
+      if (qr.requestId) {
+        emitQrCancelled(qr.requestId);
+      }
       await cancelGate();
     } catch (e) { }
     navigate('/student');

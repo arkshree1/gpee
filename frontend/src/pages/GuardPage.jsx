@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { decideRequest, getGuardDashboard, getGuardEntryExitLogs, scanQrToken } from '../api/api';
+import { initSocket, onQrCancelled } from '../utils/socket';
 import GuardScanner from '../components/GuardScanner';
 import GuardEntryExitTable from '../components/GuardEntryExitTable';
 import GuardManualEntry from '../components/GuardManualEntry';
@@ -39,6 +40,7 @@ const GuardPage = () => {
   const [pending, setPending] = useState(null);
   const [decisionLoading, setDecisionLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [qrCancelledMessage, setQrCancelledMessage] = useState(null);
 
   const isMountedRef = useRef(true);
   const refreshInProgressRef = useRef(false);
@@ -48,6 +50,30 @@ const GuardPage = () => {
     localStorage.removeItem('token');
     navigate('/login');
   };
+
+  // Socket.IO: Listen for QR cancellation events from students
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    initSocket(token);
+
+    // When a student cancels their QR, notify the guard
+    const unsubscribe = onQrCancelled((data) => {
+      console.log('🔔 Guard received qr-cancelled:', data);
+      // If the cancelled QR matches the one we're viewing, clear it
+      if (pending?.requestId === data.requestId) {
+        setPending(null);
+        setQrCancelledMessage('Student cancelled their QR request');
+        // Auto-clear message after 5 seconds
+        setTimeout(() => setQrCancelledMessage(null), 5000);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [pending?.requestId]);
 
   const formatOutTime = (value) => {
     if (!value) return '';
@@ -310,6 +336,18 @@ const GuardPage = () => {
                     </svg>
                     <span>{scanError}</span>
                     <button onClick={() => setScanError('')}>×</button>
+                  </div>
+                )}
+
+                {qrCancelledMessage && (
+                  <div className="guard-error-banner" style={{ backgroundColor: '#fff3cd', color: '#856404', borderColor: '#ffc107' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    <span>{qrCancelledMessage}</span>
+                    <button onClick={() => setQrCancelledMessage(null)}>×</button>
                   </div>
                 )}
 

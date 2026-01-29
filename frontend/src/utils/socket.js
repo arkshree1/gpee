@@ -104,10 +104,46 @@ export const onActivityUpdate = (callback) => {
     };
 };
 
+/**
+ * Emit QR cancelled event to notify guards
+ * @param {string} requestId - The request ID that was cancelled
+ */
+export const emitQrCancelled = (requestId) => {
+    if (!socket) {
+        console.warn('⚠️ Socket not initialized. Call initSocket() first.');
+        return;
+    }
+
+    socket.emit('qr-cancelled', { requestId });
+    console.log('📤 Emitted qr-cancelled:', requestId);
+};
+
+/**
+ * Subscribe to QR cancelled events (for guards)
+ * @param {function} callback - Handler function for qr-cancelled events
+ * @returns {function} Unsubscribe function
+ */
+export const onQrCancelled = (callback) => {
+    if (!socket) {
+        console.warn('⚠️ Socket not initialized. Call initSocket() first.');
+        return () => { };
+    }
+
+    socket.on('qr-cancelled', callback);
+
+    // Return unsubscribe function
+    return () => {
+        socket?.off('qr-cancelled', callback);
+    };
+};
+
 export default {
     initSocket,
     getSocket,
     disconnectSocket,
     onGateDecision,
     onActivityUpdate,
+    emitQrCancelled,
+    onQrCancelled,
 };
+
