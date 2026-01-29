@@ -7,7 +7,7 @@ const { sendOutstationApprovalNotification, sendOutstationRejectionNotification 
 // Get all pending local gatepasses for hostel office to review
 exports.getPendingGatepasses = async (req, res) => {
     const gatepasses = await LocalGatepass.find({ status: 'pending' })
-        .populate('student', 'imageUrl hostelName course')
+        .populate('student', 'imageUrl hostelName course presence')
         .sort({ createdAt: -1 })
         .select('-__v');
 
@@ -41,7 +41,7 @@ exports.getGatepassHistory = async (req, res) => {
 
     const gatepasses = await LocalGatepass.find(query)
         .sort({ decidedAt: -1, createdAt: -1 })
-        .populate('student', 'imageUrl hostelName course')
+        .populate('student', 'imageUrl hostelName course presence')
         .select('-__v');
 
     // Map gatepasses to include hostelName and course from student
@@ -320,7 +320,7 @@ exports.decideOSGatepass = async (req, res) => {
     // Send email notification to student
     try {
         const studentData = await User.findById(gatepass.student).select('email');
-        
+
         if (decision === 'approved') {
             // Send approval email to student with gatepass number
             if (studentData && studentData.email) {
