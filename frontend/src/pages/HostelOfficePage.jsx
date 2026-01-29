@@ -1806,22 +1806,30 @@ const LogRegisterView = () => {
   const handleDownloadExcel = () => {
     if (!logs.length) return;
 
-    const headers = ["Sr No", "Name", "Roll No", "Room", "Contact", "Place", "Purpose", "Gate Pass", "Time Out", "Time In"];
+    const headers = ["Sr No", "Name", "Roll No", "Room No", "Contact", "Place", "Purpose", "Gate Pass", "Time Out", "Time In"];
 
-    const rows = logs.map(log => [
-      log.srNo,
-      log.name,
-      log.rollNo,
-      log.roomNo,
-      log.contact,
-      log.place,
-      log.purpose,
-      log.gatePass,
-      formatLogTime(log.timeOut),
-      formatLogTime(log.timeIn)
-    ].map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(','));
+    const rows = logs.map(log => {
+      // Format each cell - prepend tab to contact to force text in Excel
+      const srNo = log.srNo || '';
+      const name = log.name || '';
+      const rollNo = log.rollNo || '';
+      const roomNo = log.roomNo || '';
+      const contact = log.contact ? `\t${log.contact}` : ''; // Tab prefix forces text format
+      const place = log.place || '';
+      const purpose = log.purpose || '';
+      const gatePass = log.gatePass || '--';
+      const timeOut = formatLogTime(log.timeOut);
+      const timeIn = formatLogTime(log.timeIn);
 
-    const csvContent = [headers.join(','), ...rows].join('\n');
+      // Escape quotes and wrap in quotes
+      return [srNo, name, rollNo, roomNo, contact, place, purpose, gatePass, timeOut, timeIn]
+        .map(val => `"${val.toString().replace(/"/g, '""')}"`)
+        .join(',');
+    });
+
+    // Add BOM for Excel to recognize UTF-8 encoding
+    const BOM = '\uFEFF';
+    const csvContent = BOM + [headers.join(','), ...rows].join('\r\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
