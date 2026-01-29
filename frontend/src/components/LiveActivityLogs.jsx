@@ -4,7 +4,7 @@ import { getAdminLiveLogs, getImageUrl } from '../api/api';
 /**
  * LiveActivityLogs - Production-grade real-time activity logs panel
  * Features:
- * - Polling every 5 seconds (only this component updates, not the page)
+ * - Initial fetch on mount (no polling to reduce server load)
  * - Smooth UI updates without flicker
  * - Internal scrolling
  * - Entry (green) / Exit (red) color coding
@@ -44,18 +44,9 @@ const LiveActivityLogs = ({ onStudentClick }) => {
         }
     }, []);
 
-    // Initial fetch and polling setup
+    // Initial fetch (no polling - reduces server load)
     useEffect(() => {
         fetchLogs();
-
-        // Poll every 5 seconds
-        pollIntervalRef.current = setInterval(fetchLogs, 5000);
-
-        return () => {
-            if (pollIntervalRef.current) {
-                clearInterval(pollIntervalRef.current);
-            }
-        };
     }, [fetchLogs]);
 
     // Handle student click

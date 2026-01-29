@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     getMyGatepasses,
@@ -11,6 +11,7 @@ import {
     deleteLocalGatepass,
     deleteOutstationGatepass,
 } from '../api/api';
+import { initSocket, onGateDecision } from '../utils/socket';
 import PopupBox from './PopupBox';
 import '../styles/student-dashboard.css';
 
@@ -60,7 +61,7 @@ const GatepassDetailsPopup = ({ gatepass, type, onClose, formatDate, formatTime1
                     <h2 className="tg-details-title">
                         {isLocal ? <>{Icons.home} Local Gatepass</> : <>{Icons.plane} Outstation Gatepass</>}
                     </h2>
-                    
+
                     <div className="tg-details-badge-row">
                         <span className="tg-details-gpno">{gatepass.gatePassNo || '--'}</span>
                         <span className={`tg-details-status ${isLocal ? gatepass.status : (gatepass.finalStatus || 'pending')}`}>
@@ -214,7 +215,7 @@ const TrackGatepass = () => {
         try {
             // Only show error if not polling with QR active
             if (!qrData) setError('');
-            
+
             const [localRes, osRes] = await Promise.all([getMyGatepasses(), getMyOutstationGatepasses()]);
             setLocalGatepasses(localRes.data.gatepasses || []);
             setOutstationGatepasses(osRes.data.gatepasses || []);
@@ -251,14 +252,52 @@ const TrackGatepass = () => {
         }
     };
 
+    // Initial data fetch and regular refresh (no aggressive polling when QR active)
     useEffect(() => {
         fetchGatepasses();
         // Don't poll if rejection is being shown
         if (rejectionInfo) return;
-        const pollInterval = qrData ? 800 : 5000;
+        // When QR is active, use socket instead of polling - only poll every 30s as backup
+        const pollInterval = qrData ? 30000 : 5000;
         const interval = setInterval(fetchGatepasses, pollInterval);
         return () => clearInterval(interval);
     }, [qrData, rejectionInfo]);
+
+    // Socket.IO real-time listener for gate decisions (when QR active)
+    useEffect(() => {
+        if (!qrData) return undefined;
+
+        // Initialize socket connection with auth token
+        const token = localStorage.getItem('token');
+        initSocket(token);
+
+        // Listen for gate-decision events
+        const unsubscribe = onGateDecision(async (data) => {
+            console.log('🔔 TrackGatepass received gate-decision:', data);
+
+            if (data.outcome === 'rejected') {
+                // Show rejection info briefly then navigate
+                setQrData(null);
+                setRejectionInfo({
+                    reason: 'Request was denied by guard',
+                    timestamp: data.decidedAt,
+                });
+                // Auto-redirect after 3 seconds
+                setTimeout(() => {
+                    navigate('/student');
+                }, 3000);
+            } else {
+                // Approved - refresh and clear QR
+                setQrData(null);
+                fetchGatepasses();
+            }
+        });
+
+        // Cleanup on unmount
+        return () => {
+            unsubscribe();
+        };
+    }, [qrData, navigate]);
 
     useEffect(() => {
         if (!qrData?.expiresAt) return;
@@ -585,22 +624,22 @@ const LocalGatepassList = ({ gatepasses, presence, localActiveGPNo, qrData, qrLo
             const outDate = new Date(gp.dateOut);
             const timeParts = gp.timeOut.split(':');
             outDate.setHours(parseInt(timeParts[0], 10), parseInt(timeParts[1], 10), 0, 0);
-            
+
             // Calculate 15 minutes before exit time
             const allowedTime = new Date(outDate.getTime() - 15 * 60 * 1000);
             const now = Date.now();
-            
+
             if (now >= allowedTime.getTime()) {
                 return { canExit: true, availableAt: null };
             }
-            
+
             // Format available time for display
             let hours = allowedTime.getHours();
             const mins = String(allowedTime.getMinutes()).padStart(2, '0');
             const ampm = hours >= 12 ? 'PM' : 'AM';
             hours = hours % 12 || 12;
             const availableAt = `${hours}:${mins} ${ampm}`;
-            
+
             return { canExit: false, availableAt };
         } catch { return { canExit: true, availableAt: null }; }
     };
@@ -702,7 +741,7 @@ const OutstationGatepassList = ({ gatepasses, presence, OSActiveGPNo, qrData, qr
 const OutstationGatepassCard = ({ gp, presence, OSActiveGPNo, qrData, qrLoading, deleteState, onExitQR, onEntryQR, onWithdraw, formatDate, formatTime12hr, onShowPopup, onViewDetails }) => {
     // Check if student is PhD
     const isPhD = gp.course === 'PhD';
-    
+
     // Stage order differs for PhD vs BTech/MBA
     const stageOrderPhD = ['instructor', 'officeSecretary', 'dpgc', 'hod', 'dean', 'hostelOffice'];
     const stageOrderBTech = ['officeSecretary', 'dugc', 'hod', 'hostelOffice'];
@@ -722,7 +761,7 @@ const OutstationGatepassCard = ({ gp, presence, OSActiveGPNo, qrData, qrLoading,
     function getStageStatus(gp, stage) {
         // If any previous stage was rejected, this stage is not applicable
         if (isRejectedBefore(gp, stage)) return 'not-applicable';
-        
+
         const stageData = gp.stageStatus?.[stage];
         if (stageData?.status === 'approved') return 'approved';
         if (stageData?.status === 'rejected') return 'rejected';
@@ -735,7 +774,7 @@ const OutstationGatepassCard = ({ gp, presence, OSActiveGPNo, qrData, qrLoading,
     }
 
     // Different stages for PhD vs BTech/MBA
-    const stages = isPhD 
+    const stages = isPhD
         ? [
             { id: 'applied', label: 'Applied', status: 'completed' },
             { id: 'instructor', label: 'Instructor', status: getStageStatus(gp, 'instructor') },

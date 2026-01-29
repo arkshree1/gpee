@@ -170,8 +170,6 @@ const RequestsView = ({ onViewDetails }) => {
 
   useEffect(() => {
     fetchGatepasses();
-    const interval = setInterval(fetchGatepasses, 30000);
-    return () => clearInterval(interval);
   }, []);
 
   const formatDateTime = (dateStr) => {
@@ -205,7 +203,7 @@ const RequestsView = ({ onViewDetails }) => {
       <div className="os-cards-grid">
         {sortedGatepasses.map((gp) => (
           <div key={gp._id} className="os-request-card">
-            <div 
+            <div
               className="os-card-avatar profile-pic-hover"
               onClick={() => handleProfileClick(gp.student, gp)}
               title="Click to view GoThru ID Card"
@@ -431,7 +429,7 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
       <div className="os-details-card">
         {/* Student Profile Section */}
         <div className="os-student-profile-section">
-          <div 
+          <div
             className="os-student-photo-large profile-pic-hover"
             onClick={() => setShowIdCard(true)}
             title="Click to view GoThru ID Card"
@@ -653,7 +651,7 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
           <div key={h._id} className={`os-history-item ${h.finalStatus}`}>
             <div className="os-history-header">
               {h.gatePassNo && (
-                <span 
+                <span
                   className="os-history-gatepass-tag"
                   onClick={() => setHistoryPopup({ open: true, gatepass: h })}
                   title="Click to view details"
@@ -1023,7 +1021,7 @@ const HistoryView = () => {
               tabIndex={isClickable ? 0 : undefined}
             >
               {/* Student Avatar */}
-              <div 
+              <div
                 className="os-history-avatar profile-pic-hover"
                 onClick={(e) => handleProfileClick(e, gp.student, gp)}
                 title="Click to view GoThru ID Card"
@@ -1081,7 +1079,7 @@ const HistoryView = () => {
               {!popupLoading && popupData && !popupData.error && (
                 <>
                   <div className="gatepass-popup-student">
-                    <div 
+                    <div
                       className="gatepass-popup-avatar profile-pic-hover"
                       onClick={() => {
                         setSelectedStudent(popupData.student);

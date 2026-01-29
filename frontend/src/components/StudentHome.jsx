@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getStudentStatus, getStudentLogs, getImageUrl } from '../api/api';
+import { initSocket, onActivityUpdate } from '../utils/socket';
 import '../styles/student-dashboard.css';
 
 // Professional SVG Icons
@@ -27,7 +28,7 @@ const StudentHome = () => {
   useEffect(() => {
     // Push current state to history to create a "barrier"
     window.history.pushState(null, '', window.location.href);
-    
+
     const handlePopState = (e) => {
       // Push state again to stay on current page
       window.history.pushState(null, '', window.location.href);
@@ -64,10 +65,29 @@ const StudentHome = () => {
     }
   };
 
+  // Initial data fetch (no polling - uses socket for real-time updates)
   useEffect(() => {
     refresh();
-    const id = setInterval(refresh, 5000);
-    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Socket.IO listener for real-time activity updates
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    initSocket(token);
+
+    // Listen for activity updates (triggered by guard decisions)
+    const unsubscribe = onActivityUpdate((data) => {
+      console.log('🔔 StudentHome received activity-update:', data);
+      // Refresh data when activity occurs
+      refresh();
+    });
+
+    return () => {
+      unsubscribe();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

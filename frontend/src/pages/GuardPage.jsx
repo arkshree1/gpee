@@ -101,13 +101,12 @@ const GuardPage = () => {
     }
   }, []);
 
+  // Initial data fetch (no polling - guard page doesn't need constant updates)
   useEffect(() => {
     isMountedRef.current = true;
     refresh();
-    const id = setInterval(refresh, 5000);
     return () => {
       isMountedRef.current = false;
-      clearInterval(id);
       // Cancel any pending request on unmount
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();

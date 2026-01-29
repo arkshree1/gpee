@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { applyGate, getStudentStatus, cancelGate } from '../api/api';
+import { initSocket, onGateDecision, disconnectSocket } from '../utils/socket';
 import '../styles/student-dashboard.css';
 
 // Professional SVG Icons
@@ -71,28 +72,40 @@ const StudentApply = () => {
     })();
   }, []);
 
+  // Socket.IO real-time listener for gate decisions (replaces polling)
   useEffect(() => {
     if (!qr) return undefined;
-    const interval = setInterval(async () => {
-      try {
-        const res = await getStudentStatus();
-        if (!res.data.hasPendingRequest) {
-          // Clear localStorage since request is no longer pending (approved/rejected/expired)
-          localStorage.removeItem(QR_STORAGE_KEY);
-          // Check if there was a recent rejection
-          if (res.data.recentRejection) {
-            setRejectionInfo(res.data.recentRejection);
-            // Auto-redirect after 3 seconds
-            setTimeout(() => {
-              navigate('/student');
-            }, 3000);
-          } else {
-            navigate('/student');
-          }
-        }
-      } catch (e) { }
-    }, 2000);
-    return () => clearInterval(interval);
+
+    // Initialize socket connection with auth token
+    const token = localStorage.getItem('token');
+    initSocket(token);
+
+    // Listen for gate-decision events
+    const unsubscribe = onGateDecision(async (data) => {
+      console.log('🔔 Received gate-decision:', data);
+
+      // Clear localStorage since request is resolved
+      localStorage.removeItem(QR_STORAGE_KEY);
+
+      if (data.outcome === 'rejected') {
+        // Show rejection info briefly then navigate
+        setRejectionInfo({
+          reason: 'Request was denied by guard',
+          timestamp: data.decidedAt,
+        });
+        setTimeout(() => {
+          navigate('/student');
+        }, 2000);
+      } else {
+        // Approved - navigate immediately
+        navigate('/student');
+      }
+    });
+
+    // Cleanup on unmount
+    return () => {
+      unsubscribe();
+    };
   }, [qr, navigate]);
 
   useEffect(() => {
