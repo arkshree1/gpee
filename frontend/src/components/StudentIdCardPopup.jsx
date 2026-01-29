@@ -97,9 +97,9 @@ const StudentIdCardPopup = ({ student, onClose, isOpen }) => {
             <div className="id-popup-photo-section">
               <div className="id-popup-photo-frame">
                 {imageUrl ? (
-                  <img 
-                    src={imageUrl} 
-                    alt="Student" 
+                  <img
+                    src={imageUrl}
+                    alt="Student"
                     className="id-popup-photo"
                     onError={(e) => {
                       e.target.onerror = null;
@@ -163,6 +163,18 @@ const StudentIdCardPopup = ({ student, onClose, isOpen }) => {
                 <span className="id-popup-label">Batch</span>
                 <span className="id-popup-colon">:</span>
                 <span className="id-popup-value">{batch}</span>
+              </div>
+              <div className="id-popup-row">
+                <span className="id-popup-label">Status</span>
+                <span className="id-popup-colon">:</span>
+                <span className="id-popup-value" style={{
+                  color: student.presence === 'inside' ? '#16a34a' : '#dc2626',
+                  fontWeight: '600',
+                  textTransform: 'uppercase',
+                  fontSize: '0.9rem'
+                }}>
+                  {student.presence ? (student.presence === 'inside' ? 'Inside Campus' : 'Outside Campus') : '--'}
+                </span>
               </div>
             </div>
           </div>

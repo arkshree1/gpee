@@ -201,6 +201,7 @@ const TrackGatepass = () => {
     const [countdown, setCountdown] = useState(0);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [deleteState, setDeleteState] = useState({ id: null, type: null });
+    const [withdrawModal, setWithdrawModal] = useState({ show: false, id: null, type: null });
 
     // View Details popup state
     const [detailsPopup, setDetailsPopup] = useState({ show: false, gatepass: null, type: null });
@@ -396,34 +397,35 @@ const TrackGatepass = () => {
         }
     };
 
-    const handleWithdrawLocal = async (gatepassId) => {
-        const confirmed = window.confirm('Withdraw this local gatepass request?');
-        if (!confirmed) return;
-        setDeleteState({ id: gatepassId, type: 'local' });
+    const handleConfirmWithdraw = async () => {
+        const { id, type } = withdrawModal;
+        if (!id || !type) return;
+
+        setWithdrawModal({ show: false, id: null, type: null });
+        setDeleteState({ id, type });
+
         try {
-            await deleteLocalGatepass(gatepassId);
-            setPopupMessage('Local gatepass request withdrawn.');
+            if (type === 'local') {
+                await deleteLocalGatepass(id);
+                setPopupMessage('Local gatepass request withdrawn.');
+            } else {
+                await deleteOutstationGatepass(id);
+                setPopupMessage('Outstation gatepass request withdrawn.');
+            }
             fetchGatepasses();
         } catch (err) {
-            setPopupMessage(err?.response?.data?.message || 'Failed to withdraw local gatepass.');
+            setPopupMessage(err?.response?.data?.message || 'Failed to withdraw gatepass.');
         } finally {
             setDeleteState({ id: null, type: null });
         }
     };
 
-    const handleWithdrawOutstation = async (gatepassId) => {
-        const confirmed = window.confirm('Withdraw this outstation gatepass request?');
-        if (!confirmed) return;
-        setDeleteState({ id: gatepassId, type: 'outstation' });
-        try {
-            await deleteOutstationGatepass(gatepassId);
-            setPopupMessage('Outstation gatepass request withdrawn.');
-            fetchGatepasses();
-        } catch (err) {
-            setPopupMessage(err?.response?.data?.message || 'Failed to withdraw outstation gatepass.');
-        } finally {
-            setDeleteState({ id: null, type: null });
-        }
+    const handleWithdrawLocal = (gatepassId) => {
+        setWithdrawModal({ show: true, id: gatepassId, type: 'local' });
+    };
+
+    const handleWithdrawOutstation = (gatepassId) => {
+        setWithdrawModal({ show: true, id: gatepassId, type: 'outstation' });
     };
 
     const handleBackClick = () => {
@@ -598,6 +600,22 @@ const TrackGatepass = () => {
                         <div className="sa-confirm-btns">
                             <button className="sa-confirm-yes" onClick={handleDismissQR}>Yes, Cancel QR</button>
                             <button className="sa-confirm-no" onClick={() => setShowConfirmModal(false)}>No, Keep QR</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Withdraw Confirmation Modal */}
+            {withdrawModal.show && (
+                <div className="sd-modal-overlay">
+                    <div className="sa-confirm-modal">
+                        <div className="sa-confirm-title">Withdraw Request?</div>
+                        <p className="sa-confirm-text">
+                            Are you sure you want to withdraw this gatepass request? This action cannot be undone.
+                        </p>
+                        <div className="sa-confirm-btns">
+                            <button className="sa-confirm-yes" onClick={handleConfirmWithdraw}>Yes, Withdraw</button>
+                            <button className="sa-confirm-no" onClick={() => setWithdrawModal({ show: false, id: null, type: null })}>No, Cancel</button>
                         </div>
                     </div>
                 </div>
