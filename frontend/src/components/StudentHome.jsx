@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getStudentStatus, getStudentLogs, getImageUrl } from '../api/api';
-import { initSocket, onActivityUpdate } from '../utils/socket';
+import { initSocket, onActivityUpdate, onGateDecision } from '../utils/socket';
 import '../styles/student-dashboard.css';
 
 // Professional SVG Icons
@@ -71,22 +71,29 @@ const StudentHome = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Socket.IO listener for real-time activity updates
+  // Socket.IO listener for real-time updates
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
 
     initSocket(token);
 
-    // Listen for activity updates (triggered by guard decisions)
-    const unsubscribe = onActivityUpdate((data) => {
+    // Listen for gate decisions (triggered when guard approves/rejects)
+    const unsubscribeGate = onGateDecision((data) => {
+      console.log('🔔 StudentHome received gate-decision:', data);
+      // Refresh data when decision is made
+      refresh();
+    });
+
+    // Listen for activity updates
+    const unsubscribeActivity = onActivityUpdate((data) => {
       console.log('🔔 StudentHome received activity-update:', data);
-      // Refresh data when activity occurs
       refresh();
     });
 
     return () => {
-      unsubscribe();
+      unsubscribeGate();
+      unsubscribeActivity();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
