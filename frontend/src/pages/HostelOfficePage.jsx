@@ -1813,8 +1813,8 @@ const LogRegisterView = () => {
       const name = log.name || '';
       const rollNo = log.rollNo || '';
       const roomNo = log.roomNo || '';
-      // Prefix with apostrophe to force Excel to treat as text (apostrophe is hidden in Excel)
-      const contact = log.contact ? `'${log.contact}` : '';
+      // Use Excel formula format to force text (no visible prefix)
+      const contact = log.contact ? `="${log.contact}"` : '';
       const place = log.place || '';
       const purpose = log.purpose || '';
       const gatePass = log.gatePass || '--';
