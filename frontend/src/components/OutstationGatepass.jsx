@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/student-dashboard.css';
 import PopupBox from './PopupBox';
@@ -59,6 +59,32 @@ const OutstationGatepass = () => {
   // PhD-specific: Instructor selection
   const [faculties, setFaculties] = useState([]);
   const [selectedInstructor, setSelectedInstructor] = useState('');
+  const [instructorSearch, setInstructorSearch] = useState('');
+  const [showInstructorDropdown, setShowInstructorDropdown] = useState(false);
+  const instructorDropdownRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (instructorDropdownRef.current && !instructorDropdownRef.current.contains(event.target)) {
+        setShowInstructorDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Filter faculties based on search
+  const filteredFaculties = faculties.filter((faculty) => {
+    const searchLower = instructorSearch.toLowerCase();
+    return (
+      faculty.name.toLowerCase().includes(searchLower) ||
+      faculty.department.toLowerCase().includes(searchLower)
+    );
+  });
+
+  // Get selected faculty details for display
+  const selectedFacultyDetails = faculties.find((f) => f._id === selectedInstructor);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -289,20 +315,105 @@ const OutstationGatepass = () => {
           {form.course === 'PhD' && (
             <div className="lg-section">
               <div className="lg-section-label">INSTRUCTOR (GUIDE)</div>
-              <div className="lg-field">
+              <div className="lg-field" ref={instructorDropdownRef} style={{ position: 'relative' }}>
                 <label className="lg-label">Select Your Instructor <span style={{ color: '#e74c3c' }}>*</span></label>
-                <select
+                
+                {/* Search Input */}
+                <input
+                  type="text"
                   className="lg-input"
-                  value={selectedInstructor}
-                  onChange={(e) => setSelectedInstructor(e.target.value)}
-                >
-                  <option value="">-- Select Instructor --</option>
-                  {faculties.map((faculty) => (
-                    <option key={faculty._id} value={faculty._id}>
-                      {faculty.name} ({faculty.department})
-                    </option>
-                  ))}
-                </select>
+                  placeholder="Type to search instructor..."
+                  value={instructorSearch}
+                  onChange={(e) => {
+                    setInstructorSearch(e.target.value);
+                    setShowInstructorDropdown(true);
+                  }}
+                  onFocus={() => setShowInstructorDropdown(true)}
+                  autoComplete="off"
+                />
+                
+                {/* Selected Instructor Display */}
+                {selectedFacultyDetails && (
+                  <div style={{
+                    marginTop: '8px',
+                    padding: '10px 14px',
+                    backgroundColor: '#e8f5e9',
+                    borderRadius: '8px',
+                    border: '1px solid #81c784',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <div>
+                      <strong style={{ color: '#2e7d32' }}>{selectedFacultyDetails.name}</strong>
+                      <div style={{ fontSize: '12px', color: '#558b2f' }}>{selectedFacultyDetails.department}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedInstructor('');
+                        setInstructorSearch('');
+                      }}
+                      style={{
+                        background: '#ef5350',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        padding: '4px 10px',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                      }}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
+
+                {/* Dropdown List */}
+                {showInstructorDropdown && !selectedInstructor && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    maxHeight: '250px',
+                    overflowY: 'auto',
+                    backgroundColor: '#fff',
+                    border: '1px solid #ddd',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    zIndex: 1000,
+                    marginTop: '4px'
+                  }}>
+                    {filteredFaculties.length === 0 ? (
+                      <div style={{ padding: '12px 16px', color: '#888', textAlign: 'center' }}>
+                        No instructors found
+                      </div>
+                    ) : (
+                      filteredFaculties.map((faculty) => (
+                        <div
+                          key={faculty._id}
+                          onClick={() => {
+                            setSelectedInstructor(faculty._id);
+                            setInstructorSearch('');
+                            setShowInstructorDropdown(false);
+                          }}
+                          style={{
+                            padding: '12px 16px',
+                            cursor: 'pointer',
+                            borderBottom: '1px solid #f0f0f0',
+                            transition: 'background-color 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                          onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                        >
+                          <div style={{ fontWeight: '500', color: '#333' }}>{faculty.name}</div>
+                          <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>{faculty.department}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
