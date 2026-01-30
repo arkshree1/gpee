@@ -24,22 +24,152 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const sendEmail = async (to, subject, text) => {
+/**
+ * Send professional HTML OTP email
+ * @param {string} to - Recipient email
+ * @param {string} otp - The 6-digit OTP code
+ * @param {string} purpose - Purpose of OTP: 'verification', 'login', or 'password-reset'
+ */
+const sendOtpEmail = async (to, otp, purpose = 'verification') => {
   if (!emailUser || !emailPass) {
     console.error('EMAIL_USER or EMAIL_PASS is not set in .env, cannot send email');
     return;
   }
 
+  const purposeConfig = {
+    verification: {
+      subject: 'Verify Your Email - GoThru RGIPT',
+      headerText: '🔐 Email Verification',
+      introText: 'Thank you for signing up! Please use the OTP below to verify your email address and complete your registration.',
+      headerColor: 'linear-gradient(135deg, #1a365d 0%, #2c5282 100%)',
+    },
+    login: {
+      subject: 'Email Verification Required - GoThru RGIPT',
+      headerText: '🔑 Verify Your Email',
+      introText: 'Your email is not verified. Please use the OTP below to verify your account before logging in.',
+      headerColor: 'linear-gradient(135deg, #f7882f 0%, #e67300 100%)',
+    },
+    'password-reset': {
+      subject: 'Password Reset OTP - GoThru RGIPT',
+      headerText: '🔒 Password Reset',
+      introText: 'You have requested to reset your password. Please use the OTP below to proceed with resetting your password.',
+      headerColor: 'linear-gradient(135deg, #6b46c1 0%, #805ad5 100%)',
+    },
+  };
+
+  const config = purposeConfig[purpose] || purposeConfig.verification;
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${config.subject}</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f6f9; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f6f9; padding: 20px 10px;">
+        <tr>
+          <td align="center">
+            <table role="presentation" width="100%" style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+              
+              <!-- Header -->
+              <tr>
+                <td style="background: ${config.headerColor}; padding: 30px 25px; text-align: center;">
+                  <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 600; letter-spacing: 0.5px;">
+                    GoThru - RGIPT
+                  </h1>
+                  <p style="color: rgba(255,255,255,0.85); margin: 8px 0 0; font-size: 12px; letter-spacing: 0.3px;">
+                    Gate Pass Management System
+                  </p>
+                </td>
+              </tr>
+              
+              <!-- Alert Banner -->
+              <tr>
+                <td style="background: linear-gradient(135deg, #ebf8ff 0%, #e6fffa 100%); padding: 15px 25px; text-align: center; border-bottom: 1px solid #bee3f8;">
+                  <p style="color: #2b6cb0; font-size: 14px; margin: 0; font-weight: 600;">
+                    ${config.headerText}
+                  </p>
+                </td>
+              </tr>
+              
+              <!-- Content -->
+              <tr>
+                <td style="padding: 35px 25px;">
+                  <p style="color: #4a5568; font-size: 15px; line-height: 1.7; margin: 0 0 25px; text-align: center;">
+                    ${config.introText}
+                  </p>
+                  
+                  <!-- OTP Box -->
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                    <tr>
+                      <td align="center">
+                        <div style="background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%); border: 2px dashed #cbd5e0; border-radius: 12px; padding: 25px 20px; display: inline-block; text-align: center;">
+                          <p style="color: #718096; font-size: 11px; margin: 0 0 10px; text-transform: uppercase; letter-spacing: 2px; font-weight: 600;">
+                            Your One-Time Password
+                          </p>
+                          <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+                            <tr>
+                              ${otp.split('').map(digit => `
+                                <td style="padding: 5px;">
+                                  <div style="width: 42px; height: 52px; background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%); border: 2px solid #e2e8f0; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 700; color: #1a365d; line-height: 52px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                    ${digit}
+                                  </div>
+                                </td>
+                              `).join('')}
+                            </tr>
+                          </table>
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <!-- Expiry Notice -->
+                  <div style="background: #fffaf0; border-left: 4px solid #ed8936; border-radius: 0 8px 8px 0; padding: 15px 20px; margin: 25px 0;">
+                    <p style="color: #c05621; font-size: 13px; margin: 0; line-height: 1.6;">
+                      ⏱️ <strong>This OTP expires in 10 minutes.</strong> Please do not share this code with anyone.
+                    </p>
+                  </div>
+                  
+                  <!-- Security Notice -->
+                  <p style="color: #a0aec0; font-size: 12px; text-align: center; margin: 20px 0 0; line-height: 1.6;">
+                    If you did not request this OTP, please ignore this email or contact support if you have concerns.
+                  </p>
+                </td>
+              </tr>
+              
+              <!-- Footer -->
+              <tr>
+                <td style="background-color: #f7fafc; padding: 20px 25px; border-top: 1px solid #e2e8f0;">
+                  <p style="font-size: 11px; color: #a0aec0; text-align: center; margin: 0; line-height: 1.6;">
+                    This is an automated email from GoThru - RGIPT Gate Pass System.<br>
+                    Please do not reply to this email.
+                  </p>
+                  <p style="font-size: 11px; color: #cbd5e0; text-align: center; margin: 10px 0 0;">
+                    © ${new Date().getFullYear()} RGIPT - Rajiv Gandhi Institute of Petroleum Technology
+                  </p>
+                </td>
+              </tr>
+              
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
   try {
     const info = await transporter.sendMail({
-      from: `Student Portal <${emailUser}>`,
+      from: `GoThru - RGIPT <${emailUser}>`,
       to,
-      subject,
-      text,
+      subject: config.subject,
+      html,
     });
-    console.log('Email sent:', info.messageId);
+    console.log('OTP Email sent:', info.messageId);
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error('Error sending OTP email:', error);
   }
 };
 
@@ -189,11 +319,7 @@ exports.signup = async (req, res) => {
     }
 
     // Send OTP email asynchronously so signup response is faster
-    sendEmail(
-      user.email,
-      'Your OTP for account verification',
-      `Your OTP is ${otp}. It is valid for 10 minutes.`
-    ).catch((emailError) => {
+    sendOtpEmail(user.email, otp, 'verification').catch((emailError) => {
       console.error('Error sending OTP email:', emailError);
     });
 
@@ -444,11 +570,7 @@ exports.login = async (req, res) => {
       user.otpExpires = otpExpires;
       await user.save();
 
-      await sendEmail(
-        user.email,
-        'Verify your email before login',
-        `Your email is not verified. Please use OTP ${otp} to verify your account. It is valid for 10 minutes.`
-      );
+      await sendOtpEmail(user.email, otp, 'login');
 
       return res.status(400).json({
         message: 'Please verify your email. A new OTP has been sent to your email.',
@@ -505,11 +627,7 @@ exports.forgotPassword = async (req, res) => {
     user.otpExpires = otpExpires;
     await user.save();
 
-    await sendEmail(
-      user.email,
-      'Your OTP for password reset',
-      `Your password reset OTP is ${otp}. It is valid for 10 minutes.`
-    );
+    await sendOtpEmail(user.email, otp, 'password-reset');
 
     return res.json({ message: 'Password reset OTP sent to email' });
   } catch (error) {
