@@ -12,7 +12,11 @@ import {
   getStudentLogsById,
   getAdminEntryExitLogs,
   searchGatepass,
-  getImageUrl
+  getImageUrl,
+  searchStudentForBan,
+  banStudent,
+  unbanStudent,
+  getBannedStudents
 } from '../api/api';
 import LiveActivityLogs from '../components/LiveActivityLogs';
 import DonutChart from '../components/DonutChart';
@@ -71,6 +75,7 @@ const AdminPage = () => {
   const [logRegisterLoading, setLogRegisterLoading] = useState(false);
   const [logRegisterDate, setLogRegisterDate] = useState(''); // Empty = show all dates
   const [logRegisterSearch, setLogRegisterSearch] = useState('');
+  const [logRegisterFilter, setLogRegisterFilter] = useState(''); // Filter for late/outside students
 
   // Gatepass search page state
   const [gatepassType, setGatepassType] = useState('LOCAL');
@@ -83,6 +88,18 @@ const AdminPage = () => {
   const [showGatepassModal, setShowGatepassModal] = useState(false);
   const [gatepassModalData, setGatepassModalData] = useState(null);
   const [gatepassModalLoading, setGatepassModalLoading] = useState(false);
+
+  // Ban student page state
+  const [banRollNumber, setBanRollNumber] = useState('');
+  const [banSearchResult, setBanSearchResult] = useState(null);
+  const [banSearchLoading, setBanSearchLoading] = useState(false);
+  const [banSearchError, setBanSearchError] = useState('');
+  const [banReason, setBanReason] = useState('');
+  const [banActionLoading, setBanActionLoading] = useState(false);
+  const [bannedStudentsList, setBannedStudentsList] = useState([]);
+  const [bannedListLoading, setBannedListLoading] = useState(false);
+  const [showBanConfirm, setShowBanConfirm] = useState(false);
+  const [showUnbanConfirm, setShowUnbanConfirm] = useState(false);
 
 
   // Load recent searches from localStorage (limit to 5)
@@ -126,15 +143,27 @@ const AdminPage = () => {
     }
   };
 
-  const loadLogRegister = async () => {
+  const loadLogRegister = async (filter) => {
     setLogRegisterLoading(true);
     try {
-      const res = await getAdminEntryExitLogs();
+      const res = await getAdminEntryExitLogs(filter || undefined);
       setLogRegisterLogs(res.data.logs || []);
     } catch (err) {
       console.error('Failed to load log register:', err);
     } finally {
       setLogRegisterLoading(false);
+    }
+  };
+
+  const loadBannedStudents = async () => {
+    setBannedListLoading(true);
+    try {
+      const res = await getBannedStudents();
+      setBannedStudentsList(res.data.students || []);
+    } catch (err) {
+      console.error('Failed to load banned students:', err);
+    } finally {
+      setBannedListLoading(false);
     }
   };
 
@@ -144,9 +173,11 @@ const AdminPage = () => {
     } else if (activePage === 'students') {
       loadDetailedLogs();
     } else if (activePage === 'logregister') {
-      loadLogRegister();
+      loadLogRegister(logRegisterFilter);
+    } else if (activePage === 'banstudent') {
+      loadBannedStudents();
     }
-  }, [activePage]);
+  }, [activePage, logRegisterFilter]);
 
   // Add admin-page-active class to prevent scrolling on admin pages only
   useEffect(() => {
@@ -367,6 +398,7 @@ const AdminPage = () => {
     { id: 'logregister', icon: '▤', label: 'Log Register' },
     { id: 'searchstudent', icon: '⌕', label: 'Search' },
     { id: 'gatepasses', icon: '⎙', label: 'Gatepasses' },
+    { id: 'banstudent', icon: '⊘', label: 'Ban Student' },
   ];
 
   // Render page content based on active page
@@ -751,6 +783,22 @@ const AdminPage = () => {
                   className="guard-search-input"
                 />
               </div>
+              <div className="guard-filter-group">
+                <label>Filter</label>
+                <select
+                  value={logRegisterFilter}
+                  onChange={(e) => setLogRegisterFilter(e.target.value)}
+                  className="guard-date-input"
+                  style={{ minWidth: '180px' }}
+                >
+                  <option value="">All Entries</option>
+                  <option value="lateAfter8PM">🔴 Late After 8 PM</option>
+                  <option value="outsideAfter8PM">⭐ Outside After 8 PM</option>
+                  <option value="lateLocalGatepass">⚠️ Late (Local Gatepass)</option>
+                  <option value="lateOutstationGatepass">⚠️ Late (Outstation Gatepass)</option>
+                  <option value="outsidePastGatepass">🚨 Outside Past Gatepass Time</option>
+                </select>
+              </div>
             </div>
           </div>
           <GuardEntryExitTable
@@ -919,6 +967,300 @@ const AdminPage = () => {
               </div>
             </div>
           )}
+        </div>
+      );
+    }
+
+    // Ban Student Management Page
+    if (activePage === 'banstudent') {
+      const handleBanSearch = async (e) => {
+        e?.preventDefault();
+        if (!banRollNumber.trim()) {
+          setBanSearchError('Please enter a roll number');
+          return;
+        }
+        setBanSearchLoading(true);
+        setBanSearchError('');
+        setBanSearchResult(null);
+        setBanReason('');
+        try {
+          const res = await searchStudentForBan(banRollNumber.trim());
+          setBanSearchResult(res.data.student);
+        } catch (err) {
+          setBanSearchError(err.response?.data?.message || 'Student not found');
+        } finally {
+          setBanSearchLoading(false);
+        }
+      };
+
+      const handleBanStudent = async () => {
+        if (!banReason.trim()) {
+          setBanSearchError('Please provide a reason for banning');
+          return;
+        }
+        setBanActionLoading(true);
+        setBanSearchError('');
+        try {
+          await banStudent(banSearchResult._id, banReason.trim());
+          // Refresh the search result
+          const res = await searchStudentForBan(banRollNumber.trim());
+          setBanSearchResult(res.data.student);
+          setBanReason('');
+          setShowBanConfirm(false);
+          // Refresh banned list
+          loadBannedStudents();
+        } catch (err) {
+          setBanSearchError(err.response?.data?.message || 'Failed to ban student');
+        } finally {
+          setBanActionLoading(false);
+        }
+      };
+
+      const handleUnbanStudent = async () => {
+        setBanActionLoading(true);
+        setBanSearchError('');
+        try {
+          await unbanStudent(banSearchResult._id);
+          // Refresh the search result
+          const res = await searchStudentForBan(banRollNumber.trim());
+          setBanSearchResult(res.data.student);
+          setShowUnbanConfirm(false);
+          // Refresh banned list
+          loadBannedStudents();
+        } catch (err) {
+          setBanSearchError(err.response?.data?.message || 'Failed to unban student');
+        } finally {
+          setBanActionLoading(false);
+        }
+      };
+
+      const formatBanDate = (date) => {
+        if (!date) return '--';
+        return new Date(date).toLocaleDateString('en-IN', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      };
+
+      return (
+        <div className="ban-student-page">
+          {/* Warning Banner */}
+          <div className="ban-warning-banner">
+            <span className="ban-warning-icon">⚠️</span>
+            <span>This is a sensitive operation. Banned students cannot apply for any gatepasses or generate exit QR codes.</span>
+          </div>
+
+          {/* Search Section */}
+          <div className="ban-search-section">
+            <h3 className="ban-section-title">Search Student by Roll Number</h3>
+            <div className="ban-search-box">
+              <input
+                type="text"
+                className="ban-search-input"
+                placeholder="Enter exact roll number (e.g., 21MS1001)"
+                value={banRollNumber}
+                onChange={(e) => setBanRollNumber(e.target.value.toUpperCase())}
+                onKeyDown={(e) => e.key === 'Enter' && handleBanSearch(e)}
+              />
+              <button 
+                className="ban-search-btn" 
+                onClick={handleBanSearch} 
+                disabled={banSearchLoading}
+              >
+                {banSearchLoading ? 'Searching...' : 'Search'}
+              </button>
+            </div>
+            {banSearchError && <div className="ban-error">{banSearchError}</div>}
+          </div>
+
+          {/* Search Result - Student Card */}
+          {banSearchResult && (
+            <div className={`ban-student-card ${banSearchResult.isBanned ? 'is-banned' : ''}`}>
+              <div className="ban-card-header">
+                <img
+                  src={getImageUrl(banSearchResult.imageUrl) || '/default-avatar.png'}
+                  alt={banSearchResult.name}
+                  className="ban-student-photo"
+                />
+                <div className="ban-student-basic">
+                  <h4 className="ban-student-name">{banSearchResult.name}</h4>
+                  <span className="ban-student-roll">{banSearchResult.rollnumber}</span>
+                  <span className={`ban-status-badge ${banSearchResult.isBanned ? 'banned' : 'active'}`}>
+                    {banSearchResult.isBanned ? '🚫 BANNED' : '✓ ACTIVE'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="ban-card-details">
+                <div className="ban-detail-row">
+                  <label>Email</label>
+                  <span>{banSearchResult.email}</span>
+                </div>
+                <div className="ban-detail-row">
+                  <label>Department</label>
+                  <span>{banSearchResult.department || '--'}</span>
+                </div>
+                <div className="ban-detail-row">
+                  <label>Branch</label>
+                  <span>{banSearchResult.branch || '--'}</span>
+                </div>
+                <div className="ban-detail-row">
+                  <label>Course</label>
+                  <span>{banSearchResult.course || '--'}</span>
+                </div>
+                <div className="ban-detail-row">
+                  <label>Hostel</label>
+                  <span>{banSearchResult.hostelName || '--'} {banSearchResult.roomNumber || ''}</span>
+                </div>
+                <div className="ban-detail-row">
+                  <label>Current Status</label>
+                  <span className={`presence-badge ${banSearchResult.presence}`}>
+                    {banSearchResult.presence === 'inside' ? 'Inside Campus' : 'Outside Campus'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Ban Info Section (if banned) */}
+              {banSearchResult.isBanned && (
+                <div className="ban-info-section">
+                  <div className="ban-info-header">Ban Details</div>
+                  <div className="ban-detail-row">
+                    <label>Reason</label>
+                    <span className="ban-reason-text">{banSearchResult.banReason || 'Not specified'}</span>
+                  </div>
+                  <div className="ban-detail-row">
+                    <label>Banned On</label>
+                    <span>{formatBanDate(banSearchResult.bannedAt)}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Section */}
+              <div className="ban-action-section">
+                {!banSearchResult.isBanned ? (
+                  <>
+                    {!showBanConfirm ? (
+                      <button 
+                        className="ban-action-btn ban-btn"
+                        onClick={() => setShowBanConfirm(true)}
+                      >
+                        🚫 Ban Student
+                      </button>
+                    ) : (
+                      <div className="ban-confirm-section">
+                        <label className="ban-reason-label">Reason for Ban (required):</label>
+                        <textarea
+                          className="ban-reason-input"
+                          placeholder="Enter the reason for banning this student..."
+                          value={banReason}
+                          onChange={(e) => setBanReason(e.target.value)}
+                          rows={3}
+                        />
+                        <div className="ban-confirm-buttons">
+                          <button 
+                            className="ban-confirm-btn confirm"
+                            onClick={handleBanStudent}
+                            disabled={banActionLoading || !banReason.trim()}
+                          >
+                            {banActionLoading ? 'Processing...' : 'Confirm Ban'}
+                          </button>
+                          <button 
+                            className="ban-confirm-btn cancel"
+                            onClick={() => { setShowBanConfirm(false); setBanReason(''); }}
+                            disabled={banActionLoading}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {!showUnbanConfirm ? (
+                      <button 
+                        className="ban-action-btn unban-btn"
+                        onClick={() => setShowUnbanConfirm(true)}
+                      >
+                        ✓ Unban Student
+                      </button>
+                    ) : (
+                      <div className="ban-confirm-section">
+                        <p className="unban-confirm-text">
+                          Are you sure you want to unban <strong>{banSearchResult.name}</strong>? 
+                          They will be able to apply for gatepasses again.
+                        </p>
+                        <div className="ban-confirm-buttons">
+                          <button 
+                            className="ban-confirm-btn confirm unban"
+                            onClick={handleUnbanStudent}
+                            disabled={banActionLoading}
+                          >
+                            {banActionLoading ? 'Processing...' : 'Confirm Unban'}
+                          </button>
+                          <button 
+                            className="ban-confirm-btn cancel"
+                            onClick={() => setShowUnbanConfirm(false)}
+                            disabled={banActionLoading}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Banned Students List */}
+          <div className="banned-list-section">
+            <h3 className="ban-section-title">
+              Currently Banned Students 
+              <span className="banned-count">({bannedStudentsList.length})</span>
+            </h3>
+            
+            {bannedListLoading ? (
+              <div className="banned-list-loading">Loading...</div>
+            ) : bannedStudentsList.length === 0 ? (
+              <div className="banned-list-empty">No students are currently banned.</div>
+            ) : (
+              <div className="banned-list">
+                {bannedStudentsList.map((student) => (
+                  <div 
+                    key={student._id} 
+                    className="banned-list-item"
+                    onClick={() => {
+                      setBanRollNumber(student.rollnumber);
+                      setBanSearchResult(student);
+                      setShowBanConfirm(false);
+                      setShowUnbanConfirm(false);
+                    }}
+                  >
+                    <img
+                      src={getImageUrl(student.imageUrl) || '/default-avatar.png'}
+                      alt={student.name}
+                      className="banned-item-photo"
+                    />
+                    <div className="banned-item-info">
+                      <span className="banned-item-name">{student.name}</span>
+                      <span className="banned-item-roll">{student.rollnumber}</span>
+                    </div>
+                    <div className="banned-item-reason" title={student.banReason}>
+                      {student.banReason || 'No reason'}
+                    </div>
+                    <div className="banned-item-date">
+                      {formatBanDate(student.bannedAt)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       );
     }

@@ -22,14 +22,13 @@ const OutstationGatepass = () => {
     return `${year}-${month}-${day}`;
   };
 
-  const formatTimeInput = (date) => {
-    const hours = `${date.getHours()}`.padStart(2, '0');
-    const minutes = `${date.getMinutes()}`.padStart(2, '0');
-    return `${hours}:${minutes}`;
+  // Minimum exit date is day after tomorrow (today + 2 days)
+  const getMinExitDate = () => {
+    const now = getIndiaNow();
+    now.setDate(now.getDate() + 2);
+    return formatDateInput(now);
   };
-
-  const todayIndia = formatDateInput(getIndiaNow());
-  const nowIndiaTime = formatTimeInput(getIndiaNow());
+  const minExitDate = getMinExitDate();
 
   const [form, setForm] = useState({
     studentName: '',
@@ -145,9 +144,6 @@ const OutstationGatepass = () => {
       };
 
       if (name === 'dateOut') {
-        if (value === todayIndia && next.timeOut && next.timeOut < nowIndiaTime) {
-          next.timeOut = '';
-        }
         if (next.dateIn && value && next.dateIn < value) {
           next.dateIn = '';
           next.timeIn = '';
@@ -427,7 +423,7 @@ const OutstationGatepass = () => {
                   className="lg-input"
                   type="date"
                   name="dateOut"
-                  min={todayIndia}
+                  min={minExitDate}
                   value={form.dateOut}
                   onChange={handleChange}
                 />
@@ -438,7 +434,6 @@ const OutstationGatepass = () => {
                   className="lg-input"
                   type="time"
                   name="timeOut"
-                  min={form.dateOut === todayIndia ? nowIndiaTime : undefined}
                   value={form.timeOut}
                   onChange={handleChange}
                 />
@@ -452,7 +447,7 @@ const OutstationGatepass = () => {
                   className="lg-input"
                   type="date"
                   name="dateIn"
-                  min={form.dateOut || todayIndia}
+                  min={form.dateOut || minExitDate}
                   value={form.dateIn}
                   onChange={handleChange}
                 />

@@ -42,6 +42,7 @@ const StudentApply = () => {
   const [nowTick, setNowTick] = useState(0);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [rejectionInfo, setRejectionInfo] = useState(null);
+  const [approvalInfo, setApprovalInfo] = useState(null);
 
   useEffect(() => {
     const id = setInterval(() => setNowTick((x) => x + 1), 500);
@@ -92,13 +93,20 @@ const StudentApply = () => {
         setRejectionInfo({
           reason: 'Request was denied by guard',
           timestamp: data.decidedAt,
+          direction: data.direction,
         });
         setTimeout(() => {
           navigate('/student');
-        }, 2000);
+        }, 3000);
       } else {
-        // Approved - navigate immediately
-        navigate('/student');
+        // Approved - show approval screen briefly then navigate
+        setApprovalInfo({
+          timestamp: data.decidedAt,
+          direction: data.direction,
+        });
+        setTimeout(() => {
+          navigate('/student');
+        }, 2500);
       }
     });
 
@@ -211,6 +219,48 @@ const StudentApply = () => {
             </p>
             <p className="sa-rejection-redirect">
               Redirecting to home in 3 seconds...
+            </p>
+            <button
+              className="sa-submit-btn"
+              type="button"
+              onClick={() => navigate('/student')}
+            >
+              Go to Home Now
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // If there's an approval, show approval screen
+  if (approvalInfo) {
+    return (
+      <div className="sd-shell">
+        {/* Header */}
+        <header className="sd-header">
+          <div className="sd-header-brand">
+            <span className="sd-logo">GoThru</span>
+            <span className="sd-logo-sub">by Watchr</span>
+          </div>
+        </header>
+
+        <main className="sd-main sa-main">
+          <div className="sa-approval-screen">
+            <div className="sa-approval-icon">
+              <svg className="sa-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="9 12 12 15 16 10"></polyline>
+              </svg>
+            </div>
+            <h1 className="sa-approval-title">
+              {approvalInfo.direction === 'exit' ? 'Exit Approved!' : 'Entry Approved!'}
+            </h1>
+            <p className="sa-approval-message">
+              Your {approvalInfo.direction} request has been approved by the guard.
+            </p>
+            <p className="sa-approval-redirect">
+              Redirecting to home...
             </p>
             <button
               className="sa-submit-btn"

@@ -7,6 +7,7 @@ import {
   getStudentOSHistory,
   getSecretaryGatepassHistory,
   decideOutstationGatepass,
+  editSecretaryGatepassDetails,
   sendSecretaryMeetingEmail,
   getImageUrl,
 } from '../api/api';
@@ -156,6 +157,7 @@ const RequestsView = ({ onViewDetails }) => {
       ...student,
       name: gatepass.studentName,
       rollnumber: gatepass.rollnumber,
+      course: gatepass.course,
       branch: gatepass.branch || gatepass.department,
       department: gatepass.department,
       contact: gatepass.contact,
@@ -249,6 +251,7 @@ const RequestsView = ({ onViewDetails }) => {
         student={selectedStudent}
         isOpen={showIdCard}
         onClose={() => setShowIdCard(false)}
+        hideStatus={true}
       />
     </div>
   );
@@ -300,6 +303,17 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
 
   // History gatepass popup state
   const [historyPopup, setHistoryPopup] = useState({ open: false, gatepass: null });
+
+  // Edit modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editData, setEditData] = useState({
+    leaveDays: '',
+    dateOut: '',
+    timeOut: '',
+    dateIn: '',
+    timeIn: '',
+  });
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -453,6 +467,42 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
     }
   };
 
+  // Open edit modal with current values
+  const openEditModal = () => {
+    setEditData({
+      leaveDays: gatepass.leaveDays || '',
+      dateOut: gatepass.dateOut || '',
+      timeOut: gatepass.timeOut || '',
+      dateIn: gatepass.dateIn || '',
+      timeIn: gatepass.timeIn || '',
+    });
+    setShowEditModal(true);
+  };
+
+  // Handle edit gatepass details
+  const handleEditGatepass = async () => {
+    setEditing(true);
+    try {
+      const res = await editSecretaryGatepassDetails({
+        gatepassId,
+        leaveDays: Number(editData.leaveDays),
+        dateOut: editData.dateOut,
+        timeOut: editData.timeOut,
+        dateIn: editData.dateIn,
+        timeIn: editData.timeIn,
+      });
+      setShowEditModal(false);
+      setPopupMessage(res.data.message || 'Gatepass details updated successfully');
+      // Refresh gatepass data
+      const gpRes = await getSecretaryGatepassDetails(gatepassId);
+      setGatepass(gpRes.data.gatepass);
+    } catch (err) {
+      setPopupMessage(err?.response?.data?.message || 'Failed to update gatepass details');
+    } finally {
+      setEditing(false);
+    }
+  };
+
   if (loading) return <div className="os-loading">Loading details...</div>;
   if (error) return <div className="os-error">{error}</div>;
   if (!gatepass) return <div className="os-error">Gatepass not found</div>;
@@ -504,13 +554,36 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
             <span className="os-detail-value">{gatepass.leaveDays}</span>
           </div>
           <div className="os-detail-item">
-            <span className="os-detail-label">Exit</span>
-            <span className="os-detail-value">{formatDate(gatepass.dateOut)} {formatTime12hr(gatepass.timeOut)}</span>
+            <span className="os-detail-label">Exit Date</span>
+            <span className="os-detail-value">{formatDate(gatepass.dateOut)}</span>
           </div>
           <div className="os-detail-item">
-            <span className="os-detail-label">Return</span>
-            <span className="os-detail-value">{formatDate(gatepass.dateIn)} {formatTime12hr(gatepass.timeIn)}</span>
+            <span className="os-detail-label">Exit Time</span>
+            <span className="os-detail-value">{formatTime12hr(gatepass.timeOut)}</span>
           </div>
+          <div className="os-detail-item">
+            <span className="os-detail-label">Return Date</span>
+            <span className="os-detail-value">{formatDate(gatepass.dateIn)}</span>
+          </div>
+          <div className="os-detail-item">
+            <span className="os-detail-label">Return Time</span>
+            <span className="os-detail-value">{formatTime12hr(gatepass.timeIn)}</span>
+          </div>
+        </div>
+
+        {/* Edit Button */}
+        <div className="os-edit-btn-container">
+          <button 
+            className="os-edit-btn" 
+            onClick={openEditModal}
+            title="Edit leave days, exit and return dates/times"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px', marginRight: '6px' }}>
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+            Edit Details
+          </button>
         </div>
 
         <div className="os-detail-full">
@@ -907,6 +980,85 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
         </div>
       )}
 
+      {/* Edit Gatepass Modal */}
+      {showEditModal && (
+        <div className="confirm-modal-overlay" onClick={() => setShowEditModal(false)}>
+          <div className="confirm-modal edit-gatepass-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="confirm-modal-close" onClick={() => setShowEditModal(false)}>×</button>
+            <div className="confirm-modal-header" style={{ borderLeftColor: '#38a169' }}>
+              <h3>✏️ Edit Gatepass Details</h3>
+            </div>
+            <div className="confirm-modal-body">
+              <p className="os-edit-modal-info">
+                Update leave details for <strong>{gatepass?.studentName}</strong>. 
+                The student will be notified via email about the changes.
+              </p>
+              <div className="os-edit-form">
+                <div className="os-edit-form-row">
+                  <label>
+                    <span>Leave Days <span style={{ color: '#e74c3c' }}>*</span></span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={editData.leaveDays}
+                      onChange={(e) => setEditData({ ...editData, leaveDays: e.target.value })}
+                    />
+                  </label>
+                </div>
+                <div className="os-edit-form-row">
+                  <label>
+                    <span>Exit Date <span style={{ color: '#e74c3c' }}>*</span></span>
+                    <input
+                      type="date"
+                      value={editData.dateOut}
+                      onChange={(e) => setEditData({ ...editData, dateOut: e.target.value })}
+                    />
+                  </label>
+                  <label>
+                    <span>Exit Time <span style={{ color: '#e74c3c' }}>*</span></span>
+                    <input
+                      type="time"
+                      value={editData.timeOut}
+                      onChange={(e) => setEditData({ ...editData, timeOut: e.target.value })}
+                    />
+                  </label>
+                </div>
+                <div className="os-edit-form-row">
+                  <label>
+                    <span>Return Date <span style={{ color: '#e74c3c' }}>*</span></span>
+                    <input
+                      type="date"
+                      value={editData.dateIn}
+                      onChange={(e) => setEditData({ ...editData, dateIn: e.target.value })}
+                    />
+                  </label>
+                  <label>
+                    <span>Return Time <span style={{ color: '#e74c3c' }}>*</span></span>
+                    <input
+                      type="time"
+                      value={editData.timeIn}
+                      onChange={(e) => setEditData({ ...editData, timeIn: e.target.value })}
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div className="confirm-modal-actions">
+              <button className="confirm-modal-cancel" onClick={() => setShowEditModal(false)} disabled={editing}>
+                Cancel
+              </button>
+              <button
+                className="confirm-modal-confirm os-edit-save-btn"
+                onClick={handleEditGatepass}
+                disabled={editing || !editData.leaveDays || !editData.dateOut || !editData.timeOut || !editData.dateIn || !editData.timeIn}
+              >
+                {editing ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Student ID Card Popup */}
       <StudentIdCardPopup
         student={gatepass ? {
@@ -921,6 +1073,7 @@ const GatepassDetailsView = ({ gatepassId, onBack }) => {
         } : null}
         isOpen={showIdCard}
         onClose={() => setShowIdCard(false)}
+        hideStatus={true}
       />
 
       <PopupBox message={popupMessage} onClose={() => setPopupMessage('')} />
@@ -950,6 +1103,7 @@ const HistoryView = () => {
       ...student,
       name: gp.studentName,
       rollnumber: gp.rollnumber,
+      course: gp.course,
       branch: gp.branch || gp.department,
       department: gp.department,
       contact: gp.contact,
@@ -1268,6 +1422,7 @@ const HistoryView = () => {
         student={selectedStudent}
         isOpen={showIdCard}
         onClose={() => setShowIdCard(false)}
+        hideStatus={true}
       />
     </div>
   );

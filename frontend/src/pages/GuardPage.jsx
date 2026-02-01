@@ -29,6 +29,7 @@ const GuardPage = () => {
   const [entryExitLogs, setEntryExitLogs] = useState([]);
   const [logsLoading, setLogsLoading] = useState(false);
   const [logsSearch, setLogsSearch] = useState('');
+  const [logsFilter, setLogsFilter] = useState(''); // Filter for late/outside students
   const [logsDate, setLogsDate] = useState(() => {
     const now = new Date();
     const y = now.getFullYear();
@@ -140,12 +141,13 @@ const GuardPage = () => {
     };
   }, [refresh]);
 
+  // Load logs when tab becomes active or filter changes
   useEffect(() => {
-    if (activeTab !== 'logs' || logsLoading || entryExitLogs.length) return;
+    if (activeTab !== 'logs') return;
     const loadLogs = async () => {
       try {
         setLogsLoading(true);
-        const res = await getGuardEntryExitLogs();
+        const res = await getGuardEntryExitLogs(logsFilter || undefined);
         setEntryExitLogs(res.data.logs || []);
       } catch (e) {
         // optional: reuse scan error banner area for logs load errors
@@ -155,7 +157,7 @@ const GuardPage = () => {
       }
     };
     loadLogs();
-  }, [activeTab, logsLoading, entryExitLogs.length]);
+  }, [activeTab, logsFilter]);
 
   const onToken = async (token) => {
     setScanError('');
@@ -404,6 +406,22 @@ const GuardPage = () => {
                       onChange={(e) => setLogsSearch(e.target.value)}
                       className="guard-search-input"
                     />
+                  </div>
+                  <div className="guard-filter-group">
+                    <label>Filter</label>
+                    <select
+                      value={logsFilter}
+                      onChange={(e) => setLogsFilter(e.target.value)}
+                      className="guard-date-input"
+                      style={{ minWidth: '180px' }}
+                    >
+                      <option value="">All Entries</option>
+                      <option value="lateAfter8PM">🔴 Late After 8 PM</option>
+                      <option value="outsideAfter8PM">⭐ Outside After 8 PM</option>
+                      <option value="lateLocalGatepass">⚠️ Late (Local Gatepass)</option>
+                      <option value="lateOutstationGatepass">⚠️ Late (Outstation Gatepass)</option>
+                      <option value="outsidePastGatepass">🚨 Outside Past Gatepass Time</option>
+                    </select>
                   </div>
                 </div>
               </div>

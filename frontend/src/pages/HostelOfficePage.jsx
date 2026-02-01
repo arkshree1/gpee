@@ -1769,15 +1769,16 @@ const OSHistoryView = () => {
 const LogRegisterView = () => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState(''); // Filter for late/outside students
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch logs when date or search changes
+  // Fetch logs when date, search, or filter changes
   useEffect(() => {
     const fetchLogs = async () => {
       setLoading(true);
       try {
-        const res = await getEntryExitLogs(date, search);
+        const res = await getEntryExitLogs(date, search, filter || undefined);
         setLogs(res.data.logs || []);
       } catch (err) {
         console.error("Failed to fetch logs", err);
@@ -1791,7 +1792,7 @@ const LogRegisterView = () => {
     }, 300); // Debounce search
 
     return () => clearTimeout(timeoutId);
-  }, [date, search]);
+  }, [date, search, filter]);
 
   const formatLogTime = (dateStr) => {
     if (!dateStr) return '--';
@@ -1803,13 +1804,57 @@ const LogRegisterView = () => {
     }).toUpperCase();
   };
 
+  // Helper to determine row styling based on flags
+  const getRowStyle = (log) => {
+    const flags = log.flags || {};
+    
+    // Red background for late entries (after 8PM without gatepass OR after gatepass time)
+    if (flags.lateAfter8PM || flags.lateGatepass) {
+      return { backgroundColor: '#fee2e2' }; // Light red
+    }
+    
+    // Yellow background for students still outside after 8PM or past gatepass time
+    if (flags.outsideAfter8PM || flags.outsidePastGatepass) {
+      return { backgroundColor: '#fef3c7' }; // Light yellow/amber
+    }
+    
+    return {};
+  };
+
+  // Get status indicator for the row
+  const getStatusIndicator = (log) => {
+    const flags = log.flags || {};
+    const indicators = [];
+    
+    if (flags.lateAfter8PM) {
+      indicators.push({ icon: '🔴', title: 'Late entry after 8 PM' });
+    }
+    if (flags.lateGatepass) {
+      const type = flags.isOutstationGatepass ? 'Outstation' : 'Local';
+      indicators.push({ icon: '⚠️', title: `Late entry - Past ${type} gatepass return time` });
+    }
+    if (flags.outsideAfter8PM) {
+      indicators.push({ icon: '⭐', title: 'Still outside after 8 PM (No gatepass)' });
+    }
+    if (flags.outsidePastGatepass) {
+      const type = flags.isOutstationGatepass ? 'Outstation' : 'Local';
+      indicators.push({ icon: '🚨', title: `Still outside - Past ${type} gatepass return time` });
+    }
+    
+    return indicators;
+  };
+
   const handleDownloadExcel = () => {
     if (!logs.length) return;
 
-    const headers = ["Sr No", "Name", "Roll No", "Room No", "Contact", "Place", "Purpose", "Gate Pass", "Time Out", "Time In"];
+    const headers = ["Sr No", "Status", "Name", "Roll No", "Room No", "Contact", "Place", "Purpose", "Gate Pass", "Time Out", "Time In"];
 
     const rows = logs.map(log => {
       const srNo = log.srNo || '';
+      const statusIndicators = getStatusIndicator(log);
+      const status = statusIndicators.length > 0 
+        ? statusIndicators.map(i => i.title).join(', ') 
+        : 'OK';
       const name = log.name || '';
       const rollNo = log.rollNo || '';
       const roomNo = log.roomNo || '';
@@ -1830,7 +1875,7 @@ const LogRegisterView = () => {
         return str;
       };
 
-      return [srNo, name, rollNo, roomNo, contact, place, purpose, gatePass, timeOut, timeIn]
+      return [srNo, status, name, rollNo, roomNo, contact, place, purpose, gatePass, timeOut, timeIn]
         .map(escapeCSV)
         .join(',');
     });
@@ -1885,6 +1930,22 @@ const LogRegisterView = () => {
               style={{ padding: '8px 12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px', minWidth: '180px' }}
             />
           </div>
+          {/* Status Filter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <label style={{ fontWeight: '500', fontSize: '14px', color: '#666' }}>FILTER</label>
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              style={{ padding: '8px 12px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px', minWidth: '180px' }}
+            >
+              <option value="">All Entries</option>
+              <option value="lateAfter8PM">🔴 Late After 8 PM</option>
+              <option value="outsideAfter8PM">⭐ Outside After 8 PM</option>
+              <option value="lateLocalGatepass">⚠️ Late (Local Gatepass)</option>
+              <option value="lateOutstationGatepass">⚠️ Late (Outstation Gatepass)</option>
+              <option value="outsidePastGatepass">🚨 Outside Past Gatepass Time</option>
+            </select>
+          </div>
           {/* Download Button */}
           <button
             onClick={handleDownloadExcel}
@@ -1915,6 +1976,7 @@ const LogRegisterView = () => {
             <thead>
               <tr style={{ background: '#f8f9fa', borderBottom: '2px solid #e5e7eb' }}>
                 <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap' }}>SR NO.</th>
+                <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap' }}>STATUS</th>
                 <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap' }}>NAME</th>
                 <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap' }}>ROLL NO.</th>
                 <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap' }}>ROOM NO.</th>
@@ -1929,30 +1991,45 @@ const LogRegisterView = () => {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={10} style={{ padding: '40px', textAlign: 'center', color: '#666' }}>Loading...</td>
+                  <td colSpan={11} style={{ padding: '40px', textAlign: 'center', color: '#666' }}>Loading...</td>
                 </tr>
               )}
               {!loading && logs.length === 0 && (
                 <tr>
-                  <td colSpan={10} style={{ padding: '40px', textAlign: 'center', color: '#666' }}>No records found</td>
+                  <td colSpan={11} style={{ padding: '40px', textAlign: 'center', color: '#666' }}>No records found</td>
                 </tr>
               )}
-              {!loading && logs.map((log) => (
-                <tr key={log._id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                  <td style={{ padding: '12px 16px', color: '#ef4444', fontWeight: '500' }}>{log.srNo}</td>
-                  <td style={{ padding: '12px 16px', color: '#111' }}>{log.name}</td>
-                  <td style={{ padding: '12px 16px', color: '#111' }}>{log.rollNo}</td>
-                  <td style={{ padding: '12px 16px', color: '#111' }}>{log.roomNo}</td>
-                  <td style={{ padding: '12px 16px', color: '#111' }}>{log.contact}</td>
-                  <td style={{ padding: '12px 16px', color: '#2563eb' }}>{log.place}</td>
-                  <td style={{ padding: '12px 16px', color: '#059669' }}>{log.purpose}</td>
-                  <td style={{ padding: '12px 16px', color: '#666' }}>{log.gatePass}</td>
-                  <td style={{ padding: '12px 16px', color: '#111' }}>{formatLogTime(log.timeOut)}</td>
-                  <td style={{ padding: '12px 16px', color: log.timeIn ? '#059669' : '#999', fontWeight: log.timeIn ? '500' : 'normal' }}>
-                    {formatLogTime(log.timeIn)}
-                  </td>
-                </tr>
-              ))}
+              {!loading && logs.map((log) => {
+                const statusIndicators = getStatusIndicator(log);
+                const rowStyle = getRowStyle(log);
+                return (
+                  <tr key={log._id} style={{ borderBottom: '1px solid #e5e7eb', ...rowStyle }}>
+                    <td style={{ padding: '12px 16px', color: '#ef4444', fontWeight: '500' }}>{log.srNo}</td>
+                    <td style={{ padding: '12px 16px', textAlign: 'center', fontSize: '16px' }}>
+                      {statusIndicators.length > 0 ? (
+                        statusIndicators.map((ind, i) => (
+                          <span key={i} title={ind.title} style={{ cursor: 'help', marginRight: '2px' }}>
+                            {ind.icon}
+                          </span>
+                        ))
+                      ) : (
+                        <span style={{ color: '#10b981' }}>✓</span>
+                      )}
+                    </td>
+                    <td style={{ padding: '12px 16px', color: '#111' }}>{log.name}</td>
+                    <td style={{ padding: '12px 16px', color: '#111' }}>{log.rollNo}</td>
+                    <td style={{ padding: '12px 16px', color: '#111' }}>{log.roomNo}</td>
+                    <td style={{ padding: '12px 16px', color: '#111' }}>{log.contact}</td>
+                    <td style={{ padding: '12px 16px', color: '#2563eb' }}>{log.place}</td>
+                    <td style={{ padding: '12px 16px', color: '#059669' }}>{log.purpose}</td>
+                    <td style={{ padding: '12px 16px', color: '#666' }}>{log.gatePass}</td>
+                    <td style={{ padding: '12px 16px', color: '#111' }}>{formatLogTime(log.timeOut)}</td>
+                    <td style={{ padding: '12px 16px', color: log.timeIn ? '#059669' : '#999', fontWeight: log.timeIn ? '500' : 'normal' }}>
+                      {formatLogTime(log.timeIn)}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

@@ -331,10 +331,10 @@
 
 /* ========================================
    Form Subtitle (for Forgot Password, etc.)
-   ======================================== */
+   ========================================*/
 .gothru-form-subtitle {
     font-size: 13px;
-    color: rgba(220, 199, 170, 0.7);
+    color: rgba(255, 255, 255, 0.85);
     margin: -16px 0 8px 0;
     line-height: 1.5;
     position: relative;
@@ -603,12 +603,12 @@
 
 /* ========================================
    Footer Text
-   ======================================== */
+   ========================================*/
 .gothru-footer {
     text-align: center;
     margin-top: 20px;
     font-size: 13px;
-    color: rgba(220, 199, 170, 0.7);
+    color: rgba(255, 255, 255, 0.9);
 }
 
 .gothru-footer-link {
@@ -1078,5 +1078,209 @@
     .camera-frame {
         width: 160px;
         height: 160px;
+    }
+}
+
+/* ========================================
+   Signup Confirmation Popup
+   ======================================== */
+.signup-confirm-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 20px;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.signup-confirm-modal {
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 32px;
+    max-width: 520px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from { 
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.signup-confirm-icon {
+    font-size: 48px;
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+.signup-confirm-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a1a2e;
+    text-align: center;
+    margin: 0 0 20px 0;
+}
+
+.signup-confirm-content {
+    margin-bottom: 24px;
+}
+
+.signup-confirm-warning {
+    font-size: 15px;
+    color: #4a5568;
+    text-align: center;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.signup-confirm-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.signup-confirm-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, #fff8f0 0%, #fff5eb 100%);
+    border: 1px solid #fed7aa;
+    border-left: 4px solid #f7882f;
+    border-radius: 12px;
+    font-size: 14px;
+    color: #4a5568;
+    line-height: 1.5;
+}
+
+.confirm-bullet {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.signup-confirm-list li strong {
+    color: #c2410c;
+    font-weight: 600;
+}
+
+.signup-confirm-photo-preview {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.photo-preview-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7a8f;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.photo-preview-img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #f7882f;
+    box-shadow: 0 4px 16px rgba(247, 136, 47, 0.3);
+}
+
+.signup-confirm-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.signup-confirm-btn {
+    flex: 1;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--gothru-font);
+}
+
+.signup-confirm-btn.edit-btn {
+    background: #f3f4f6;
+    color: #4a5568;
+}
+
+.signup-confirm-btn.edit-btn:hover {
+    background: #e5e7eb;
+    transform: translateY(-2px);
+}
+
+.signup-confirm-btn.submit-btn {
+    background: linear-gradient(135deg, #f7882f 0%, #e07422 100%);
+    color: white;
+    box-shadow: 0 4px 14px rgba(247, 136, 47, 0.4);
+}
+
+.signup-confirm-btn.submit-btn:hover {
+    background: linear-gradient(135deg, #e07422 0%, #c96418 100%);
+    box-shadow: 0 6px 20px rgba(247, 136, 47, 0.5);
+    transform: translateY(-2px);
+}
+
+/* Mobile responsive for confirmation popup */
+@media (max-width: 500px) {
+    .signup-confirm-modal {
+        padding: 24px 20px;
+        border-radius: 20px;
+    }
+
+    .signup-confirm-title {
+        font-size: 20px;
+    }
+
+    .signup-confirm-list li {
+        padding: 12px 14px;
+        font-size: 13px;
+    }
+
+    .signup-confirm-actions {
+        flex-direction: column;
+    }
+
+    .signup-confirm-btn {
+        padding: 16px;
+    }
+
+    .signup-confirm-btn.edit-btn {
+        order: 2;
+    }
+
+    .signup-confirm-btn.submit-btn {
+        order: 1;
     }
 }

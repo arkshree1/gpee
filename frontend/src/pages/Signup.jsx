@@ -98,6 +98,9 @@ const Signup = () => {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
 
+  // Confirmation popup state
+  const [showConfirmPopup, setShowConfirmPopup] = useState(false);
+
   const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
@@ -291,10 +294,18 @@ const Signup = () => {
     return true;
   };
 
+  // Show confirmation popup before submitting
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
+    
+    // Show confirmation popup instead of submitting directly
+    setShowConfirmPopup(true);
+  };
 
+  // Actually submit the form after user confirms
+  const handleConfirmedSubmit = async () => {
+    setShowConfirmPopup(false);
     setLoading(true);
     try {
       const formData = new FormData();
@@ -747,6 +758,57 @@ const Signup = () => {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Signup Confirmation Popup */}
+      {showConfirmPopup && (
+        <div className="signup-confirm-overlay">
+          <div className="signup-confirm-modal">
+            <div className="signup-confirm-icon">⚠️</div>
+            <h2 className="signup-confirm-title">Important Notice</h2>
+            <div className="signup-confirm-content">
+              <p className="signup-confirm-warning">
+                Please review your information carefully before proceeding.
+              </p>
+              <ul className="signup-confirm-list">
+                <li>
+                  <span className="confirm-bullet">📝</span>
+                  <span>The information you are submitting is <strong>one-time only</strong> and <strong>cannot be changed or edited</strong> after registration.</span>
+                </li>
+                <li>
+                  <span className="confirm-bullet">📷</span>
+                  <span>Your <strong>photo cannot be changed</strong> after signup. Make sure your <strong>face is clearly visible</strong> and the image is clear.</span>
+                </li>
+                <li>
+                  <span className="confirm-bullet">✅</span>
+                  <span>Double-check your <strong>roll number</strong>, <strong>name</strong>, and other details are correct.</span>
+                </li>
+              </ul>
+              <div className="signup-confirm-photo-preview">
+                {imagePreview && (
+                  <>
+                    <span className="photo-preview-label">Your Photo:</span>
+                    <img src={imagePreview} alt="Your photo" className="photo-preview-img" />
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="signup-confirm-actions">
+              <button 
+                className="signup-confirm-btn edit-btn"
+                onClick={() => setShowConfirmPopup(false)}
+              >
+                ← Edit Information
+              </button>
+              <button 
+                className="signup-confirm-btn submit-btn"
+                onClick={handleConfirmedSubmit}
+              >
+                Confirm & Sign Up →
+              </button>
+            </div>
           </div>
         </div>
       )}

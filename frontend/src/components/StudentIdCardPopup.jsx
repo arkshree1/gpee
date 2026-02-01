@@ -22,8 +22,9 @@ const calculateBatch = (rollNumber) => {
  * @param {Object} props.student - Student data object with fields like name, rollnumber, imageUrl, etc.
  * @param {Function} props.onClose - Callback function when popup is closed
  * @param {boolean} props.isOpen - Whether the popup is visible
+ * @param {boolean} props.hideStatus - Whether to hide the status field (default: false)
  */
-const StudentIdCardPopup = ({ student, onClose, isOpen }) => {
+const StudentIdCardPopup = ({ student, onClose, isOpen, hideStatus = false }) => {
   if (!isOpen || !student) return null;
 
   // Extract student data with fallbacks
@@ -32,7 +33,6 @@ const StudentIdCardPopup = ({ student, onClose, isOpen }) => {
   const course = student.course || '--';
   const branch = student.branch || '--';
   const department = student.department || '--';
-  const semester = student.semester || '--';
   const batch = calculateBatch(student.rollnumber || student.rollNumber);
   const roomNumber = student.roomNumber || '--';
   const hostelName = student.hostelName || '--';
@@ -145,11 +145,6 @@ const StudentIdCardPopup = ({ student, onClose, isOpen }) => {
                 <span className="id-popup-value">{course}</span>
               </div>
               <div className="id-popup-row">
-                <span className="id-popup-label">Semester</span>
-                <span className="id-popup-colon">:</span>
-                <span className="id-popup-value">{semester}</span>
-              </div>
-              <div className="id-popup-row">
                 <span className="id-popup-label">Branch</span>
                 <span className="id-popup-colon">:</span>
                 <span className="id-popup-value">{branch}</span>
@@ -164,18 +159,20 @@ const StudentIdCardPopup = ({ student, onClose, isOpen }) => {
                 <span className="id-popup-colon">:</span>
                 <span className="id-popup-value">{batch}</span>
               </div>
-              <div className="id-popup-row">
-                <span className="id-popup-label">Status</span>
-                <span className="id-popup-colon">:</span>
-                <span className="id-popup-value" style={{
-                  color: student.presence === 'inside' ? '#16a34a' : '#dc2626',
-                  fontWeight: '600',
-                  textTransform: 'uppercase',
-                  fontSize: '0.9rem'
-                }}>
-                  {student.presence ? (student.presence === 'inside' ? 'Inside Campus' : 'Outside Campus') : '--'}
-                </span>
-              </div>
+              {!hideStatus && (
+                <div className="id-popup-row">
+                  <span className="id-popup-label">Status</span>
+                  <span className="id-popup-colon">:</span>
+                  <span className="id-popup-value" style={{
+                    color: student.presence === 'inside' ? '#16a34a' : '#dc2626',
+                    fontWeight: '600',
+                    textTransform: 'uppercase',
+                    fontSize: '0.9rem'
+                  }}>
+                    {student.presence ? (student.presence === 'inside' ? 'Inside Campus' : 'Outside Campus') : '--'}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>

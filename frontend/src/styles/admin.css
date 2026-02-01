@@ -1458,31 +1458,34 @@ body {
 
     .admin-dashboard-layout {
         overflow: visible;
+        flex-direction: column;
+        gap: 16px;
     }
 
     .admin-dashboard-content {
         overflow: visible;
         min-height: auto;
+        flex-shrink: 0;
     }
 
     /* Dashboard main - single column for tablet with donut + metrics */
     .admin-dashboard-main {
         display: flex;
         flex-direction: column;
-        gap: 16px;
+        gap: 12px;
         min-height: auto;
         height: auto;
         overflow: visible;
         align-items: center;
     }
 
-    /* Donut container - full width for tablet */
+    /* Donut container - compact for tablet portrait to give more space to live activity */
     .admin-donut-container {
         width: 100%;
         min-height: auto;
         max-height: none;
         height: auto;
-        padding: 16px;
+        padding: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -1492,37 +1495,42 @@ body {
     .donut-mobile-wrapper {
         display: flex !important;
         flex-direction: row;
-        align-items: flex-start;
+        align-items: center;
         justify-content: center;
-        gap: 24px;
+        gap: 20px;
         width: 100%;
-        padding: 16px;
+        padding: 8px;
     }
 
-    /* Donut chart stays centered */
+    /* Donut chart - smaller size for tablet portrait */
     .donut-mobile-chart {
         flex-shrink: 0;
+    }
+
+    .donut-mobile-chart svg {
+        width: 140px !important;
+        height: 140px !important;
     }
 
     /* Legend + Metrics column for tablet */
     .donut-mobile-legend {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 6px 10px;
+        gap: 4px 8px;
         width: auto;
-        max-width: 200px;
+        max-width: 180px;
     }
 
     .donut-mobile-legend-item {
-        padding: 4px 6px;
+        padding: 3px 5px;
     }
 
     .donut-mobile-legend-label {
-        font-size: 8px;
+        font-size: 7px;
     }
 
     .donut-mobile-legend-value {
-        font-size: 12px;
+        font-size: 11px;
     }
 
     /* Metrics panel for tablet - HIDDEN by default on tablet portrait */
@@ -1531,36 +1539,45 @@ body {
     }
 
     .donut-mobile-metric-card {
-        padding: 8px 12px;
+        padding: 6px 10px;
     }
 
     .donut-mobile-metric-title {
-        font-size: 9px;
+        font-size: 8px;
     }
 
     .donut-mobile-metric-value {
-        font-size: 20px;
+        font-size: 18px;
+    }
+
+    /* Live Activity Panel for tablet portrait - give it more space */
+    .live-logs-panel {
+        width: 100% !important;
+        min-width: 100% !important;
+        max-height: 350px !important;
+        min-height: 280px !important;
+        flex-shrink: 0;
     }
 
     /* College banner - smaller for tablet */
     .admin-college-banner {
-        padding: 14px 20px;
+        padding: 12px 16px;
     }
 
     .admin-college-name {
-        font-size: 14px;
+        font-size: 13px;
     }
 
     .admin-college-subtitle {
-        font-size: 10px;
+        font-size: 9px;
     }
 
     .admin-college-name-hi {
-        font-size: 12px;
+        font-size: 11px;
     }
 
     .admin-college-subtitle-hi {
-        font-size: 9px;
+        font-size: 8px;
     }
 
     /* Sidebar overlay for tablet - covers the dimmed area when sidebar is open */
@@ -1577,23 +1594,135 @@ body {
     }
 }
 
-/* ==================== TABLET LANDSCAPE ONLY - Show metrics ==================== */
-@media (min-width: 769px) and (max-width: 1024px) and (orientation: landscape) {
-    /* Show metrics panel only in tablet landscape (horizontal) orientation */
-    .donut-mobile-metrics {
-        display: flex !important;
-        flex-direction: column;
-        gap: 6px;
-        width: 220px;
-        margin-top: 0;
+/* ==================== TABLET PORTRAIT ONLY - Compact layout ==================== */
+@media (min-width: 769px) and (max-width: 1024px) and (orientation: portrait) {
+    /* Even more compact donut for portrait */
+    .donut-mobile-chart svg {
+        width: 130px !important;
+        height: 130px !important;
     }
 
-    /* Horizontal layout for tablet landscape - donut left, metrics right */
+    /* Vertical stacking for portrait mode */
+    .donut-mobile-wrapper {
+        flex-direction: column !important;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .donut-mobile-legend {
+        max-width: 260px;
+        width: 100%;
+    }
+
+    /* Show mobile live activity container in portrait */
+    .mobile-live-activity-container {
+        display: block !important;
+        min-height: 300px;
+        max-height: 400px;
+    }
+}
+
+/* ==================== TABLET LANDSCAPE ONLY - Show metrics ==================== */
+@media (min-width: 769px) and (max-width: 1024px) and (orientation: landscape) {
+    /* Landscape: Use row layout with donut + legend + metrics side by side */
+    .admin-dashboard-layout {
+        flex-direction: row !important;
+        gap: 16px;
+        align-items: stretch;
+    }
+
+    .admin-dashboard-content {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    /* Donut wrapper - horizontal with all elements */
     .donut-mobile-wrapper {
         flex-direction: row !important;
         align-items: flex-start;
-        justify-content: center;
-        gap: 24px;
+        justify-content: flex-start;
+        gap: 16px;
+        padding: 8px;
+        flex-wrap: nowrap;
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    /* Donut chart - reasonable size for landscape */
+    .donut-mobile-chart {
+        flex-shrink: 0;
+    }
+
+    .donut-mobile-chart svg {
+        width: 150px !important;
+        height: 150px !important;
+    }
+
+    /* Legend - compact single column */
+    .donut-mobile-legend {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        width: auto;
+        min-width: 120px;
+        max-width: 140px;
+        flex-shrink: 0;
+    }
+
+    .donut-mobile-legend-item {
+        padding: 4px 6px;
+    }
+
+    .donut-mobile-legend-label {
+        font-size: 8px;
+    }
+
+    .donut-mobile-legend-value {
+        font-size: 12px;
+    }
+
+    /* Show metrics panel in tablet landscape */
+    .donut-mobile-metrics {
+        display: flex !important;
+        flex-direction: column;
+        gap: 4px;
+        width: auto;
+        min-width: 150px;
+        max-width: 180px;
+        margin-top: 0;
+        flex-shrink: 0;
+    }
+
+    .donut-mobile-metric-card {
+        padding: 6px 10px;
+    }
+
+    .donut-mobile-metric-title {
+        font-size: 8px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .donut-mobile-metric-value {
+        font-size: 16px;
+    }
+
+    /* Live Activity Panel for tablet landscape - right side panel */
+    .live-logs-panel {
+        width: 240px !important;
+        min-width: 220px !important;
+        max-width: 280px !important;
+        max-height: none !important;
+        min-height: 0 !important;
+        flex-shrink: 0;
+    }
+
+    /* Donut container should not overflow */
+    .admin-donut-container {
+        padding: 10px;
+        overflow: visible;
     }
 }
 
@@ -5266,6 +5395,125 @@ body {
     cursor: not-allowed;
 }
 
+/* ==================== EDIT GATEPASS STYLES ==================== */
+.os-edit-btn-container {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.os-edit-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 18px;
+    background: linear-gradient(135deg, #38a169 0%, #276749 100%);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.os-edit-btn:hover {
+    background: linear-gradient(135deg, #276749 0%, #1e4e3a 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(56, 161, 105, 0.3);
+}
+
+.os-edit-btn svg {
+    flex-shrink: 0;
+}
+
+.edit-gatepass-modal {
+    max-width: 480px;
+}
+
+.os-edit-modal-info {
+    color: #4a5568;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    padding: 12px;
+    background: #f0fff4;
+    border-radius: 8px;
+    border-left: 4px solid #38a169;
+}
+
+.os-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.os-edit-form-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.os-edit-form-row label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.os-edit-form-row label span {
+    font-size: 13px;
+    font-weight: 600;
+    color: #4a5568;
+}
+
+.os-edit-form-row input[type="date"],
+.os-edit-form-row input[type="time"],
+.os-edit-form-row input[type="number"] {
+    padding: 10px 12px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #2d3748;
+    transition: all 0.2s ease;
+}
+
+.os-edit-form-row input[type="date"]:focus,
+.os-edit-form-row input[type="time"]:focus,
+.os-edit-form-row input[type="number"]:focus {
+    outline: none;
+    border-color: #38a169;
+    box-shadow: 0 0 0 3px rgba(56, 161, 105, 0.15);
+}
+
+.os-edit-save-btn {
+    background: linear-gradient(135deg, #38a169 0%, #276749 100%) !important;
+}
+
+.os-edit-save-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #276749 0%, #1e4e3a 100%) !important;
+}
+
+.os-edit-save-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+    .os-edit-form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .os-edit-btn {
+        width: 100%;
+    }
+    
+    .os-edit-btn-container {
+        justify-content: stretch;
+    }
+}
+
 @media (max-width: 480px) {
     .os-email-form-row {
         grid-template-columns: 1fr;
@@ -5325,4 +5573,570 @@ body {
 
 .os-student-photo-large.profile-pic-hover::after {
     border-radius: 12px;
+}
+
+/* ==================== BAN STUDENT PAGE STYLES ==================== */
+
+.ban-student-page {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+    overflow-y: auto;
+    max-height: calc(100vh - 120px);
+    padding-bottom: 40px;
+}
+
+/* Warning Banner */
+.ban-warning-banner {
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    border: 1px solid #ffb74d;
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #e65100;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.ban-warning-icon {
+    font-size: 24px;
+}
+
+/* Search Section */
+.ban-search-section {
+    background: var(--color-surface);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.ban-section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.banned-count {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--color-bg);
+    padding: 4px 10px;
+    border-radius: 12px;
+}
+
+.ban-search-box {
+    display: flex;
+    gap: 12px;
+    max-width: 600px;
+}
+
+.ban-search-input {
+    flex: 1;
+    padding: 14px 18px;
+    border: 2px solid var(--color-border);
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    outline: none;
+    transition: all 0.2s;
+    text-transform: uppercase;
+}
+
+.ban-search-input:focus {
+    border-color: var(--color-blue);
+    box-shadow: 0 0 0 4px rgba(59, 143, 243, 0.1);
+}
+
+.ban-search-input::placeholder {
+    text-transform: none;
+    color: var(--text-muted);
+    letter-spacing: normal;
+}
+
+.ban-search-btn {
+    padding: 14px 28px;
+    background: var(--color-blue);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.ban-search-btn:hover:not(:disabled) {
+    background: #2a7ee0;
+    box-shadow: 0 4px 12px rgba(59, 143, 243, 0.35);
+}
+
+.ban-search-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.ban-error {
+    margin-top: 12px;
+    padding: 12px 16px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    color: #dc2626;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* Student Card */
+.ban-student-card {
+    background: var(--color-surface);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 2px solid var(--color-border);
+    transition: all 0.3s;
+}
+
+.ban-student-card.is-banned {
+    border-color: #ef4444;
+    background: linear-gradient(to bottom, #fef2f2, #ffffff);
+}
+
+.ban-card-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 20px;
+}
+
+.ban-student-photo {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--color-border);
+}
+
+.ban-student-card.is-banned .ban-student-photo {
+    border-color: #ef4444;
+    filter: grayscale(30%);
+}
+
+.ban-student-basic {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ban-student-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.ban-student-roll {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-blue);
+}
+
+.ban-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    margin-top: 8px;
+    width: fit-content;
+}
+
+.ban-status-badge.active {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.ban-status-badge.banned {
+    background: #fee2e2;
+    color: #dc2626;
+    animation: pulse-danger 2s ease-in-out infinite;
+}
+
+@keyframes pulse-danger {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.3); }
+    50% { box-shadow: 0 0 0 8px rgba(220, 38, 38, 0); }
+}
+
+.ban-card-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.ban-detail-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ban-detail-row label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.ban-detail-row span {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.presence-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    width: fit-content;
+}
+
+.presence-badge.inside {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.presence-badge.outside {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+/* Ban Info Section */
+.ban-info-section {
+    margin-top: 20px;
+    padding: 16px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 12px;
+}
+
+.ban-info-header {
+    font-size: 14px;
+    font-weight: 700;
+    color: #dc2626;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.ban-reason-text {
+    color: #b91c1c !important;
+    font-style: italic;
+}
+
+/* Action Section */
+.ban-action-section {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--color-border);
+}
+
+.ban-action-btn {
+    padding: 14px 32px;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ban-action-btn.ban-btn {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+}
+
+.ban-action-btn.ban-btn:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.4);
+    transform: translateY(-2px);
+}
+
+.ban-action-btn.unban-btn {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    color: white;
+}
+
+.ban-action-btn.unban-btn:hover {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    box-shadow: 0 4px 16px rgba(34, 197, 94, 0.4);
+    transform: translateY(-2px);
+}
+
+/* Confirm Section */
+.ban-confirm-section {
+    background: var(--color-bg);
+    border-radius: 12px;
+    padding: 20px;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.ban-reason-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+}
+
+.ban-reason-input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid var(--color-border);
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.ban-reason-input:focus {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+}
+
+.unban-confirm-text {
+    font-size: 15px;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    line-height: 1.6;
+}
+
+.ban-confirm-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.ban-confirm-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.ban-confirm-btn.confirm {
+    background: #ef4444;
+    color: white;
+}
+
+.ban-confirm-btn.confirm:hover:not(:disabled) {
+    background: #dc2626;
+}
+
+.ban-confirm-btn.confirm.unban {
+    background: #22c55e;
+}
+
+.ban-confirm-btn.confirm.unban:hover:not(:disabled) {
+    background: #16a34a;
+}
+
+.ban-confirm-btn.cancel {
+    background: var(--color-border);
+    color: var(--text-secondary);
+}
+
+.ban-confirm-btn.cancel:hover:not(:disabled) {
+    background: #d1d5db;
+}
+
+.ban-confirm-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Banned Students List */
+.banned-list-section {
+    background: var(--color-surface);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.banned-list-loading,
+.banned-list-empty {
+    padding: 40px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 15px;
+}
+
+.banned-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+.banned-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.banned-list::-webkit-scrollbar-track {
+    background: #fef2f2;
+    border-radius: 3px;
+}
+
+.banned-list::-webkit-scrollbar-thumb {
+    background: #fca5a5;
+    border-radius: 3px;
+}
+
+.banned-list::-webkit-scrollbar-thumb:hover {
+    background: #f87171;
+}
+
+.banned-list-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #fef2f2 0%, #fff5f5 100%);
+    border: 1px solid #fecaca;
+    border-left: 4px solid #ef4444;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.banned-list-item:hover {
+    background: #fee2e2;
+    border-color: #fca5a5;
+    transform: translateX(4px);
+}
+
+.banned-item-photo {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #fca5a5;
+    filter: grayscale(30%);
+}
+
+.banned-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 150px;
+}
+
+.banned-item-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.banned-item-roll {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-blue);
+}
+
+.banned-item-reason {
+    flex: 1;
+    font-size: 13px;
+    color: #b91c1c;
+    font-style: italic;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+}
+
+.banned-item-date {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .ban-student-page {
+        padding: 16px;
+        gap: 16px;
+    }
+
+    .ban-warning-banner {
+        flex-direction: column;
+        text-align: center;
+        gap: 8px;
+    }
+
+    .ban-search-box {
+        flex-direction: column;
+    }
+
+    .ban-card-header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .ban-student-basic {
+        align-items: center;
+    }
+
+    .ban-card-details {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .ban-confirm-buttons {
+        flex-direction: column;
+    }
+
+    .banned-list-item {
+        flex-wrap: wrap;
+    }
+
+    .banned-item-reason {
+        width: 100%;
+        max-width: none;
+        order: 4;
+        margin-top: 8px;
+    }
+
+    .banned-item-date {
+        margin-left: auto;
+    }
 }

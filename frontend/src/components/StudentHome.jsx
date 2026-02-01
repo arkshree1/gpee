@@ -259,29 +259,46 @@ const StudentHome = () => {
           </div>
         </div>
 
+        {/* Ban Warning Banner */}
+        {status?.isBanned && (
+          <div className="sd-ban-banner">
+            <span className="sd-ban-icon">🚫</span>
+            <div className="sd-ban-content">
+              <span className="sd-ban-title">Account Suspended</span>
+              <span className="sd-ban-message">
+                You cannot apply for exit or gatepasses. {status.banReason ? `Reason: ${status.banReason}` : 'Contact administration for details.'}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Quick Actions */}
         <div className="sd-actions-section">
           <div className="sd-section-label">QUICK ACTIONS</div>
           <div className="sd-actions-row">
             <button
-              className="sd-action-btn primary"
-              disabled={loading}
+              className={`sd-action-btn primary ${status?.isBanned ? 'disabled-banned' : ''}`}
+              disabled={loading || status?.isBanned}
               onClick={handleApply}
+              title={status?.isBanned ? 'Account suspended - cannot apply' : ''}
             >
               <span className="sd-btn-icon">{Icons.doorExit}</span>
               {loading ? (
                 <span className="loader loader--inline" role="status" aria-label="Loading"></span>
+              ) : status?.isBanned ? (
+                'Suspended'
               ) : (
                 actionLabel
               )}
             </button>
             <button
-              className="sd-action-btn primary"
-              disabled={loading}
+              className={`sd-action-btn primary ${status?.isBanned ? 'disabled-banned' : ''}`}
+              disabled={loading || status?.isBanned}
               onClick={() => navigate('/student/gatepass')}
+              title={status?.isBanned ? 'Account suspended - cannot apply' : ''}
             >
               <span className="sd-btn-icon">{Icons.file}</span>
-              Apply for Gatepass
+              {status?.isBanned ? 'Suspended' : 'Apply for Gatepass'}
             </button>
             <button
               className="sd-action-btn secondary"
@@ -320,8 +337,13 @@ const StudentHome = () => {
                     const exitDate = parseDate(log.exitStatusTime);
                     const entryDate = parseDate(log.entryStatusTime);
 
-                    // Simple status: Completed if both exit and entry, In Progress if only exit
-                    const isCompleted = exitDate && entryDate;
+                    // Status logic:
+                    // - ENTRY-only log (direction='entry') → Completed (successful re-entry)
+                    // - EXIT + ENTRY → Completed
+                    // - EXIT only → In Progress (student is outside)
+                    // - Neither → Pending (shouldn't happen normally)
+                    const isEntryOnlyLog = log.direction === 'entry' && entryDate && !exitDate;
+                    const isCompleted = (exitDate && entryDate) || isEntryOnlyLog;
                     const isInProgress = exitDate && !entryDate;
 
                     return (

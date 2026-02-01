@@ -77,7 +77,8 @@ export const applyOSGatepassEntry = async (payload) => apiClient.post('/api/stud
 export const getGuardDashboard = async (options = {}) => apiClient.get('/api/guard/dashboard', options);
 export const scanQrToken = async (payload) => apiClient.post('/api/guard/scan', payload);
 export const decideRequest = async (payload) => apiClient.post('/api/guard/decide', payload);
-export const getGuardEntryExitLogs = async () => apiClient.get('/api/guard/entry-exit-logs');
+export const getGuardEntryExitLogs = async (filter) => 
+  apiClient.get('/api/guard/entry-exit-logs', { params: { filter } });
 export const searchGuardStudents = async (q) =>
   apiClient.get('/api/guard/students', { params: { q } });
 export const manualExit = async (payload) => apiClient.post('/api/guard/manual-exit', payload);
@@ -98,16 +99,27 @@ export const searchAdminStudents = async (q) =>
   apiClient.get('/api/admin/search-students', { params: { q } });
 export const getStudentLogsById = async (studentId) =>
   apiClient.get(`/api/admin/student-logs/${studentId}`);
-export const getAdminEntryExitLogs = async () => apiClient.get('/api/admin/entry-exit-logs');
+export const getAdminEntryExitLogs = async (filter) => 
+  apiClient.get('/api/admin/entry-exit-logs', { params: { filter } });
 export const searchGatepass = async (type, number) =>
   apiClient.get('/api/admin/search-gatepass', { params: { type, number } });
+
+// Admin Ban/Unban APIs
+export const searchStudentForBan = async (rollnumber) =>
+  apiClient.get('/api/admin/search-student-ban', { params: { rollnumber } });
+export const banStudent = async (studentId, reason) =>
+  apiClient.post('/api/admin/ban-student', { studentId, reason });
+export const unbanStudent = async (studentId) =>
+  apiClient.post('/api/admin/unban-student', { studentId });
+export const getBannedStudents = async () =>
+  apiClient.get('/api/admin/banned-students');
 
 // Hostel Office APIs - Local Gatepass
 export const getPendingGatepasses = async () => apiClient.get('/api/hostel-office/pending-gatepasses');
 export const getGatepassHistory = async (search) =>
   apiClient.get('/api/hostel-office/gatepass-history', { params: { search } });
-export const getEntryExitLogs = async (date, search) =>
-  apiClient.get('/api/hostel-office/entry-exit-logs', { params: { date, search } });
+export const getEntryExitLogs = async (date, search, filter) =>
+  apiClient.get('/api/hostel-office/entry-exit-logs', { params: { date, search, filter } });
 export const decideGatepass = async (payload) => apiClient.post('/api/hostel-office/decide-gatepass', payload);
 export const getLocalStudentHistory = async (studentId) =>
   apiClient.get(`/api/hostel-office/local-student-history/${studentId}`);
@@ -137,6 +149,8 @@ export const getSecretaryGatepassHistory = async (search) =>
   apiClient.get('/api/office-secretary/gatepass-history', { params: { search } });
 export const decideOutstationGatepass = async (payload) =>
   apiClient.post('/api/office-secretary/decide-gatepass', payload);
+export const editSecretaryGatepassDetails = async (payload) =>
+  apiClient.post('/api/office-secretary/edit-gatepass', payload);
 export const sendSecretaryMeetingEmail = async (payload) =>
   apiClient.post('/api/office-secretary/send-meeting-email', payload);
 
