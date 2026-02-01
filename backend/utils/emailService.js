@@ -607,7 +607,7 @@ const sendOutstationApprovalNotification = async ({
         </p>
         
         <p style="color: #4a5568; font-size: 15px; line-height: 1.8; margin: 0 0 20px;">
-          Congratulations! Your outstation gatepass request has been <strong style="color: #276749;">approved</strong> by all authorities.
+          It is to inform you that your outstation gatepass request has been <strong style="color: #276749;">approved</strong>. Below are the details of your approved gatepass:
         </p>
         
         <!-- Gatepass Number Card -->
@@ -639,19 +639,8 @@ const sendOutstationApprovalNotification = async ({
           </table>
         </div>
         
-        <!-- Important Notice -->
-        <div style="background: #fffaf0; border-left: 4px solid #ed8936; border-radius: 0 8px 8px 0; padding: 20px 25px; margin: 25px 0;">
-          <h3 style="color: #c05621; font-size: 14px; margin: 0 0 10px;">Important Instructions</h3>
-          <ul style="color: #744210; font-size: 14px; margin: 0; padding-left: 20px; line-height: 1.8;">
-            <li>Please carry your student ID card while exiting and entering the campus.</li>
-            <li>Show this gatepass number at the security gate during exit.</li>
-            <li>Ensure you return by the approved date and time.</li>
-            <li>Report to the hostel office upon your return if required.</li>
-          </ul>
-        </div>
-        
         <p style="color: #4a5568; font-size: 15px; line-height: 1.8; margin: 20px 0 0;">
-          Have a safe journey!
+          Happy and safe journey!
         </p>
       </div>
       
@@ -679,10 +668,148 @@ const sendOutstationApprovalNotification = async ({
   }
 };
 
+/**
+ * Send notification to student when Office Secretary edits their gatepass details
+ * @param {Object} options
+ * @param {string} options.to - Student email
+ * @param {string} options.studentName - Student name
+ * @param {string} options.rollnumber - Student roll number
+ * @param {Object} options.changes - Object containing old and new values for changed fields
+ * @param {string} options.editedBy - Name of the secretary who made the edit
+ */
+const sendGatepassEditNotification = async ({
+  to,
+  studentName,
+  rollnumber,
+  changes,
+  editedBy,
+}) => {
+  if (!emailUser || !emailPass) {
+    console.error('EMAIL_USER or EMAIL_PASS is not set in .env, cannot send email');
+    throw new Error('Email configuration is missing');
+  }
+
+  const subject = `Gatepass Details Updated by Office Secretary | ${studentName} (${rollnumber})`;
+
+  // Build the changes list HTML
+  let changesHtml = '';
+  if (changes.leaveDays) {
+    changesHtml += `
+      <tr>
+        <td style="padding: 10px 15px; border-bottom: 1px solid #e0e0e0; font-weight: 600;">Leave Days</td>
+        <td style="padding: 10px 15px; border-bottom: 1px solid #e0e0e0; color: #dc3545; text-decoration: line-through;">${changes.leaveDays.old}</td>
+        <td style="padding: 10px 15px; border-bottom: 1px solid #e0e0e0; color: #28a745; font-weight: 600;">${changes.leaveDays.new}</td>
+      </tr>`;
+  }
+  if (changes.dateOut) {
+    changesHtml += `
+      <tr>
+        <td style="padding: 10px 15px; border-bottom: 1px solid #e0e0e0; font-weight: 600;">Exit Date</td>
+        <td style="padding: 10px 15px; border-bottom: 1px solid #e0e0e0; color: #dc3545; text-decoration: line-through;">${changes.dateOut.old}</td>
+        <td style="padding: 10px 15px; border-bottom: 1px solid #e0e0e0; color: #28a745; font-weight: 600;">${changes.dateOut.new}</td>
+      </tr>`;
+  }
+  if (changes.timeOut) {
+    changesHtml += `
+      <tr>
+        <td style="padding: 10px 15px; border-bottom: 1px solid #e0e0e0; font-weight: 600;">Exit Time</td>
+        <td style="padding: 10px 15px; border-bottom: 1px solid #e0e0e0; color: #dc3545; text-decoration: line-through;">${changes.timeOut.old}</td>
+        <td style="padding: 10px 15px; border-bottom: 1px solid #e0e0e0; color: #28a745; font-weight: 600;">${changes.timeOut.new}</td>
+      </tr>`;
+  }
+  if (changes.dateIn) {
+    changesHtml += `
+      <tr>
+        <td style="padding: 10px 15px; border-bottom: 1px solid #e0e0e0; font-weight: 600;">Return Date</td>
+        <td style="padding: 10px 15px; border-bottom: 1px solid #e0e0e0; color: #dc3545; text-decoration: line-through;">${changes.dateIn.old}</td>
+        <td style="padding: 10px 15px; border-bottom: 1px solid #e0e0e0; color: #28a745; font-weight: 600;">${changes.dateIn.new}</td>
+      </tr>`;
+  }
+  if (changes.timeIn) {
+    changesHtml += `
+      <tr>
+        <td style="padding: 10px 15px; border-bottom: 1px solid #e0e0e0; font-weight: 600;">Return Time</td>
+        <td style="padding: 10px 15px; border-bottom: 1px solid #e0e0e0; color: #dc3545; text-decoration: line-through;">${changes.timeIn.old}</td>
+        <td style="padding: 10px 15px; border-bottom: 1px solid #e0e0e0; color: #28a745; font-weight: 600;">${changes.timeIn.new}</td>
+      </tr>`;
+  }
+
+  const html = `
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 650px; margin: 0 auto; padding: 0; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%); padding: 25px; text-align: center;">
+        <h1 style="color: #fff; margin: 0; font-size: 22px; font-weight: 600;">GoThru - Outstation Gate Pass</h1>
+        <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0; font-size: 13px;">RGIPT Campus Access Management</p>
+      </div>
+      
+      <!-- Alert Banner -->
+      <div style="background: #e7f3ff; padding: 15px 35px; border-bottom: 1px solid #007bff;">
+        <p style="color: #004085; font-size: 14px; margin: 0; font-weight: 600;">
+          ✏️ Your Gatepass Details Have Been Updated
+        </p>
+      </div>
+      
+      <!-- Content -->
+      <div style="padding: 30px 35px;">
+        <p style="color: #4a5568; font-size: 14px; line-height: 1.7; margin: 0 0 20px;">
+          Dear <strong>${studentName}</strong>,
+        </p>
+        
+        <p style="color: #4a5568; font-size: 14px; line-height: 1.7; margin: 0 0 20px;">
+          The Office Secretary (<strong>${editedBy}</strong>) has made changes to your outstation gatepass application. Please review the updated details below:
+        </p>
+        
+        <!-- Changes Table -->
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px;">
+          <thead>
+            <tr style="background: #f8f9fa;">
+              <th style="padding: 12px 15px; text-align: left; border-bottom: 2px solid #dee2e6;">Field</th>
+              <th style="padding: 12px 15px; text-align: left; border-bottom: 2px solid #dee2e6;">Previous</th>
+              <th style="padding: 12px 15px; text-align: left; border-bottom: 2px solid #dee2e6;">Updated</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${changesHtml}
+          </tbody>
+        </table>
+        
+        <p style="color: #4a5568; font-size: 14px; line-height: 1.7; margin: 20px 0 0;">
+          If you have any questions regarding these changes, please contact the Office Secretary.
+        </p>
+      </div>
+      
+      <!-- Footer -->
+      <div style="background: #f8f9fa; padding: 20px 35px; border-top: 1px solid #e0e0e0; text-align: center;">
+        <p style="color: #6c757d; font-size: 12px; margin: 0;">
+          This is an automated message from GoThru Gate Pass System
+        </p>
+        <p style="color: #6c757d; font-size: 11px; margin: 10px 0 0;">
+          © ${new Date().getFullYear()} RGIPT. All rights reserved.
+        </p>
+      </div>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: `"GoThru Gate Pass" <${emailUser}>`,
+      to,
+      subject,
+      html,
+    });
+    return { success: true };
+  } catch (err) {
+    console.error('Error sending gatepass edit notification email:', err);
+    throw err;
+  }
+};
+
 module.exports = {
   sendMeetingInviteEmail,
   sendLocalGatepassNotification,
   sendOutstationGatepassNotification,
   sendOutstationRejectionNotification,
   sendOutstationApprovalNotification,
+  sendGatepassEditNotification,
 };
+

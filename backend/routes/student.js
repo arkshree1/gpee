@@ -3,6 +3,7 @@ const router = express.Router();
 
 const auth = require('../middleware/auth');
 const requireRole = require('../middleware/requireRole');
+const checkBan = require('../middleware/checkBan');
 const { gatepassLimiter, qrGenerationLimiter } = require('../middleware/rateLimiter');
 const asyncHandler = require('../utils/asyncHandler');
 const proofUpload = require('../utils/proofUpload');
@@ -14,19 +15,23 @@ const outstationGatepassController = require('../controllers/outstationGatepassC
 router.get('/status', auth, requireRole(['student']), asyncHandler(studentController.getStatus));
 
 // QR Generation - Rate limited: 10 requests per 5 minutes per user
-router.post('/apply', auth, requireRole(['student']), qrGenerationLimiter, asyncHandler(studentController.apply));
+// checkBan middleware blocks banned students from generating QR codes
+router.post('/apply', auth, requireRole(['student']), checkBan, qrGenerationLimiter, asyncHandler(studentController.apply));
 router.post('/cancel', auth, requireRole(['student']), asyncHandler(studentController.cancel));
 router.get('/logs', auth, requireRole(['student']), asyncHandler(studentLogsController.getMyLogs));
 
 // Gatepass creation - Rate limited: 10 requests per 5 minutes per user
-router.post('/local-gatepass', auth, requireRole(['student']), gatepassLimiter, asyncHandler(localGatepassController.createLocalGatepass));
+// checkBan middleware blocks banned students from creating gatepasses
+router.post('/local-gatepass', auth, requireRole(['student']), checkBan, gatepassLimiter, asyncHandler(localGatepassController.createLocalGatepass));
 router.delete('/local-gatepass/:gatepassId', auth, requireRole(['student']), asyncHandler(localGatepassController.deleteLocalGatepass));
 
 // Outstation gatepass creation - Rate limited: 10 requests per 5 minutes per user
+// checkBan middleware blocks banned students from creating gatepasses
 router.post(
 	'/outstation-gatepass',
 	auth,
 	requireRole(['student']),
+	checkBan,
 	gatepassLimiter,
 	proofUpload.single('proofFile'),
 	asyncHandler(outstationGatepassController.createOutstationGatepass)
@@ -37,12 +42,14 @@ router.delete('/outstation-gatepass/:gatepassId', auth, requireRole(['student'])
 router.get('/my-gatepasses', auth, requireRole(['student']), asyncHandler(studentController.getMyGatepasses));
 
 // Gatepass QR Generation - Rate limited: 10 requests per 5 minutes per user
-router.post('/gatepass-exit', auth, requireRole(['student']), qrGenerationLimiter, asyncHandler(studentController.applyGatepassExit));
-router.post('/gatepass-entry', auth, requireRole(['student']), qrGenerationLimiter, asyncHandler(studentController.applyGatepassEntry));
+// checkBan middleware blocks banned students from generating gatepass QR codes
+router.post('/gatepass-exit', auth, requireRole(['student']), checkBan, qrGenerationLimiter, asyncHandler(studentController.applyGatepassExit));
+router.post('/gatepass-entry', auth, requireRole(['student']), checkBan, qrGenerationLimiter, asyncHandler(studentController.applyGatepassEntry));
 
 // Outstation gatepass QR routes - Rate limited: 10 requests per 5 minutes per user
-router.post('/os-gatepass-exit', auth, requireRole(['student']), qrGenerationLimiter, asyncHandler(studentController.applyOSGatepassExit));
-router.post('/os-gatepass-entry', auth, requireRole(['student']), qrGenerationLimiter, asyncHandler(studentController.applyOSGatepassEntry));
+// checkBan middleware blocks banned students from generating OS gatepass QR codes
+router.post('/os-gatepass-exit', auth, requireRole(['student']), checkBan, qrGenerationLimiter, asyncHandler(studentController.applyOSGatepassExit));
+router.post('/os-gatepass-entry', auth, requireRole(['student']), checkBan, qrGenerationLimiter, asyncHandler(studentController.applyOSGatepassEntry));
 
 // Outstation gatepass tracking
 router.get('/my-outstation-gatepasses', auth, requireRole(['student']), asyncHandler(outstationGatepassController.getMyOutstationGatepasses));

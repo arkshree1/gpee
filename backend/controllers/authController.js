@@ -105,15 +105,15 @@ const sendOtpEmail = async (to, otp, purpose = 'verification') => {
                   <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                     <tr>
                       <td align="center">
-                        <div style="background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%); border: 2px dashed #cbd5e0; border-radius: 12px; padding: 25px 20px; display: inline-block; text-align: center;">
-                          <p style="color: #718096; font-size: 11px; margin: 0 0 10px; text-transform: uppercase; letter-spacing: 2px; font-weight: 600;">
+                        <div style="background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%); border: 2px dashed #cbd5e0; border-radius: 12px; padding: 25px 20px; text-align: center;">
+                          <p style="color: #718096; font-size: 11px; margin: 0 0 15px; text-transform: uppercase; letter-spacing: 2px; font-weight: 600;">
                             Your One-Time Password
                           </p>
-                          <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+                          <table role="presentation" cellspacing="0" cellpadding="0" align="center" style="margin: 0 auto;">
                             <tr>
                               ${otp.split('').map(digit => `
-                                <td style="padding: 5px;">
-                                  <div style="width: 42px; height: 52px; background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%); border: 2px solid #e2e8f0; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 700; color: #1a365d; line-height: 52px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                <td align="center" valign="middle" style="padding: 0 5px;">
+                                  <div style="width: 42px; height: 52px; background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%); border: 2px solid #e2e8f0; border-radius: 10px; font-size: 26px; font-weight: 700; color: #1a365d; line-height: 52px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                                     ${digit}
                                   </div>
                                 </td>

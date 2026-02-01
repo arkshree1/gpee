@@ -227,9 +227,35 @@ exports.decide = async (req, res) => {
 
   if (requestDoc.direction === 'exit') {
     if (approved) {
+      // Get gatepass expected return time if applicable
+      let gatepassExpectedReturnTime = null;
+      let isOutstationGatepass = false;
+      
+      if (requestDoc.gatePassNo) {
+        if (requestDoc.gatePassNo.startsWith('OS-')) {
+          isOutstationGatepass = true;
+          const OutstationGatepass = require('../models/OutstationGatepass');
+          const osGatepass = await OutstationGatepass.findOne({ gatePassNo: requestDoc.gatePassNo });
+          if (osGatepass && osGatepass.dateIn && osGatepass.timeIn) {
+            gatepassExpectedReturnTime = new Date(`${osGatepass.dateIn}T${osGatepass.timeIn}`);
+          }
+        } else if (requestDoc.gatePassNo.startsWith('L-')) {
+          const LocalGatepass = require('../models/LocalGatepass');
+          const localGatepass = await LocalGatepass.findOne({ gatePassNo: requestDoc.gatePassNo });
+          if (localGatepass && localGatepass.dateIn && localGatepass.timeIn) {
+            gatepassExpectedReturnTime = new Date(`${localGatepass.dateIn}T${localGatepass.timeIn}`);
+          }
+        }
+      }
+
       // EXIT APPROVED -> create base exit document
       await GateLog.create({
         student: student._id,
+        // Store denormalized student info for data persistence
+        studentName: student.name,
+        studentRollNumber: student.rollnumber,
+        studentRoomNumber: student.roomNumber,
+        studentContact: student.contactNumber,
         guard: guard._id,
         request: requestDoc._id,
         direction: 'exit',
@@ -239,6 +265,8 @@ exports.decide = async (req, res) => {
         decidedAt,
         gatepassId: requestDoc.gatepassId || null,
         gatePassNo: requestDoc.gatePassNo || null,
+        gatepassExpectedReturnTime,
+        isOutstationGatepass,
         exitStatus: 'exit done',
         exitOutcome: 'approved',
         entryStatus: '--',
@@ -268,27 +296,7 @@ exports.decide = async (req, res) => {
         baseExitLog.outcome = 'approved';
         await baseExitLog.save();
       }
-
-      // ALWAYS create a separate ENTRY log for the activity feed display
-      // This ensures both EXIT and ENTRY appear as separate rows in live activity
-      await GateLog.create({
-        student: student._id,
-        guard: guard._id,
-        request: requestDoc._id,
-        direction: 'entry',
-        outcome: 'approved',
-        purpose: requestDoc.purpose || baseExitLog?.purpose || '--',
-        place: requestDoc.place || baseExitLog?.place || '--',
-        decidedAt,
-        gatepassId: requestDoc.gatepassId || baseExitLog?.gatepassId || null,
-        gatePassNo: requestDoc.gatePassNo || baseExitLog?.gatePassNo || null,
-        exitStatus: '--',
-        exitOutcome: '--',
-        entryStatus: 'entry approved',
-        entryOutcome: 'approved',
-        exitStatusTime: null,
-        entryStatusTime: decidedAt,
-      });
+      // No separate entry log created - the exit log already contains all entry information
     }
     // ENTRY DENIED -> No log update, base exit log stays as In Progress
   }
@@ -392,6 +400,11 @@ exports.manualExit = async (req, res) => {
   // Create GateLog entry equivalent to an approved exit via QR
   await GateLog.create({
     student: student._id,
+    // Store denormalized student info for data persistence
+    studentName: student.name,
+    studentRollNumber: student.rollnumber,
+    studentRoomNumber: student.roomNumber,
+    studentContact: student.contactNumber,
     guard: guard._id,
     request: null,
     direction: 'exit',
@@ -485,6 +498,11 @@ exports.manualEntry = async (req, res) => {
     // Fallback: if no base exit log found, create a standalone entry-approved log
     await GateLog.create({
       student: student._id,
+      // Store denormalized student info for data persistence
+      studentName: student.name,
+      studentRollNumber: student.rollnumber,
+      studentRoomNumber: student.roomNumber,
+      studentContact: student.contactNumber,
       guard: guard._id,
       request: null,
       direction: 'entry',
@@ -504,14 +522,112 @@ exports.manualEntry = async (req, res) => {
   return res.json({ message: 'Manual entry recorded successfully' });
 };
 
+// Helper function to check if entry time is after 8PM
+const isAfter8PM = (dateTime) => {
+  if (!dateTime) return false;
+  const d = new Date(dateTime);
+  return d.getHours() >= 20; // 20:00 = 8 PM
+};
+
+// Helper function to check if student is still outside after 8PM today
+const isOutsideAfter8PM = (log) => {
+  // Student must be outside (no entry recorded)
+  if (log.entryOutcome === 'approved') return false;
+  
+  // Check if current time is past 8PM
+  const now = new Date();
+  if (now.getHours() < 20) return false; // Not yet 8PM
+  
+  // Check if exit was today or earlier
+  const exitDate = new Date(log.exitStatusTime);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  exitDate.setHours(0, 0, 0, 0);
+  
+  return exitDate <= today;
+};
+
 exports.getEntryExitLogs = async (req, res) => {
+  const { filter } = req.query;
+  
   const logs = await GateLog.find({
     exitOutcome: 'approved',
     entryOutcome: { $in: ['approved', '--'] },
   })
-    .sort({ exitStatusTime: 1, _id: 1 })
+    .sort({ exitStatusTime: -1, _id: 1 })
     .limit(300)
     .populate('student', 'name rollnumber roomNumber contactNumber');
 
-  return res.json({ logs });
+  // Map logs to include fallback to denormalized student data and flags
+  let formattedLogs = logs.map(log => {
+    const logObj = log.toObject();
+    const entryTime = log.entryStatusTime;
+    const hasGatepass = !!log.gatePassNo;
+    const expectedReturnTime = log.gatepassExpectedReturnTime;
+    
+    // Flag: Late after 8PM (only for students WITHOUT approved gatepass)
+    const lateAfter8PM = !hasGatepass && log.entryOutcome === 'approved' && isAfter8PM(entryTime);
+    
+    // Flag: Late according to gatepass (entered after expected return time)
+    const lateGatepass = hasGatepass && log.entryOutcome === 'approved' && expectedReturnTime && 
+      new Date(entryTime) > new Date(expectedReturnTime);
+    
+    // Flag: Still outside after 8PM (only for students WITHOUT approved gatepass)
+    const outsideAfter8PM = !hasGatepass && isOutsideAfter8PM(log);
+    
+    // Flag: Still outside past gatepass return time
+    const outsidePastGatepass = hasGatepass && log.entryOutcome !== 'approved' && expectedReturnTime &&
+      new Date() > new Date(expectedReturnTime);
+
+    return {
+      ...logObj,
+      student: log.student ? {
+        name: log.student.name,
+        rollnumber: log.student.rollnumber,
+        roomNumber: log.student.roomNumber,
+        contactNumber: log.student.contactNumber,
+      } : {
+        // Fallback to denormalized data if student was deleted
+        name: log.studentName || '--',
+        rollnumber: log.studentRollNumber || '--',
+        roomNumber: log.studentRoomNumber || '--',
+        contactNumber: log.studentContact || '--',
+      },
+      // Add flags for frontend
+      flags: {
+        lateAfter8PM,
+        lateGatepass,
+        outsideAfter8PM,
+        outsidePastGatepass,
+        isOutstationGatepass: log.isOutstationGatepass || false,
+      },
+      gatepassExpectedReturnTime: expectedReturnTime,
+    };
+  });
+
+  // Apply filter if specified
+  if (filter) {
+    switch (filter) {
+      case 'lateAfter8PM':
+        formattedLogs = formattedLogs.filter(log => log.flags.lateAfter8PM);
+        break;
+      case 'lateGatepass':
+        formattedLogs = formattedLogs.filter(log => log.flags.lateGatepass);
+        break;
+      case 'lateLocalGatepass':
+        formattedLogs = formattedLogs.filter(log => log.flags.lateGatepass && !log.flags.isOutstationGatepass);
+        break;
+      case 'lateOutstationGatepass':
+        formattedLogs = formattedLogs.filter(log => log.flags.lateGatepass && log.flags.isOutstationGatepass);
+        break;
+      case 'outsideAfter8PM':
+        formattedLogs = formattedLogs.filter(log => log.flags.outsideAfter8PM);
+        break;
+      case 'outsidePastGatepass':
+        formattedLogs = formattedLogs.filter(log => log.flags.outsidePastGatepass);
+        break;
+    }
+  }
+
+  return res.json({ logs: formattedLogs });
 };

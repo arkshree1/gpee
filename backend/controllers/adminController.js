@@ -64,6 +64,7 @@ exports.getUsers = async (req, res) => {
 
 // Live activity logs for real-time dashboard panel - from GateLog
 // Shows recent gate activity (approved exits/entries)
+// Creates separate log entries for exit and entry events based on timestamps
 exports.getLiveLogs = async (req, res) => {
   try {
     const logs = await GateLog.find({ outcome: 'approved' })
@@ -72,20 +73,48 @@ exports.getLiveLogs = async (req, res) => {
       .populate('student', 'name rollnumber imageUrl');
 
     // Transform to clean format for frontend
-    const liveLogs = logs.map(log => ({
-      id: log._id,
-      studentId: log.student?._id || null,
-      actionType: log.direction === 'exit' ? 'EXIT' : 'ENTRY',
-      studentName: log.student?.name || 'Unknown',
-      rollNumber: log.student?.rollnumber || '--',
-      imageUrl: log.student?.imageUrl || null,
-      timestamp: log.decidedAt,
-      status: log.outcome,
-      purpose: log.purpose || '--',
-      place: log.place || '--',
-    }));
+    // Each GateLog can have both exit and entry events, so we create separate entries
+    const liveLogs = [];
 
-    return res.json({ logs: liveLogs });
+    logs.forEach(log => {
+      // Add exit event if exitStatusTime exists
+      if (log.exitStatusTime) {
+        liveLogs.push({
+          id: `${log._id}_exit`,
+          studentId: log.student?._id || null,
+          actionType: 'EXIT',
+          studentName: log.student?.name || 'Unknown',
+          rollNumber: log.student?.rollnumber || '--',
+          imageUrl: log.student?.imageUrl || null,
+          timestamp: log.exitStatusTime,
+          status: log.exitOutcome || 'approved',
+          purpose: log.purpose || '--',
+          place: log.place || '--',
+        });
+      }
+
+      // Add entry event if entryStatusTime exists (entry was approved)
+      if (log.entryStatusTime && log.entryOutcome === 'approved') {
+        liveLogs.push({
+          id: `${log._id}_entry`,
+          studentId: log.student?._id || null,
+          actionType: 'ENTRY',
+          studentName: log.student?.name || 'Unknown',
+          rollNumber: log.student?.rollnumber || '--',
+          imageUrl: log.student?.imageUrl || null,
+          timestamp: log.entryStatusTime,
+          status: log.entryOutcome || 'approved',
+          purpose: log.purpose || '--',
+          place: log.place || '--',
+        });
+      }
+    });
+
+    // Sort all events by timestamp descending (most recent first)
+    liveLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    // Limit to 50 most recent events
+    return res.json({ logs: liveLogs.slice(0, 50) });
   } catch (error) {
     console.error('Error fetching live logs:', error);
     return res.status(500).json({ message: 'Failed to fetch live logs' });
@@ -93,6 +122,7 @@ exports.getLiveLogs = async (req, res) => {
 };
 
 // Detailed activity logs for the Students page - from GateLog - includes contact number and type
+// Creates separate log entries for exit and entry events based on timestamps
 exports.getDetailedLogs = async (req, res) => {
   try {
     const logs = await GateLog.find({ outcome: 'approved' })
@@ -100,27 +130,52 @@ exports.getDetailedLogs = async (req, res) => {
       .limit(200)
       .populate('student', 'name rollnumber contactNumber imageUrl');
 
-    const detailedLogs = logs.map(log => {
+    const detailedLogs = [];
+
+    logs.forEach(log => {
       // gatePassNo already contains the format like "L-00008" or "OS-00002"
       let type = 'Normal';
       if (log.gatePassNo) {
         type = log.gatePassNo;
       }
 
-      return {
-        id: log._id,
-        studentId: log.student?._id || null,
-        name: log.student?.name || 'Unknown',
-        rollNumber: log.student?.rollnumber || '--',
-        contactNumber: log.student?.contactNumber || '--',
-        imageUrl: log.student?.imageUrl || null,
-        activity: log.direction === 'exit' ? 'EXIT' : 'ENTRY',
-        type: type,
-        place: log.place || '--',
-        purpose: log.purpose || '--',
-        timestamp: log.decidedAt,
-      };
+      // Add exit event if exitStatusTime exists
+      if (log.exitStatusTime) {
+        detailedLogs.push({
+          id: `${log._id}_exit`,
+          studentId: log.student?._id || null,
+          name: log.student?.name || 'Unknown',
+          rollNumber: log.student?.rollnumber || '--',
+          contactNumber: log.student?.contactNumber || '--',
+          imageUrl: log.student?.imageUrl || null,
+          activity: 'EXIT',
+          type: type,
+          place: log.place || '--',
+          purpose: log.purpose || '--',
+          timestamp: log.exitStatusTime,
+        });
+      }
+
+      // Add entry event if entryStatusTime exists (entry was approved)
+      if (log.entryStatusTime && log.entryOutcome === 'approved') {
+        detailedLogs.push({
+          id: `${log._id}_entry`,
+          studentId: log.student?._id || null,
+          name: log.student?.name || 'Unknown',
+          rollNumber: log.student?.rollnumber || '--',
+          contactNumber: log.student?.contactNumber || '--',
+          imageUrl: log.student?.imageUrl || null,
+          activity: 'ENTRY',
+          type: type,
+          place: log.place || '--',
+          purpose: log.purpose || '--',
+          timestamp: log.entryStatusTime,
+        });
+      }
     });
+
+    // Sort all events by timestamp descending (most recent first)
+    detailedLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     return res.json({ logs: detailedLogs });
   } catch (error) {
@@ -133,7 +188,7 @@ exports.getDetailedLogs = async (req, res) => {
 exports.getStudentsInside = async (req, res) => {
   try {
     const students = await User.find({ role: 'student', presence: 'inside' })
-      .select('name rollnumber email roomNumber hostelName contactNumber imageUrl')
+      .select('name rollnumber email roomNumber hostelName contactNumber imageUrl course branch department presence')
       .sort({ name: 1 });
     return res.json({ students });
   } catch (error) {
@@ -151,7 +206,7 @@ exports.getStudentsOutside = async (req, res) => {
       localActiveGPNo: null,
       OSActiveGPNo: null
     })
-      .select('name rollnumber email roomNumber hostelName contactNumber imageUrl')
+      .select('name rollnumber email roomNumber hostelName contactNumber imageUrl course branch department presence')
       .sort({ name: 1 });
     return res.json({ students });
   } catch (error) {
@@ -168,7 +223,7 @@ exports.getLocalGatepassExits = async (req, res) => {
       presence: 'outside',
       localActiveGPNo: { $ne: null }
     })
-      .select('name rollnumber email roomNumber hostelName contactNumber imageUrl')
+      .select('name rollnumber email roomNumber hostelName contactNumber imageUrl course branch department presence')
       .sort({ name: 1 });
     return res.json({ students });
   } catch (error) {
@@ -185,7 +240,7 @@ exports.getOutstationGatepassExits = async (req, res) => {
       presence: 'outside',
       OSActiveGPNo: { $ne: null }
     })
-      .select('name rollnumber email roomNumber hostelName contactNumber imageUrl')
+      .select('name rollnumber email roomNumber hostelName contactNumber imageUrl course branch department presence')
       .sort({ name: 1 });
     return res.json({ students });
   } catch (error) {
@@ -198,7 +253,7 @@ exports.getOutstationGatepassExits = async (req, res) => {
 exports.getAllStudents = async (req, res) => {
   try {
     const students = await User.find({ role: 'student' })
-      .select('name rollnumber email roomNumber hostelName contactNumber imageUrl')
+      .select('name rollnumber email roomNumber hostelName contactNumber imageUrl course branch department presence')
       .sort({ name: 1 });
     return res.json({ students });
   } catch (error) {
@@ -223,7 +278,7 @@ exports.searchStudents = async (req, res) => {
         { rollnumber: regex }
       ]
     })
-      .select('name rollnumber email roomNumber hostelName contactNumber imageUrl department branch')
+      .select('name rollnumber email roomNumber hostelName contactNumber imageUrl department branch course presence')
       .limit(10)
       .sort({ name: 1 });
 
@@ -241,7 +296,7 @@ exports.getStudentLogs = async (req, res) => {
 
     // Get student details
     const student = await User.findById(studentId)
-      .select('name rollnumber email roomNumber hostelName contactNumber imageUrl department branch');
+      .select('name rollnumber email roomNumber hostelName contactNumber imageUrl department branch course presence');
 
     if (!student) {
       return res.status(404).json({ message: 'Student not found' });
@@ -408,5 +463,167 @@ exports.searchGatepass = async (req, res) => {
   } catch (error) {
     console.error('Error searching gatepass:', error);
     return res.status(500).json({ message: 'Failed to search gatepass' });
+  }
+};
+
+// ============================================
+// BAN/UNBAN STUDENT MANAGEMENT
+// ============================================
+
+// Search student by exact roll number for ban management
+exports.searchStudentByRollForBan = async (req, res) => {
+  try {
+    const { rollnumber } = req.query;
+
+    if (!rollnumber || rollnumber.trim() === '') {
+      return res.status(400).json({ message: 'Roll number is required' });
+    }
+
+    // Case-insensitive exact match for roll number
+    const student = await User.findOne({
+      rollnumber: { $regex: new RegExp(`^${rollnumber.trim()}$`, 'i') },
+      role: 'student',
+    }).select('_id name rollnumber email department branch course hostelName roomNumber imageUrl isBanned banReason bannedAt presence');
+
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found with this roll number' });
+    }
+
+    return res.json({
+      student: {
+        _id: student._id,
+        name: student.name,
+        rollnumber: student.rollnumber,
+        email: student.email,
+        department: student.department,
+        branch: student.branch,
+        course: student.course,
+        hostelName: student.hostelName,
+        roomNumber: student.roomNumber,
+        imageUrl: student.imageUrl,
+        isBanned: student.isBanned || false,
+        banReason: student.banReason || null,
+        bannedAt: student.bannedAt || null,
+        presence: student.presence,
+      },
+    });
+  } catch (error) {
+    console.error('Error searching student for ban:', error);
+    return res.status(500).json({ message: 'Failed to search student' });
+  }
+};
+
+// Ban a student - prevents all gatepass operations
+exports.banStudent = async (req, res) => {
+  try {
+    const { studentId, reason } = req.body;
+    const adminId = req.user.userId; // From auth middleware
+
+    if (!studentId) {
+      return res.status(400).json({ message: 'Student ID is required' });
+    }
+
+    if (!reason || reason.trim() === '') {
+      return res.status(400).json({ message: 'Ban reason is required' });
+    }
+
+    // Verify student exists and is a student
+    const student = await User.findOne({ _id: studentId, role: 'student' });
+
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    if (student.isBanned) {
+      return res.status(400).json({ message: 'Student is already banned' });
+    }
+
+    // Update student with ban information
+    student.isBanned = true;
+    student.banReason = reason.trim();
+    student.bannedAt = new Date();
+    student.bannedBy = adminId;
+
+    await student.save();
+
+    console.log(`[ADMIN] Student ${student.rollnumber} banned by admin ${adminId}. Reason: ${reason}`);
+
+    return res.json({
+      message: 'Student has been banned successfully',
+      student: {
+        _id: student._id,
+        name: student.name,
+        rollnumber: student.rollnumber,
+        isBanned: true,
+        banReason: student.banReason,
+        bannedAt: student.bannedAt,
+      },
+    });
+  } catch (error) {
+    console.error('Error banning student:', error);
+    return res.status(500).json({ message: 'Failed to ban student' });
+  }
+};
+
+// Unban a student - restores gatepass access
+exports.unbanStudent = async (req, res) => {
+  try {
+    const { studentId } = req.body;
+    const adminId = req.user.userId;
+
+    if (!studentId) {
+      return res.status(400).json({ message: 'Student ID is required' });
+    }
+
+    // Verify student exists and is a student
+    const student = await User.findOne({ _id: studentId, role: 'student' });
+
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    if (!student.isBanned) {
+      return res.status(400).json({ message: 'Student is not banned' });
+    }
+
+    // Remove ban
+    student.isBanned = false;
+    student.banReason = null;
+    student.bannedAt = null;
+    student.bannedBy = null;
+
+    await student.save();
+
+    console.log(`[ADMIN] Student ${student.rollnumber} unbanned by admin ${adminId}`);
+
+    return res.json({
+      message: 'Student has been unbanned successfully',
+      student: {
+        _id: student._id,
+        name: student.name,
+        rollnumber: student.rollnumber,
+        isBanned: false,
+      },
+    });
+  } catch (error) {
+    console.error('Error unbanning student:', error);
+    return res.status(500).json({ message: 'Failed to unban student' });
+  }
+};
+
+// Get list of all banned students
+exports.getBannedStudents = async (req, res) => {
+  try {
+    const bannedStudents = await User.find({
+      role: 'student',
+      isBanned: true,
+    })
+      .select('_id name rollnumber email department course hostelName isBanned banReason bannedAt imageUrl')
+      .sort({ bannedAt: -1 });
+
+    return res.json({ students: bannedStudents });
+  } catch (error) {
+    console.error('Error fetching banned students:', error);
+    return res.status(500).json({ message: 'Failed to fetch banned students' });
   }
 };

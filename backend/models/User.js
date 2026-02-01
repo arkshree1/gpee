@@ -102,6 +102,25 @@ const userSchema = new mongoose.Schema(
       default: null,
       trim: true,
     },
+    // Ban system fields - for admin to restrict student access
+    isBanned: {
+      type: Boolean,
+      default: false,
+    },
+    banReason: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    bannedAt: {
+      type: Date,
+      default: null,
+    },
+    bannedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Admin',
+      default: null,
+    },
   },
   {
     timestamps: true,

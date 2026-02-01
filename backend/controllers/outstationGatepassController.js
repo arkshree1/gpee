@@ -4,6 +4,7 @@ const OutstationGatepass = require('../models/OutstationGatepass');
 const GateRequest = require('../models/GateRequest');
 const OfficeSecretary = require('../models/OfficeSecretary');
 const Faculty = require('../models/Faculty');
+const User = require('../models/User');
 const { sendOutstationGatepassNotification } = require('../utils/emailService');
 
 exports.createOutstationGatepass = async (req, res) => {
@@ -12,6 +13,7 @@ exports.createOutstationGatepass = async (req, res) => {
     studentName,
     rollnumber,
     roomNumber,
+    hostelName,
     course,
     department,
     branch,
@@ -109,11 +111,21 @@ exports.createOutstationGatepass = async (req, res) => {
     }
   }
 
+  // Get hostelName from student record if not provided in request
+  let finalHostelName = hostelName;
+  if (!finalHostelName) {
+    const student = await User.findById(studentId).select('hostelName');
+    if (student) {
+      finalHostelName = student.hostelName;
+    }
+  }
+
   const doc = await OutstationGatepass.create({
     student: studentId,
     studentName,
     rollnumber,
     roomNumber,
+    hostelName: finalHostelName,
     course,
     department,
     branch,
@@ -200,8 +212,6 @@ exports.createOutstationGatepass = async (req, res) => {
 };
 
 // Get student's outstation gatepasses for tracking
-const User = require('../models/User');
-
 exports.getMyOutstationGatepasses = async (req, res) => {
   const studentId = req.user.userId;
 

@@ -32,14 +32,20 @@ exports.getPendingGatepasses = async (req, res) => {
         department: secretary.department,
     })
         .sort({ createdAt: -1 })
-        .select('studentName rollnumber course department branch contact roomNumber student createdAt')
-        .populate('student', 'imageUrl branch');
+        .select('studentName rollnumber course department branch contact roomNumber hostelName student createdAt')
+        .populate('student', 'imageUrl branch hostelName course');
 
-    // For existing records without branch, use the student's branch
+    // For existing records without branch, hostelName, or course, use the student's data
     const mappedGatepasses = gatepasses.map(gp => {
         const gpObj = gp.toObject();
         if (!gpObj.branch && gpObj.student?.branch) {
             gpObj.branch = gpObj.student.branch;
+        }
+        if (!gpObj.hostelName && gpObj.student?.hostelName) {
+            gpObj.hostelName = gpObj.student.hostelName;
+        }
+        if (!gpObj.course && gpObj.student?.course) {
+            gpObj.course = gpObj.student.course;
         }
         return gpObj;
     });
@@ -59,7 +65,7 @@ exports.getGatepassDetails = async (req, res) => {
     }
 
     const gatepass = await OutstationGatepass.findById(gatepassId)
-        .populate('student', 'imageUrl name rollnumber branch department course');
+        .populate('student', 'imageUrl name rollnumber branch department course hostelName');
 
     if (!gatepass) {
         return res.status(404).json({ message: 'Gatepass not found' });
@@ -70,7 +76,16 @@ exports.getGatepassDetails = async (req, res) => {
         return res.status(403).json({ message: 'Not authorized to view this gatepass' });
     }
 
-    return res.json({ gatepass });
+    // Ensure hostelName and course are available (fallback to student's data for older gatepasses)
+    const gatepassObj = gatepass.toObject();
+    if (!gatepassObj.hostelName && gatepass.student?.hostelName) {
+        gatepassObj.hostelName = gatepass.student.hostelName;
+    }
+    if (!gatepassObj.course && gatepass.student?.course) {
+        gatepassObj.course = gatepass.student.course;
+    }
+
+    return res.json({ gatepass: gatepassObj });
 };
 
 // Get student's OS gatepass history (for view details page)
@@ -121,10 +136,22 @@ exports.getGatepassHistory = async (req, res) => {
 
     const gatepasses = await OutstationGatepass.find(query)
         .sort({ 'stageStatus.officeSecretary.decidedAt': -1, createdAt: -1 })
-        .populate('student', 'imageUrl')
+        .populate('student', 'imageUrl hostelName course')
         .select('-__v');
 
-    return res.json({ gatepasses });
+    // Ensure hostelName and course are available for older gatepasses
+    const mappedGatepasses = gatepasses.map(gp => {
+        const gpObj = gp.toObject();
+        if (!gpObj.hostelName && gpObj.student?.hostelName) {
+            gpObj.hostelName = gpObj.student.hostelName;
+        }
+        if (!gpObj.course && gpObj.student?.course) {
+            gpObj.course = gpObj.student.course;
+        }
+        return gpObj;
+    });
+
+    return res.json({ gatepasses: mappedGatepasses });
 };
 
 // Approve or reject an outstation gatepass
@@ -228,7 +255,7 @@ exports.decideGatepass = async (req, res) => {
             if (gatepass.course === 'PhD') {
                 const dpgc = await Dpgc.findOne({ department: gatepass.department }).select('name email');
                 if (dpgc && dpgc.email) {
-                    const reviewLink = `${process.env.FRONTEND_URL || 'https://gothru.vercel.app'}/dpgc/outstation`;
+                    const reviewLink = `${process.env.FRONTEND_URL || 'https://gothrurgipt.in'}/login`;
                     await sendOutstationGatepassNotification({
                         to: dpgc.email,
                         approverName: dpgc.name,
@@ -253,7 +280,7 @@ exports.decideGatepass = async (req, res) => {
                 // Send email to DUGC of the same department for BTech/MBA
                 const dugc = await Dugc.findOne({ department: gatepass.department }).select('name email');
                 if (dugc && dugc.email) {
-                    const reviewLink = `${process.env.FRONTEND_URL || 'https://gothru.vercel.app'}/dugc/outstation`;
+                    const reviewLink = `${process.env.FRONTEND_URL || 'https://gothrurgipt.in'}/login`;
                     await sendOutstationGatepassNotification({
                         to: dugc.email,
                         approverName: dugc.name,
@@ -356,3 +383,102 @@ exports.sendMeetingEmail = async (req, res) => {
     }
 };
 
+// Edit gatepass details (leaveDays, dateOut, timeOut, dateIn, timeIn)
+exports.editGatepassDetails = async (req, res) => {
+    const secretaryId = req.user.userId;
+    const { gatepassId, leaveDays, dateOut, timeOut, dateIn, timeIn } = req.body;
+
+    if (!gatepassId) {
+        return res.status(400).json({ message: 'Gatepass ID is required' });
+    }
+
+    // Get secretary's department and name
+    const secretary = await OfficeSecretary.findById(secretaryId).select('department name');
+    if (!secretary) {
+        return res.status(404).json({ message: 'Secretary not found' });
+    }
+
+    const gatepass = await OutstationGatepass.findById(gatepassId)
+        .populate('student', 'email name');
+
+    if (!gatepass) {
+        return res.status(404).json({ message: 'Gatepass not found' });
+    }
+
+    // Verify secretary can only edit gatepasses from their department
+    if (gatepass.department !== secretary.department) {
+        return res.status(403).json({ message: 'You can only edit gatepasses from your department' });
+    }
+
+    // Only allow editing if gatepass is at officeSecretary stage
+    if (gatepass.currentStage !== 'officeSecretary') {
+        return res.status(400).json({ message: 'Can only edit gatepass at Office Secretary stage' });
+    }
+
+    // Track changes for notification
+    const changes = {};
+
+    // Update fields if provided and different from current values
+    if (leaveDays !== undefined && leaveDays !== gatepass.leaveDays) {
+        changes.leaveDays = { old: gatepass.leaveDays, new: leaveDays };
+        gatepass.leaveDays = leaveDays;
+    }
+    if (dateOut && dateOut !== gatepass.dateOut) {
+        changes.dateOut = { old: gatepass.dateOut, new: dateOut };
+        gatepass.dateOut = dateOut;
+    }
+    if (timeOut && timeOut !== gatepass.timeOut) {
+        changes.timeOut = { old: gatepass.timeOut, new: timeOut };
+        gatepass.timeOut = timeOut;
+    }
+    if (dateIn && dateIn !== gatepass.dateIn) {
+        changes.dateIn = { old: gatepass.dateIn, new: dateIn };
+        gatepass.dateIn = dateIn;
+    }
+    if (timeIn && timeIn !== gatepass.timeIn) {
+        changes.timeIn = { old: gatepass.timeIn, new: timeIn };
+        gatepass.timeIn = timeIn;
+    }
+
+    // If no changes were made
+    if (Object.keys(changes).length === 0) {
+        return res.status(400).json({ message: 'No changes to save' });
+    }
+
+    // Add edit history record
+    if (!gatepass.editHistory) {
+        gatepass.editHistory = [];
+    }
+    gatepass.editHistory.push({
+        editedBy: secretaryId,
+        editedByName: secretary.name,
+        editedByRole: 'officeSecretary',
+        editedAt: new Date(),
+        changes: changes,
+    });
+
+    await gatepass.save();
+
+    // Send notification email to student if email is available
+    if (gatepass.student?.email) {
+        try {
+            const { sendGatepassEditNotification } = require('../utils/emailService');
+            await sendGatepassEditNotification({
+                to: gatepass.student.email,
+                studentName: gatepass.studentName || gatepass.student.name,
+                rollnumber: gatepass.rollnumber,
+                changes: changes,
+                editedBy: secretary.name,
+            });
+        } catch (err) {
+            console.error('Error sending edit notification email:', err);
+            // Don't fail the request if email fails
+        }
+    }
+
+    return res.json({ 
+        message: 'Gatepass details updated successfully', 
+        gatepass: gatepass,
+        changes: changes 
+    });
+};

@@ -15,7 +15,7 @@ const getDirectionFromPresence = (presence) => {
 exports.getStatus = async (req, res) => {
   const userId = req.user.userId;
 
-  const student = await User.findById(userId).select('presence role name rollnumber imageUrl department branch course roomNumber contactNumber hostelName localActiveGPNo OSActiveGPNo');
+  const student = await User.findById(userId).select('presence role name rollnumber imageUrl department branch course roomNumber contactNumber hostelName localActiveGPNo OSActiveGPNo isBanned banReason');
   if (!student) return res.status(404).json({ message: 'Student not found' });
 
   const pendingRequest = await GateRequest.findOne({
@@ -62,6 +62,9 @@ exports.getStatus = async (req, res) => {
     recentRejection: showRejection,
     // Active gatepass info
     activeGatePassNo,
+    // Ban status - frontend should display appropriate message
+    isBanned: student.isBanned || false,
+    banReason: student.banReason || null,
     // Student profile data for forms
     studentName: student.name,
     rollnumber: student.rollnumber,

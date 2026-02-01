@@ -63,6 +63,11 @@ const outstationGatepassSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    hostelName: {
+      type: String,
+      trim: true,
+      default: null,
+    },
     leaveDays: {
       type: Number,
       required: true,
@@ -257,6 +262,33 @@ const outstationGatepassSchema = new mongoose.Schema(
         default: null,
       },
     },
+
+    // ==================== EDIT HISTORY TRACKING ====================
+    editHistory: [
+      {
+        editedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          required: true,
+        },
+        editedByName: {
+          type: String,
+          required: true,
+        },
+        editedByRole: {
+          type: String,
+          enum: ['officeSecretary', 'dugc', 'dpgc', 'hod', 'dean', 'hostelOffice', 'admin'],
+          required: true,
+        },
+        editedAt: {
+          type: Date,
+          default: Date.now,
+        },
+        changes: {
+          type: mongoose.Schema.Types.Mixed,
+          default: {},
+        },
+      },
+    ],
   },
   {
     timestamps: true,

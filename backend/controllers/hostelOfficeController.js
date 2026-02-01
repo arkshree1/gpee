@@ -57,58 +57,141 @@ exports.getGatepassHistory = async (req, res) => {
     return res.json({ gatepasses: mappedGatepasses });
 };
 
+// Helper function to check if entry time is after 8PM
+const isAfter8PM = (dateTime) => {
+    if (!dateTime) return false;
+    const d = new Date(dateTime);
+    return d.getHours() >= 20; // 20:00 = 8 PM
+};
+
+// Helper function to check if student is still outside after 8PM today
+const isOutsideAfter8PM = (log) => {
+    // Student must be outside (no entry recorded)
+    if (log.entryOutcome === 'approved') return false;
+    
+    // Check if current time is past 8PM
+    const now = new Date();
+    if (now.getHours() < 20) return false; // Not yet 8PM
+    
+    // Check if exit was today or earlier
+    const exitDate = new Date(log.exitStatusTime);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    exitDate.setHours(0, 0, 0, 0);
+    
+    return exitDate <= today;
+};
+
 // Get entry-exit logs (only approved ones)
 exports.getEntryExitLogs = async (req, res) => {
-    const { date, search } = req.query;
+    try {
+        const { date, search, filter } = req.query;
 
-    let query = {
-        exitOutcome: 'approved',
-        // entryOutcome: 'approved', // Show all exits, even if entry is pending
-    };
-
-    // Filter by date if provided
-    if (date) {
-        const startOfDay = new Date(date);
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(date);
-        endOfDay.setHours(23, 59, 59, 999);
-
-        query.exitStatusTime = {
-            $gte: startOfDay,
-            $lte: endOfDay,
+        let query = {
+            exitOutcome: 'approved',
+            // entryOutcome: 'approved', // Show all exits, even if entry is pending
         };
+
+        // Filter by date if provided
+        if (date) {
+            const startOfDay = new Date(date);
+            startOfDay.setHours(0, 0, 0, 0);
+            const endOfDay = new Date(date);
+            endOfDay.setHours(23, 59, 59, 999);
+
+            query.exitStatusTime = {
+                $gte: startOfDay,
+                $lte: endOfDay,
+            };
+        }
+
+        const logs = await GateLog.find(query)
+            .populate('student', 'name rollnumber roomNumber contactNumber')
+            .sort({ exitStatusTime: -1 })
+            .limit(100);
+
+        // Format the logs for frontend with flags
+        let formattedLogs = logs.map((log, index) => {
+            const entryTime = log.entryStatusTime;
+            const hasGatepass = !!log.gatePassNo;
+            const expectedReturnTime = log.gatepassExpectedReturnTime;
+            
+            // Flag: Late after 8PM (only for students WITHOUT approved gatepass)
+            const lateAfter8PM = !hasGatepass && log.entryOutcome === 'approved' && isAfter8PM(entryTime);
+            
+            // Flag: Late according to gatepass (entered after expected return time)
+            const lateGatepass = hasGatepass && log.entryOutcome === 'approved' && expectedReturnTime && 
+                new Date(entryTime) > new Date(expectedReturnTime);
+            
+            // Flag: Still outside after 8PM (only for students WITHOUT approved gatepass)
+            const outsideAfter8PM = !hasGatepass && isOutsideAfter8PM(log);
+            
+            // Flag: Still outside past gatepass return time
+            const outsidePastGatepass = hasGatepass && log.entryOutcome !== 'approved' && expectedReturnTime &&
+                new Date() > new Date(expectedReturnTime);
+
+            return {
+                _id: log._id,
+                srNo: index + 1,
+                name: log.student?.name || log.studentName || '--',
+                rollNo: log.student?.rollnumber || log.studentRollNumber || '--',
+                roomNo: log.student?.roomNumber || log.studentRoomNumber || '--',
+                contact: log.student?.contactNumber || log.studentContact || '--',
+                place: log.place || '--',
+                purpose: log.purpose || '--',
+                gatePass: log.gatePassNo || '--',
+                timeOut: log.exitStatusTime,
+                timeIn: log.entryStatusTime,
+                entryOutcome: log.entryOutcome,
+                gatepassExpectedReturnTime: expectedReturnTime,
+                flags: {
+                    lateAfter8PM,
+                    lateGatepass,
+                    outsideAfter8PM,
+                    outsidePastGatepass,
+                    isOutstationGatepass: log.isOutstationGatepass || false,
+                },
+            };
+        });
+
+        // Apply search filter if provided
+        if (search && search.trim()) {
+            const searchLower = search.trim().toLowerCase();
+            formattedLogs = formattedLogs.filter(log =>
+                log.name.toLowerCase().includes(searchLower) ||
+                log.rollNo.toLowerCase().includes(searchLower)
+            );
+        }
+
+        // Apply flag filter if specified
+        if (filter) {
+            switch (filter) {
+                case 'lateAfter8PM':
+                    formattedLogs = formattedLogs.filter(log => log.flags.lateAfter8PM);
+                    break;
+                case 'lateGatepass':
+                    formattedLogs = formattedLogs.filter(log => log.flags.lateGatepass);
+                    break;
+                case 'lateLocalGatepass':
+                    formattedLogs = formattedLogs.filter(log => log.flags.lateGatepass && !log.flags.isOutstationGatepass);
+                    break;
+                case 'lateOutstationGatepass':
+                    formattedLogs = formattedLogs.filter(log => log.flags.lateGatepass && log.flags.isOutstationGatepass);
+                    break;
+                case 'outsideAfter8PM':
+                    formattedLogs = formattedLogs.filter(log => log.flags.outsideAfter8PM);
+                    break;
+                case 'outsidePastGatepass':
+                    formattedLogs = formattedLogs.filter(log => log.flags.outsidePastGatepass);
+                    break;
+            }
+        }
+
+        return res.json({ logs: formattedLogs });
+    } catch (error) {
+        console.error('Error fetching entry-exit logs:', error);
+        return res.status(500).json({ message: 'Failed to fetch logs', error: error.message });
     }
-
-    const logs = await GateLog.find(query)
-        .populate('student', 'name rollnumber roomNumber contactNumber')
-        .sort({ exitStatusTime: -1 })
-        .limit(100);
-
-    // Format the logs for frontend
-    let formattedLogs = logs.map((log, index) => ({
-        _id: log._id,
-        srNo: index + 1,
-        name: log.student?.name || '--',
-        rollNo: log.student?.rollnumber || '--',
-        roomNo: log.student?.roomNumber || '--',
-        contact: log.student?.contactNumber || '--',
-        place: log.place || '--',
-        purpose: log.purpose || '--',
-        gatePass: log.gatePassNo || '--',
-        timeOut: log.exitStatusTime,
-        timeIn: log.entryStatusTime,
-    }));
-
-    // Apply search filter if provided
-    if (search && search.trim()) {
-        const searchLower = search.trim().toLowerCase();
-        formattedLogs = formattedLogs.filter(log =>
-            log.name.toLowerCase().includes(searchLower) ||
-            log.rollNo.toLowerCase().includes(searchLower)
-        );
-    }
-
-    return res.json({ logs: formattedLogs });
 };
 
 // Approve or deny a local gatepass

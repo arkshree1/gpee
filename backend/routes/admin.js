@@ -22,4 +22,10 @@ router.get('/student-logs/:studentId', auth, requireRole(['admin']), asyncHandle
 router.get('/entry-exit-logs', auth, requireRole(['admin']), asyncHandler(guardController.getEntryExitLogs));
 router.get('/search-gatepass', auth, requireRole(['admin']), asyncHandler(adminController.searchGatepass));
 
+// Ban/Unban student management routes
+router.get('/search-student-ban', auth, requireRole(['admin']), asyncHandler(adminController.searchStudentByRollForBan));
+router.post('/ban-student', auth, requireRole(['admin']), asyncHandler(adminController.banStudent));
+router.post('/unban-student', auth, requireRole(['admin']), asyncHandler(adminController.unbanStudent));
+router.get('/banned-students', auth, requireRole(['admin']), asyncHandler(adminController.getBannedStudents));
+
 module.exports = router;

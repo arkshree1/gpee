@@ -54,6 +54,14 @@ router.post(
     asyncHandler(officeSecretaryController.decideGatepass)
 );
 
+// Edit gatepass details (leaveDays, exit/return date/time)
+router.post(
+    '/edit-gatepass',
+    auth,
+    requireRole(['officeSecretary']),
+    asyncHandler(officeSecretaryController.editGatepassDetails)
+);
+
 // Send meeting email to student
 router.post(
     '/send-meeting-email',

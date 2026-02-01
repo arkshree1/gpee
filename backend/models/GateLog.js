@@ -8,6 +8,27 @@ const gateLogSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    // Denormalized student info (stored at log creation time for data persistence)
+    studentName: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    studentRollNumber: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    studentRoomNumber: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    studentContact: {
+      type: String,
+      trim: true,
+      default: null,
+    },
     guard: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Guard',
@@ -57,6 +78,16 @@ const gateLogSchema = new mongoose.Schema(
       type: String,
       default: null,
       trim: true,
+    },
+    // Expected return time from gatepass (if applicable)
+    gatepassExpectedReturnTime: {
+      type: Date,
+      default: null,
+    },
+    // Whether this is an outstation gatepass
+    isOutstationGatepass: {
+      type: Boolean,
+      default: false,
     },
     exitStatus: {
       type: String,
