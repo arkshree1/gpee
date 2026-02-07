@@ -44,6 +44,19 @@ const StudentApply = () => {
   const [rejectionInfo, setRejectionInfo] = useState(null);
   const [approvalInfo, setApprovalInfo] = useState(null);
 
+  // Reload page once when navigating to /apply
+  useEffect(() => {
+    const hasReloaded = sessionStorage.getItem('apply_page_reloaded');
+    if (!hasReloaded) {
+      sessionStorage.setItem('apply_page_reloaded', 'true');
+      window.location.reload();
+    }
+    // Clean up on unmount so it reloads again next time
+    return () => {
+      sessionStorage.removeItem('apply_page_reloaded');
+    };
+  }, []);
+
   useEffect(() => {
     const id = setInterval(() => setNowTick((x) => x + 1), 500);
     return () => clearInterval(id);

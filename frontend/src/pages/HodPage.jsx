@@ -8,11 +8,13 @@ import {
   getHodGatepassHistory,
   decideHodGatepass,
   sendHodMeetingEmail,
+  updateHodProfile,
   getImageUrl,
 } from '../api/api';
 import PopupBox from '../components/PopupBox';
 import ConfirmModal from '../components/ConfirmModal';
 import StudentIdCardPopup from '../components/StudentIdCardPopup';
+import EditProfileModal from '../components/EditProfileModal';
 import '../styles/admin.css';
 
 const HodPage = () => {
@@ -20,6 +22,10 @@ const HodPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activePage, setActivePage] = useState(() => searchParams.get('page') || 'requests');
   const [department, setDepartment] = useState('');
+  const [profileEmail, setProfileEmail] = useState('');
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [editProfileProcessing, setEditProfileProcessing] = useState(false);
+  const [popupMessage, setPopupMessage] = useState('');
 
   // Fetch profile to get department
   useEffect(() => {
@@ -27,6 +33,7 @@ const HodPage = () => {
       try {
         const res = await getHodProfile();
         setDepartment(res.data.department || '');
+        setProfileEmail(res.data.email || '');
       } catch (err) {
         console.error('Failed to fetch profile:', err);
       }
@@ -61,6 +68,22 @@ const HodPage = () => {
     setSidebarOpen(false);
   };
 
+  const handleUpdateProfile = async (payload) => {
+    setEditProfileProcessing(true);
+    try {
+      const res = await updateHodProfile(payload);
+      if (payload.email) {
+        setProfileEmail(res.data.email);
+      }
+      setPopupMessage(res.data.message || 'Profile updated successfully');
+      setShowEditProfile(false);
+    } catch (err) {
+      setPopupMessage(err.response?.data?.message || 'Failed to update profile');
+    } finally {
+      setEditProfileProcessing(false);
+    }
+  };
+
 
 
   return (
@@ -77,6 +100,17 @@ const HodPage = () => {
         </div>
         <div className="admin-header-right">
           <span className="admin-header-role">{department} HOD</span>
+          <button 
+            className="admin-edit-profile-btn" 
+            onClick={() => setShowEditProfile(true)}
+            title="Edit Profile"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+            <span>Edit Profile</span>
+          </button>
           <button className="admin-logout-btn" onClick={handleLogout}>
             Logout
           </button>
@@ -130,6 +164,21 @@ const HodPage = () => {
           </div>
         </main>
       </div>
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal
+        isOpen={showEditProfile}
+        onClose={() => setShowEditProfile(false)}
+        onUpdate={handleUpdateProfile}
+        currentEmail={profileEmail}
+        roleName="HOD"
+        isProcessing={editProfileProcessing}
+      />
+
+      {/* Popup Message */}
+      {popupMessage && (
+        <PopupBox message={popupMessage} onClose={() => setPopupMessage('')} />
+      )}
     </div>
   );
 };

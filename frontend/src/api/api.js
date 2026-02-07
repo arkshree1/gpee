@@ -153,6 +153,8 @@ export const editSecretaryGatepassDetails = async (payload) =>
   apiClient.post('/api/office-secretary/edit-gatepass', payload);
 export const sendSecretaryMeetingEmail = async (payload) =>
   apiClient.post('/api/office-secretary/send-meeting-email', payload);
+export const updateSecretaryProfile = async (payload) =>
+  apiClient.put('/api/office-secretary/update-profile', payload);
 
 // DUGC APIs
 export const getDugcProfile = async () =>
@@ -169,6 +171,8 @@ export const decideDugcGatepass = async (payload) =>
   apiClient.post('/api/dugc/decide-gatepass', payload);
 export const sendDugcMeetingEmail = async (payload) =>
   apiClient.post('/api/dugc/send-meeting-email', payload);
+export const updateDugcProfile = async (payload) =>
+  apiClient.put('/api/dugc/update-profile', payload);
 
 // HOD APIs
 export const getHodProfile = async () =>
@@ -185,6 +189,8 @@ export const decideHodGatepass = async (payload) =>
   apiClient.post('/api/hod/decide-gatepass', payload);
 export const sendHodMeetingEmail = async (payload) =>
   apiClient.post('/api/hod/send-meeting-email', payload);
+export const updateHodProfile = async (payload) =>
+  apiClient.put('/api/hod/update-profile', payload);
 
 // Student Outstation Gatepass APIs
 export const getMyOutstationGatepasses = async () =>
@@ -225,6 +231,8 @@ export const decideDpgcGatepass = async (payload) =>
   apiClient.post('/api/dpgc/decide-gatepass', payload);
 export const sendDpgcMeetingEmail = async (payload) =>
   apiClient.post('/api/dpgc/send-meeting-email', payload);
+export const updateDpgcProfile = async (payload) =>
+  apiClient.put('/api/dpgc/update-profile', payload);
 
 // Dean APIs
 export const getDeanProfile = async () =>
@@ -241,5 +249,7 @@ export const decideDeanGatepass = async (payload) =>
   apiClient.post('/api/dean/decide-gatepass', payload);
 export const sendDeanMeetingEmail = async (payload) =>
   apiClient.post('/api/dean/send-meeting-email', payload);
+export const updateDeanProfile = async (payload) =>
+  apiClient.put('/api/dean/update-profile', payload);
 
 export default apiClient;
