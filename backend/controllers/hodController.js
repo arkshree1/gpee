@@ -3,18 +3,19 @@ const Hod = require('../models/Hod');
 const HostelOffice = require('../models/HostelOffice');
 const Dean = require('../models/Dean');
 const User = require('../models/User');
+const bcrypt = require('bcryptjs');
 const { sendMeetingInviteEmail, sendOutstationGatepassNotification, sendOutstationRejectionNotification } = require('../utils/emailService');
 
-// Get HOD profile (name and department)
+// Get HOD profile (name, department, and email)
 exports.getProfile = async (req, res) => {
     const hodId = req.user.userId;
 
-    const hod = await Hod.findById(hodId).select('name department');
+    const hod = await Hod.findById(hodId).select('name department email');
     if (!hod) {
         return res.status(404).json({ message: 'HOD not found' });
     }
 
-    return res.json({ name: hod.name, department: hod.department });
+    return res.json({ name: hod.name, department: hod.department, email: hod.email });
 };
 
 // Get pending outstation gatepasses for HOD's department
@@ -338,4 +339,47 @@ exports.sendMeetingEmail = async (req, res) => {
         console.error('Error sending meeting email:', err);
         return res.status(500).json({ message: 'Failed to send email. Please try again.' });
     }
+};
+
+// Update HOD profile (email and/or password)
+exports.updateProfile = async (req, res) => {
+    const hodId = req.user.userId;
+    const { email, currentPassword, newPassword } = req.body;
+
+    const hod = await Hod.findById(hodId);
+    if (!hod) {
+        return res.status(404).json({ message: 'HOD not found' });
+    }
+
+    // If updating password, verify current password first
+    if (newPassword) {
+        if (!currentPassword) {
+            return res.status(400).json({ message: 'Current password is required to set a new password' });
+        }
+        const isMatch = await hod.comparePassword(currentPassword);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Current password is incorrect' });
+        }
+        if (newPassword.length < 6) {
+            return res.status(400).json({ message: 'New password must be at least 6 characters' });
+        }
+        hod.password = await bcrypt.hash(newPassword, 10);
+    }
+
+    // If updating email
+    if (email && email !== hod.email) {
+        // Check if email is already in use
+        const existingHod = await Hod.findOne({ email: email.toLowerCase(), _id: { $ne: hodId } });
+        if (existingHod) {
+            return res.status(400).json({ message: 'Email is already in use' });
+        }
+        hod.email = email.toLowerCase();
+    }
+
+    await hod.save();
+
+    return res.json({ 
+        message: 'Profile updated successfully',
+        email: hod.email
+    });
 };

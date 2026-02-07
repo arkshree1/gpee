@@ -62,4 +62,12 @@ router.post(
     asyncHandler(dugcController.sendMeetingEmail)
 );
 
+// Update DUGC profile (email and/or password)
+router.put(
+    '/update-profile',
+    auth,
+    requireRole(['dugc']),
+    asyncHandler(dugcController.updateProfile)
+);
+
 module.exports = router;

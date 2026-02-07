@@ -2,18 +2,19 @@ const OutstationGatepass = require('../models/OutstationGatepass');
 const Dean = require('../models/Dean');
 const HostelOffice = require('../models/HostelOffice');
 const User = require('../models/User');
+const bcrypt = require('bcryptjs');
 const { sendMeetingInviteEmail, sendOutstationGatepassNotification, sendOutstationRejectionNotification } = require('../utils/emailService');
 
-// Get Dean profile
+// Get Dean profile (name and email)
 exports.getProfile = async (req, res) => {
     const deanId = req.user.userId;
 
-    const dean = await Dean.findById(deanId).select('name');
+    const dean = await Dean.findById(deanId).select('name email');
     if (!dean) {
         return res.status(404).json({ message: 'Dean not found' });
     }
 
-    return res.json({ name: dean.name, department: 'All Departments' });
+    return res.json({ name: dean.name, department: 'All Departments', email: dean.email });
 };
 
 // Get pending outstation gatepasses for Dean (all PhD students from all departments)
@@ -309,4 +310,47 @@ exports.sendMeetingEmail = async (req, res) => {
         console.error('Error sending meeting email:', err);
         return res.status(500).json({ message: 'Failed to send email. Please try again.' });
     }
+};
+
+// Update Dean profile (email and/or password)
+exports.updateProfile = async (req, res) => {
+    const deanId = req.user.userId;
+    const { email, currentPassword, newPassword } = req.body;
+
+    const dean = await Dean.findById(deanId);
+    if (!dean) {
+        return res.status(404).json({ message: 'Dean not found' });
+    }
+
+    // If updating password, verify current password first
+    if (newPassword) {
+        if (!currentPassword) {
+            return res.status(400).json({ message: 'Current password is required to set a new password' });
+        }
+        const isMatch = await dean.comparePassword(currentPassword);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Current password is incorrect' });
+        }
+        if (newPassword.length < 6) {
+            return res.status(400).json({ message: 'New password must be at least 6 characters' });
+        }
+        dean.password = await bcrypt.hash(newPassword, 10);
+    }
+
+    // If updating email
+    if (email && email !== dean.email) {
+        // Check if email is already in use
+        const existingDean = await Dean.findOne({ email: email.toLowerCase(), _id: { $ne: deanId } });
+        if (existingDean) {
+            return res.status(400).json({ message: 'Email is already in use' });
+        }
+        dean.email = email.toLowerCase();
+    }
+
+    await dean.save();
+
+    return res.json({ 
+        message: 'Profile updated successfully',
+        email: dean.email
+    });
 };

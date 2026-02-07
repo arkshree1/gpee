@@ -70,4 +70,12 @@ router.post(
     asyncHandler(officeSecretaryController.sendMeetingEmail)
 );
 
+// Update Office Secretary profile (email and/or password)
+router.put(
+    '/update-profile',
+    auth,
+    requireRole(['officeSecretary']),
+    asyncHandler(officeSecretaryController.updateProfile)
+);
+
 module.exports = router;

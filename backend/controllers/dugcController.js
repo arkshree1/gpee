@@ -2,18 +2,19 @@ const OutstationGatepass = require('../models/OutstationGatepass');
 const Dugc = require('../models/Dugc');
 const Hod = require('../models/Hod');
 const User = require('../models/User');
+const bcrypt = require('bcryptjs');
 const { sendMeetingInviteEmail, sendOutstationGatepassNotification, sendOutstationRejectionNotification } = require('../utils/emailService');
 
-// Get DUGC profile (name and department)
+// Get DUGC profile (name, department, and email)
 exports.getProfile = async (req, res) => {
     const dugcId = req.user.userId;
 
-    const dugc = await Dugc.findById(dugcId).select('name department');
+    const dugc = await Dugc.findById(dugcId).select('name department email');
     if (!dugc) {
         return res.status(404).json({ message: 'DUGC not found' });
     }
 
-    return res.json({ name: dugc.name, department: dugc.department });
+    return res.json({ name: dugc.name, department: dugc.department, email: dugc.email });
 };
 
 // Get pending outstation gatepasses for DUGC's department
@@ -303,4 +304,47 @@ exports.sendMeetingEmail = async (req, res) => {
         console.error('Error sending meeting email:', err);
         return res.status(500).json({ message: 'Failed to send email. Please try again.' });
     }
+};
+
+// Update DUGC profile (email and/or password)
+exports.updateProfile = async (req, res) => {
+    const dugcId = req.user.userId;
+    const { email, currentPassword, newPassword } = req.body;
+
+    const dugc = await Dugc.findById(dugcId);
+    if (!dugc) {
+        return res.status(404).json({ message: 'DUGC not found' });
+    }
+
+    // If updating password, verify current password first
+    if (newPassword) {
+        if (!currentPassword) {
+            return res.status(400).json({ message: 'Current password is required to set a new password' });
+        }
+        const isMatch = await dugc.comparePassword(currentPassword);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Current password is incorrect' });
+        }
+        if (newPassword.length < 6) {
+            return res.status(400).json({ message: 'New password must be at least 6 characters' });
+        }
+        dugc.password = await bcrypt.hash(newPassword, 10);
+    }
+
+    // If updating email
+    if (email && email !== dugc.email) {
+        // Check if email is already in use
+        const existingDugc = await Dugc.findOne({ email: email.toLowerCase(), _id: { $ne: dugcId } });
+        if (existingDugc) {
+            return res.status(400).json({ message: 'Email is already in use' });
+        }
+        dugc.email = email.toLowerCase();
+    }
+
+    await dugc.save();
+
+    return res.json({ 
+        message: 'Profile updated successfully',
+        email: dugc.email
+    });
 };

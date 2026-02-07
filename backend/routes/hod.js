@@ -62,4 +62,12 @@ router.post(
     asyncHandler(hodController.sendMeetingEmail)
 );
 
+// Update HOD profile (email and/or password)
+router.put(
+    '/update-profile',
+    auth,
+    requireRole(['hod']),
+    asyncHandler(hodController.updateProfile)
+);
+
 module.exports = router;

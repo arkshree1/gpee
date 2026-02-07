@@ -3,18 +3,19 @@ const OfficeSecretary = require('../models/OfficeSecretary');
 const Dugc = require('../models/Dugc');
 const Dpgc = require('../models/Dpgc');
 const User = require('../models/User');
+const bcrypt = require('bcryptjs');
 const { sendMeetingInviteEmail, sendOutstationGatepassNotification, sendOutstationRejectionNotification } = require('../utils/emailService');
 
-// Get Office Secretary profile (name and department)
+// Get Office Secretary profile (name, department, and email)
 exports.getProfile = async (req, res) => {
     const secretaryId = req.user.userId;
 
-    const secretary = await OfficeSecretary.findById(secretaryId).select('name department');
+    const secretary = await OfficeSecretary.findById(secretaryId).select('name department email');
     if (!secretary) {
         return res.status(404).json({ message: 'Secretary not found' });
     }
 
-    return res.json({ name: secretary.name, department: secretary.department });
+    return res.json({ name: secretary.name, department: secretary.department, email: secretary.email });
 };
 
 // Get pending outstation gatepasses for the secretary's department (card view)
@@ -480,5 +481,48 @@ exports.editGatepassDetails = async (req, res) => {
         message: 'Gatepass details updated successfully', 
         gatepass: gatepass,
         changes: changes 
+    });
+};
+
+// Update Office Secretary profile (email and/or password)
+exports.updateProfile = async (req, res) => {
+    const secretaryId = req.user.userId;
+    const { email, currentPassword, newPassword } = req.body;
+
+    const secretary = await OfficeSecretary.findById(secretaryId);
+    if (!secretary) {
+        return res.status(404).json({ message: 'Office Secretary not found' });
+    }
+
+    // If updating password, verify current password first
+    if (newPassword) {
+        if (!currentPassword) {
+            return res.status(400).json({ message: 'Current password is required to set a new password' });
+        }
+        const isMatch = await secretary.comparePassword(currentPassword);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Current password is incorrect' });
+        }
+        if (newPassword.length < 6) {
+            return res.status(400).json({ message: 'New password must be at least 6 characters' });
+        }
+        secretary.password = await bcrypt.hash(newPassword, 10);
+    }
+
+    // If updating email
+    if (email && email !== secretary.email) {
+        // Check if email is already in use
+        const existingSecretary = await OfficeSecretary.findOne({ email: email.toLowerCase(), _id: { $ne: secretaryId } });
+        if (existingSecretary) {
+            return res.status(400).json({ message: 'Email is already in use' });
+        }
+        secretary.email = email.toLowerCase();
+    }
+
+    await secretary.save();
+
+    return res.json({ 
+        message: 'Profile updated successfully',
+        email: secretary.email
     });
 };

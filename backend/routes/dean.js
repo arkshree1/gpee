@@ -62,4 +62,12 @@ router.post(
     asyncHandler(deanController.sendMeetingEmail)
 );
 
+// Update Dean profile (email and/or password)
+router.put(
+    '/update-profile',
+    auth,
+    requireRole(['dean']),
+    asyncHandler(deanController.updateProfile)
+);
+
 module.exports = router;

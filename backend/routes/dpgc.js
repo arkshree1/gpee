@@ -62,4 +62,12 @@ router.post(
     asyncHandler(dpgcController.sendMeetingEmail)
 );
 
+// Update DPGC profile (email and/or password)
+router.put(
+    '/update-profile',
+    auth,
+    requireRole(['dpgc']),
+    asyncHandler(dpgcController.updateProfile)
+);
+
 module.exports = router;

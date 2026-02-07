@@ -2,18 +2,19 @@ const OutstationGatepass = require('../models/OutstationGatepass');
 const Dpgc = require('../models/Dpgc');
 const Hod = require('../models/Hod');
 const User = require('../models/User');
+const bcrypt = require('bcryptjs');
 const { sendMeetingInviteEmail, sendOutstationGatepassNotification, sendOutstationRejectionNotification } = require('../utils/emailService');
 
-// Get DPGC profile (name and department)
+// Get DPGC profile (name, department, and email)
 exports.getProfile = async (req, res) => {
     const dpgcId = req.user.userId;
 
-    const dpgc = await Dpgc.findById(dpgcId).select('name department');
+    const dpgc = await Dpgc.findById(dpgcId).select('name department email');
     if (!dpgc) {
         return res.status(404).json({ message: 'DPGC not found' });
     }
 
-    return res.json({ name: dpgc.name, department: dpgc.department });
+    return res.json({ name: dpgc.name, department: dpgc.department, email: dpgc.email });
 };
 
 // Get pending outstation gatepasses for DPGC's department (PhD students only)
@@ -306,4 +307,47 @@ exports.sendMeetingEmail = async (req, res) => {
         console.error('Error sending meeting email:', err);
         return res.status(500).json({ message: 'Failed to send email. Please try again.' });
     }
+};
+
+// Update DPGC profile (email and/or password)
+exports.updateProfile = async (req, res) => {
+    const dpgcId = req.user.userId;
+    const { email, currentPassword, newPassword } = req.body;
+
+    const dpgc = await Dpgc.findById(dpgcId);
+    if (!dpgc) {
+        return res.status(404).json({ message: 'DPGC not found' });
+    }
+
+    // If updating password, verify current password first
+    if (newPassword) {
+        if (!currentPassword) {
+            return res.status(400).json({ message: 'Current password is required to set a new password' });
+        }
+        const isMatch = await dpgc.comparePassword(currentPassword);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Current password is incorrect' });
+        }
+        if (newPassword.length < 6) {
+            return res.status(400).json({ message: 'New password must be at least 6 characters' });
+        }
+        dpgc.password = await bcrypt.hash(newPassword, 10);
+    }
+
+    // If updating email
+    if (email && email !== dpgc.email) {
+        // Check if email is already in use
+        const existingDpgc = await Dpgc.findOne({ email: email.toLowerCase(), _id: { $ne: dpgcId } });
+        if (existingDpgc) {
+            return res.status(400).json({ message: 'Email is already in use' });
+        }
+        dpgc.email = email.toLowerCase();
+    }
+
+    await dpgc.save();
+
+    return res.json({ 
+        message: 'Profile updated successfully',
+        email: dpgc.email
+    });
 };
